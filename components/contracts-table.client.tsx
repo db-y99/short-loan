@@ -24,6 +24,7 @@ import {
   CONTRACT_STATUS_COLOR,
   CONTRACT_STATUS,
 } from "@/constants/contracts";
+import { formatCurrencyVND, formatDateTimeVN } from "@/lib/format";
 
 type TProps = {
   contracts: TContract[];
@@ -41,24 +42,6 @@ const STATUS_OPTIONS = [
   })),
 ];
 
-const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(amount);
-};
-
-const formatDate = (dateString: string | null): string => {
-  if (!dateString) return "—";
-
-  return new Intl.DateTimeFormat("vi-VN", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(dateString));
-};
 
 const ContractsTable = ({ contracts, onRefresh, onRowClick }: TProps) => {
   const [isMounted, setIsMounted] = useState(false);
@@ -130,13 +113,13 @@ const ContractsTable = ({ contracts, onRefresh, onRowClick }: TProps) => {
         case "amount":
           return (
             <span className="font-semibold">
-              {formatCurrency(contract.amount)}
+              {formatCurrencyVND(contract.amount)}
             </span>
           );
         case "created_at":
-          return formatDate(contract.created_at);
+          return formatDateTimeVN(contract.created_at);
         case "approved_at":
-          return formatDate(contract.approved_at);
+          return formatDateTimeVN(contract.approved_at);
         case "status":
           return (
             <Chip

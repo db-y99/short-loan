@@ -32,7 +32,9 @@ export const formatCurrencyVND = (amount: number): string => {
 /**
  * Format ngày giờ vi-VN (ngày/tháng/năm giờ:phút)
  */
-export const formatDateTimeVN = (dateString: string): string => {
+export const formatDateTimeVN = (dateString: string | null): string => {
+  if (!dateString) return "—";
+
   return new Intl.DateTimeFormat("vi-VN", {
     day: "2-digit",
     month: "2-digit",

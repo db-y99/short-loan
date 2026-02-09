@@ -10,7 +10,7 @@ type TProps = {
 };
 
 const ContractProfileSection = ({ contract }: TProps) => {
-  const isSigned = contract.isSigned ?? contract.status === "disbursed" || contract.status === "completed";
+  const isSigned = contract.isSigned ?? (contract.status === "disbursed" || contract.status === "completed");
 
   return (
     <div className="mb-4 p-4 bg-default-50 rounded-xl border border-default-200">

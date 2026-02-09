@@ -8,10 +8,7 @@ import {
   ModalFooter,
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
-import { Chip } from "@heroui/chip";
-import { Link } from "@heroui/link";
 import { AlertCircle, CreditCard, MessageCircle, MessageSquare, ShoppingCart } from "lucide-react";
-
 import type { TContractDetails } from "@/types/contracts.types";
 import ContractHeader from "@/components/contract-details/contract-header";
 import ContractProfileSection from "@/components/contract-details/contract-profile-section";

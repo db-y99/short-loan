@@ -19,51 +19,9 @@ import {
 import type { TContractDetails } from "@/types/contracts.types";
 import { formatCurrencyVND } from "@/lib/format";
 import AssetGallery from "@/components/contract-details/asset-gallery.client";
+import SectionHeader from "@/components/section-header";
+import InfoRow from "@/components/info-row";
 
-const SectionHeader = ({
-  icon: Icon,
-  title,
-}: {
-  icon: ElementType;
-  title: string;
-}) => (
-  <div className="flex items-center gap-2">
-    <div className="p-2 rounded-lg bg-primary/10">
-      <Icon className="w-5 h-5 text-primary" />
-    </div>
-    <h3 className="font-semibold">{title}</h3>
-  </div>
-);
-
-const InfoRow = ({
-  icon: Icon,
-  label,
-  value,
-  isLink = false,
-  href,
-  className,
-}: {
-  icon: ElementType;
-  label: string;
-  value: string;
-  isLink?: boolean;
-  href?: string;
-  className?: string;
-}) => (
-  <div className={cn("flex items-start gap-2 py-1.5", className)}>
-    <Icon className="w-4 h-4 text-default-400 mt-0.5 flex-shrink-0" />
-    <div className="flex-1 min-w-0">
-      <p className="text-xs text-default-400">{label}</p>
-      {isLink && href ? (
-        <Link isExternal className="text-sm" href={href}>
-          {value}
-        </Link>
-      ) : (
-        <p className="text-sm font-medium break-words">{value}</p>
-      )}
-    </div>
-  </div>
-);
 
 type TProps = {
   contract: TContractDetails;

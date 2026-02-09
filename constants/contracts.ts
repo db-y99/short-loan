@@ -1,4 +1,17 @@
-import type { TContractStatus } from "@/types/contracts.types";
+import type {
+  TActivityLogType,
+  TContractStatus,
+} from "@/types/contracts.types";
+import type { ElementType } from "react";
+import {
+  MessageCircle,
+  AlertCircle,
+  Upload,
+  CheckCircle2,
+  FileText,
+  FileSignature,
+  Banknote,
+} from "lucide-react";
 
 export const CONTRACT_STATUS = {
   PENDING: "pending",
@@ -92,3 +105,23 @@ export const ACTIVITY_SYSTEM_TYPES = [
   ACTIVITY_LOG_TYPE.CONTRACT_SIGNED,
   ACTIVITY_LOG_TYPE.DISBURSEMENT,
 ] as const;
+
+export const ACTIVITY_ICON_MAP: Record<TActivityLogType, ElementType> = {
+  [ACTIVITY_LOG_TYPE.MESSAGE]: MessageCircle,
+  [ACTIVITY_LOG_TYPE.SYSTEM_EVENT]: AlertCircle,
+  [ACTIVITY_LOG_TYPE.IMAGE_UPLOAD]: Upload,
+  [ACTIVITY_LOG_TYPE.APPROVAL]: CheckCircle2,
+  [ACTIVITY_LOG_TYPE.CONTRACT_CREATED]: FileText,
+  [ACTIVITY_LOG_TYPE.CONTRACT_SIGNED]: FileSignature,
+  [ACTIVITY_LOG_TYPE.DISBURSEMENT]: Banknote,
+};
+
+export const ACTIVITY_COLOR_MAP: Record<TActivityLogType, string> = {
+  [ACTIVITY_LOG_TYPE.MESSAGE]: "text-primary",
+  [ACTIVITY_LOG_TYPE.SYSTEM_EVENT]: "text-secondary",
+  [ACTIVITY_LOG_TYPE.IMAGE_UPLOAD]: "text-warning",
+  [ACTIVITY_LOG_TYPE.APPROVAL]: "text-success",
+  [ACTIVITY_LOG_TYPE.CONTRACT_CREATED]: "text-secondary",
+  [ACTIVITY_LOG_TYPE.CONTRACT_SIGNED]: "text-success",
+  [ACTIVITY_LOG_TYPE.DISBURSEMENT]: "text-success",
+};

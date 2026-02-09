@@ -234,7 +234,7 @@ export const SAMPLE_CONTRACT_DETAILS: TContractDetails = {
       userId: "namlh.cs",
       userName: "namlh.cs",
       timestamp: "2026-02-06T11:11:00+07:00",
-      images: ["/assets/chat-img-1.png"],
+      images: ["https://picsum.photos/id/4/300/500"],
     },
     {
       id: "log-013",
@@ -243,7 +243,7 @@ export const SAMPLE_CONTRACT_DETAILS: TContractDetails = {
       userName: "namlh.cs",
       timestamp: "2026-02-06T11:12:00+07:00",
       content: "Dạ điện thoại em kiểm tra rồi á chị bth như lúc ban đầu",
-      images: ["/assets/chat-img-2.png"],
+      images: ["https://picsum.photos/id/5/300/500"],
     },
     {
       id: "log-014",
@@ -276,7 +276,7 @@ export const SAMPLE_CONTRACT_DETAILS: TContractDetails = {
       userId: "namlh.cs",
       userName: "namlh.cs",
       timestamp: "2026-02-06T11:14:00+07:00",
-      images: ["/assets/chat-img-3.png"],
+      images: ["https://picsum.photos/id/6/300/500"],
     },
     {
       id: "log-018",
