@@ -17,33 +17,33 @@ import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
 import { Search, RefreshCw } from "lucide-react";
 
-import type { TContract, TContractStatus } from "@/types/contracts.types";
+import type { TLoan, TLoanStatus } from "@/types/loan.types";
 import {
-  CONTRACT_TABLE_COLUMNS,
-  CONTRACT_STATUS_LABEL,
-  CONTRACT_STATUS_COLOR,
-  CONTRACT_STATUS,
-} from "@/constants/contracts";
+  LOANS_TABLE_COLUMNS,
+  LOAN_STATUS_LABEL,
+  LOAN_STATUS_COLOR,
+  LOAN_STATUS,
+} from "@/constants/loan";
 import { formatCurrencyVND, formatDateTimeVN } from "@/lib/format";
 
 type TProps = {
-  contracts: TContract[];
+  loans: TLoan[];
   onRefresh?: () => void;
-  onRowClick?: (contract: TContract) => void;
+  onRowClick?: (loan: TLoan) => void;
 };
 
 const ALL_FILTER_VALUE = "all";
 
 const STATUS_OPTIONS = [
   { key: ALL_FILTER_VALUE, label: "Tất cả" },
-  ...Object.values(CONTRACT_STATUS).map((status) => ({
+  ...Object.values(LOAN_STATUS).map((status) => ({
     key: status,
-    label: CONTRACT_STATUS_LABEL[status],
+    label: LOAN_STATUS_LABEL[status],
   })),
 ];
 
 
-const ContractsTable = ({ contracts, onRefresh, onRowClick }: TProps) => {
+const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
   const [isMounted, setIsMounted] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState(ALL_FILTER_VALUE);
@@ -56,26 +56,26 @@ const ContractsTable = ({ contracts, onRefresh, onRowClick }: TProps) => {
 
   // Derive unique values from data for dynamic filters
   const loanPackageOptions = useMemo(() => {
-    const unique = Array.from(new Set(contracts.map((c) => c.loan_package)));
+    const unique = Array.from(new Set(loans.map((c) => c.loan_package)));
 
     return [
       { key: ALL_FILTER_VALUE, label: "Tất cả" },
       ...unique.map((pkg) => ({ key: pkg, label: pkg })),
     ];
-  }, [contracts]);
+  }, [loans]);
 
   const creatorOptions = useMemo(() => {
-    const unique = Array.from(new Set(contracts.map((c) => c.creator)));
+    const unique = Array.from(new Set(loans.map((c) => c.creator)));
 
     return [
       { key: ALL_FILTER_VALUE, label: "Tất cả" },
       ...unique.map((creator) => ({ key: creator, label: creator })),
     ];
-  }, [contracts]);
+  }, [loans]);
 
-  // Filter contracts
-  const filteredContracts = useMemo(() => {
-    let result = contracts;
+  // Filter loans
+  const filteredLoans = useMemo(() => {
+    let result = loans;
 
     // Search by code, customer, asset
     if (search.trim()) {
@@ -105,32 +105,32 @@ const ContractsTable = ({ contracts, onRefresh, onRowClick }: TProps) => {
     }
 
     return result;
-  }, [contracts, search, statusFilter, loanPackageFilter, creatorFilter]);
+  }, [loans, search, statusFilter, loanPackageFilter, creatorFilter]);
 
   const renderCell = useCallback(
-    (contract: TContract, columnKey: string): React.ReactNode => {
+    (loan: TLoan, columnKey: string): React.ReactNode => {
       switch (columnKey) {
         case "amount":
           return (
             <span className="font-semibold">
-              {formatCurrencyVND(contract.amount)}
+              {formatCurrencyVND(loan.amount)}
             </span>
           );
         case "created_at":
-          return formatDateTimeVN(contract.created_at);
+          return formatDateTimeVN(loan.created_at);
         case "approved_at":
-          return formatDateTimeVN(contract.approved_at);
+          return formatDateTimeVN(loan.approved_at);
         case "status":
           return (
             <Chip
-              color={CONTRACT_STATUS_COLOR[contract.status as TContractStatus]}
+              color={LOAN_STATUS_COLOR[loan.status as TLoanStatus]}
               variant="flat"
             >
-              {CONTRACT_STATUS_LABEL[contract.status as TContractStatus]}
+              {LOAN_STATUS_LABEL[loan.status as TLoanStatus]}
             </Chip>
           );
         default:
-          return contract[columnKey as keyof TContract]?.toString() ?? "—";
+          return loan[columnKey as keyof TLoan]?.toString() ?? "—";
       }
     },
     [],
@@ -243,12 +243,12 @@ const ContractsTable = ({ contracts, onRefresh, onRowClick }: TProps) => {
 
       {/* Result count */}
       <div className="text-sm text-default-500">
-        Tìm thấy {filteredContracts.length} hợp đồng
+        Tìm thấy {filteredLoans.length} khoản vay
       </div>
 
       {/* Table */}
-      <Table aria-label="Bảng hợp đồng vay" isHeaderSticky selectionMode="none">
-        <TableHeader columns={[...CONTRACT_TABLE_COLUMNS]}>
+      <Table aria-label="Bảng khoản vay" isHeaderSticky selectionMode="none">
+        <TableHeader columns={[...LOANS_TABLE_COLUMNS]}>
           {(column) => (
             <TableColumn
               key={column.key}
@@ -259,23 +259,23 @@ const ContractsTable = ({ contracts, onRefresh, onRowClick }: TProps) => {
           )}
         </TableHeader>
         <TableBody
-          emptyContent="Không có hợp đồng nào"
-          items={filteredContracts}
+          emptyContent="Không có khoản vay nào"
+          items={filteredLoans}
         >
-          {(contract) => (
+          {(loan) => (
             <TableRow
-              key={contract.id}
+              key={loan.id}
               className={
 
                 onRowClick
                   ? "cursor-pointer hover:bg-default-100 transition-colors"
                   : ""
               }
-              onClick={() => onRowClick?.(contract)}
+              onClick={() => onRowClick?.(loan)}
             >
               {(columnKey) => (
                 <TableCell className="py-4">
-                  {renderCell(contract, columnKey as string)}
+                  {renderCell(loan, columnKey as string)}
                 </TableCell>
               )}
             </TableRow>
@@ -286,4 +286,4 @@ const ContractsTable = ({ contracts, onRefresh, onRowClick }: TProps) => {
   );
 };
 
-export default ContractsTable;
+export default LoansTable;

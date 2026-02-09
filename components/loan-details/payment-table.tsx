@@ -1,4 +1,4 @@
-import type { TPaymentMilestone } from "@/types/contracts.types";
+import type { TPaymentMilestone } from "@/types/loan.types";
 import { Table, TableHeader, TableColumn, TableBody, TableRow, TableCell } from "@heroui/table";
 import { Chip } from "@heroui/chip";
 import { formatDateShortVN } from "@/lib/format";

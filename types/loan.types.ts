@@ -1,11 +1,11 @@
-export type TContractStatus =
+export type TLoanStatus =
   | "pending"
   | "approved"
   | "rejected"
   | "disbursed"
   | "completed";
 
-export type TContract = {
+export type TLoan = {
   id: string;
   code: string;
   creator: string;
@@ -15,7 +15,7 @@ export type TContract = {
   loan_package: string;
   created_at: string;
   approved_at: string | null;
-  status: TContractStatus;
+  status: TLoanStatus;
 };
 
 export type TReference = {
@@ -25,7 +25,7 @@ export type TReference = {
   relationship: string;
 };
 
-export type TCreateContractForm = {
+export type TCreateLoanForm = {
   // Customer info
   full_name: string;
   cccd: string;
@@ -60,7 +60,7 @@ export type TCreateContractForm = {
 
 // ==================== Contract Details Types ====================
 
-export type TContractFile = {
+export type TLoanFile = {
   id: string;
   name: string; // "HĐ Chính", "XN Đủ Tiền", "UQ Xử Lý", "HD Thuê"
   url: string;
@@ -79,15 +79,15 @@ export type TPaymentPeriod = {
   milestones: TPaymentMilestone[];
 };
 
-export type TContractDetails = {
-  // Contract info
+export type TLoanDetails = {
+  // Loan info
   id: string;
   code: string;
   signedAt: string;
   originalFileUrl?: string;
   notes: string;
   isSigned?: boolean; // Hợp đồng đã được ký kết
-  originalFiles?: TContractFile[]; // File Gốc (Soạn thảo)
+  originalFiles?: TLoanFile[]; // File Gốc (Soạn thảo)
 
   // Customer info
   customer: {
@@ -134,7 +134,7 @@ export type TContractDetails = {
   nextPeriod: TPaymentPeriod;
 
   // Status
-  status: TContractStatus;
+  status: TLoanStatus;
   statusMessage?: string;
 
   // Activity log (Trao đổi & Nhật ký)

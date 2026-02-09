@@ -5,18 +5,18 @@ import { Select, SelectItem } from "@heroui/select";
 import { Textarea } from "@heroui/input";
 import { Divider } from "@heroui/divider";
 
-import type { TCreateContractForm } from "@/types/contracts.types";
+import type { TCreateLoanForm } from "@/types/loan.types";
 import { formatNumberInput } from "@/lib/format";
 import {
   ASSET_TYPES,
   ASSET_TYPE_LABEL,
   LOAN_TYPES,
   LOAN_TYPE_LABEL,
-} from "@/constants/contracts";
+} from "@/constants/loan";
 
 type TProps = {
-  form: TCreateContractForm;
-  onChange: (field: keyof TCreateContractForm, value: string) => void;
+  form: TCreateLoanForm;
+  onChange: (field: keyof TCreateLoanForm, value: string) => void;
 };
 
 const ASSET_TYPE_OPTIONS = Object.values(ASSET_TYPES).map((type) => ({

@@ -3,10 +3,10 @@
 import { Chip, Link } from "@heroui/react";
 import { FileText, CheckCircle2 } from "lucide-react";
 
-import type { TContractDetails } from "@/types/contracts.types";
+import type { TLoanDetails } from "@/types/loan.types";
 
 type TProps = {
-  contract: TContractDetails;
+  contract: TLoanDetails;
 };
 
 const ContractProfileSection = ({ contract }: TProps) => {

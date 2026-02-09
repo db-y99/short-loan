@@ -17,16 +17,16 @@ import ReferencesSection from "./references-section.client";
 import AttachmentsSection from "./attachments-section.client";
 
 import type {
-  TCreateContractForm,
+  TCreateLoanForm,
   TReference,
-} from "@/types/contracts.types";
+} from "@/types/loan.types";
 
 type TProps = {
   isOpen: boolean;
   onClose: () => void;
 };
 
-const INITIAL_FORM: TCreateContractForm = {
+const INITIAL_FORM: TCreateLoanForm = {
   full_name: "",
   cccd: "",
   phone: "",
@@ -53,10 +53,10 @@ const INITIAL_FORM: TCreateContractForm = {
 };
 
 const CreateContractModal = ({ isOpen, onClose }: TProps) => {
-  const [form, setForm] = useState<TCreateContractForm>(INITIAL_FORM);
+  const [form, setForm] = useState<TCreateLoanForm>(INITIAL_FORM);
 
   const handleFieldChange = useCallback(
-    (field: keyof TCreateContractForm, value: string) => {
+    (field: keyof TCreateLoanForm, value: string) => {
       setForm((prev) => ({ ...prev, [field]: value }));
     },
     [],

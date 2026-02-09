@@ -16,15 +16,15 @@ import {
   Calendar,
 } from "lucide-react";
 
-import type { TContractDetails } from "@/types/contracts.types";
+import type { TLoanDetails } from "@/types/loan.types";
 import { formatCurrencyVND } from "@/lib/format";
-import AssetGallery from "@/components/contract-details/asset-gallery.client";
+import AssetGallery from "@/components/loan-details/asset-gallery.client";
 import SectionHeader from "@/components/section-header";
 import InfoRow from "@/components/info-row";
 
 
 type TProps = {
-  contract: TContractDetails;
+  contract: TLoanDetails;
   showAssetGallery?: boolean;
 };
 

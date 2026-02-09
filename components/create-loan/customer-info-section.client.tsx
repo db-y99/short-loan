@@ -3,12 +3,12 @@
 import { Input } from "@heroui/input";
 import { Divider } from "@heroui/divider";
 
-import type { TCreateContractForm } from "@/types/contracts.types";
+import type { TCreateLoanForm } from "@/types/loan.types";
 import { formatNumberInput } from "@/lib/format";
 
 type TProps = {
-  form: TCreateContractForm;
-  onChange: (field: keyof TCreateContractForm, value: string) => void;
+  form: TCreateLoanForm;
+  onChange: (field: keyof TCreateLoanForm, value: string) => void;
 };
 
 const CustomerInfoSection = ({ form, onChange }: TProps) => {

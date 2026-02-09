@@ -4,7 +4,7 @@ import { Button } from "@heroui/button";
 import { useDisclosure } from "@heroui/modal";
 import { Plus } from "lucide-react";
 
-import CreateContractModal from "./create-contract-modal.client";
+import CreateContractModal from "./create-loan-modal.client";
 
 type TProps = {
   className?: string;
@@ -22,7 +22,7 @@ const CreateContractButton = ({ className }: TProps) => {
         variant="solid"
         onPress={onOpen}
       >
-        Tạo hợp đồng
+        Tạo đơn vay
       </Button>
       {
         isOpen && <CreateContractModal isOpen={isOpen} onClose={onClose} />

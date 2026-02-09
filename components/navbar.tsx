@@ -28,7 +28,7 @@ import { siteConfig } from "@/config/site";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { Logo } from "@/components/icons";
 import Notification from "@/components/notification";
-import CreateContractButton from "@/components/create-contract/create-contract-button.client";
+import CreateContractButton from "@/components/create-loan/create-loan-button.client";
 
 export const Navbar = () => {
   return (

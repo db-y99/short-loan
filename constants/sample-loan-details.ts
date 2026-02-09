@@ -1,7 +1,7 @@
-import type { TContractDetails } from "@/types/contracts.types";
+import type { TLoanDetails } from "@/types/loan.types";
 
-// Sample data based on the user's provided contract information
-export const SAMPLE_CONTRACT_DETAILS: TContractDetails = {
+// Sample data based on the user's provided loan information
+export const SAMPLE_LOAN_DETAILS: TLoanDetails = {
   id: "hd-001",
   code: "HD-2026-0208-001",
   signedAt: "2026-02-08T11:55:00+07:00",

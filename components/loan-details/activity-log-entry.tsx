@@ -1,5 +1,5 @@
-import { ACTIVITY_COLOR_MAP, ACTIVITY_ICON_MAP, ACTIVITY_LOG_TYPE, ACTIVITY_SYSTEM_TYPES } from "@/constants/contracts";
-import { TActivityLogEntry } from "@/types/contracts.types";
+import { ACTIVITY_COLOR_MAP, ACTIVITY_ICON_MAP, ACTIVITY_LOG_TYPE, ACTIVITY_SYSTEM_TYPES } from "@/constants/loan";
+import { TActivityLogEntry } from "@/types/loan.types";
 import { formatActivityTimeVN } from "@/lib/format";
 import { Link } from "@heroui/link";
 import { ExternalLink } from "lucide-react";

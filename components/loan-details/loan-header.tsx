@@ -1,27 +1,20 @@
 import { Button, Chip } from "@heroui/react";
 import { FileText } from "lucide-react";
 
-import type {
-  TContractDetails,
-  TContractStatus,
-} from "@/types/contracts.types";
-import {
-  CONTRACT_STATUS_COLOR,
-  CONTRACT_STATUS_LABEL,
-} from "@/constants/contracts";
+import type { TLoanDetails, TLoanStatus } from "@/types/loan.types";
+import { LOAN_STATUS_COLOR, LOAN_STATUS_LABEL } from "@/constants/loan";
 import { formatCurrencyVND, formatDateTimeVN } from "@/lib/format";
 
 type TProps = {
-  contract: TContractDetails;
+  contract: TLoanDetails;
   onClose: () => void;
 };
 
 const ContractHeader = ({ contract, onClose }: TProps) => {
   const statusColor =
-    CONTRACT_STATUS_COLOR[contract.status as TContractStatus] || "default";
+    LOAN_STATUS_COLOR[contract.status as TLoanStatus] || "default";
   const statusLabel =
-    CONTRACT_STATUS_LABEL[contract.status as TContractStatus] ||
-    "Không xác định";
+    LOAN_STATUS_LABEL[contract.status as TLoanStatus] || "Không xác định";
 
   return (
     <div className="flex items-center justify-between w-full">

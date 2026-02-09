@@ -1,13 +1,13 @@
 import { Card, CardBody, CardHeader } from "@heroui/react";
 import { Clock, Calendar } from "lucide-react";
 
-import type { TContractDetails } from "@/types/contracts.types";
-import PaymentTable from "@/components/contract-details/payment-table";
+import type { TLoanDetails } from "@/types/loan.types";
+import PaymentTable from "@/components/loan-details/payment-table";
 import SectionHeader from "@/components/section-header";
 
 
 type TProps = {
-  contract: TContractDetails;
+  contract: TLoanDetails;
 };
 
 const PaymentPeriods = ({ contract }: TProps) => {

@@ -7,8 +7,8 @@ import {
   MessageSquare,
   Send,
 } from "lucide-react";
-import type { TActivityLogEntry } from "@/types/contracts.types";
-import ActivityLogEntry from "@/components/contract-details/activity-log-entry";
+import type { TActivityLogEntry } from "@/types/loan.types";
+import ActivityLogEntry from "@/components/loan-details/activity-log-entry";
 
 type TProps = {
   entries: TActivityLogEntry[];

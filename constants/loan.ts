@@ -1,7 +1,4 @@
-import type {
-  TActivityLogType,
-  TContractStatus,
-} from "@/types/contracts.types";
+import type { TActivityLogType, TLoanStatus } from "@/types/loan.types";
 import type { ElementType } from "react";
 import {
   MessageCircle,
@@ -13,7 +10,7 @@ import {
   Banknote,
 } from "lucide-react";
 
-export const CONTRACT_STATUS = {
+export const LOAN_STATUS = {
   PENDING: "pending",
   APPROVED: "approved",
   REJECTED: "rejected",
@@ -21,23 +18,23 @@ export const CONTRACT_STATUS = {
   COMPLETED: "completed",
 } as const;
 
-export const CONTRACT_STATUS_LABEL: Record<TContractStatus, string> = {
-  [CONTRACT_STATUS.PENDING]: "Chờ duyệt",
-  [CONTRACT_STATUS.APPROVED]: "Đã duyệt",
-  [CONTRACT_STATUS.REJECTED]: "Từ chối",
-  [CONTRACT_STATUS.DISBURSED]: "Đã giải ngân",
-  [CONTRACT_STATUS.COMPLETED]: "Hoàn thành",
+export const LOAN_STATUS_LABEL: Record<TLoanStatus, string> = {
+  [LOAN_STATUS.PENDING]: "Chờ duyệt",
+  [LOAN_STATUS.APPROVED]: "Đã duyệt",
+  [LOAN_STATUS.REJECTED]: "Từ chối",
+  [LOAN_STATUS.DISBURSED]: "Đã giải ngân",
+  [LOAN_STATUS.COMPLETED]: "Hoàn thành",
 } as const;
 
-export const CONTRACT_STATUS_COLOR: Record<
-  TContractStatus,
+export const LOAN_STATUS_COLOR: Record<
+  TLoanStatus,
   "warning" | "success" | "danger" | "primary" | "default"
 > = {
-  [CONTRACT_STATUS.PENDING]: "warning",
-  [CONTRACT_STATUS.APPROVED]: "success",
-  [CONTRACT_STATUS.REJECTED]: "danger",
-  [CONTRACT_STATUS.DISBURSED]: "primary",
-  [CONTRACT_STATUS.COMPLETED]: "default",
+  [LOAN_STATUS.PENDING]: "warning",
+  [LOAN_STATUS.APPROVED]: "success",
+  [LOAN_STATUS.REJECTED]: "danger",
+  [LOAN_STATUS.DISBURSED]: "primary",
+  [LOAN_STATUS.COMPLETED]: "default",
 } as const;
 
 export const ASSET_TYPES = {
@@ -74,8 +71,8 @@ export const LOAN_TYPE_LABEL: Record<string, string> = {
   [LOAN_TYPES.NINETY_DAYS]: "Gói 90 ngày",
 } as const;
 
-export const CONTRACT_TABLE_COLUMNS = [
-  { key: "code", label: "Mã HĐ" },
+export const LOANS_TABLE_COLUMNS = [
+  { key: "code", label: "Mã khoản vay" },
   { key: "creator", label: "Người tạo" },
   { key: "customer", label: "Khách hàng" },
   { key: "asset", label: "Tài sản" },

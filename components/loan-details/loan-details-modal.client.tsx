@@ -9,18 +9,18 @@ import {
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { AlertCircle, CreditCard, MessageCircle, MessageSquare, ShoppingCart } from "lucide-react";
-import type { TContractDetails } from "@/types/contracts.types";
-import ContractHeader from "@/components/contract-details/contract-header";
-import ContractProfileSection from "@/components/contract-details/contract-profile-section";
-import ContractInfoCards from "@/components/contract-details/contract-info-cards.client";
-import LoanAmountSummary from "@/components/contract-details/loan-amount-summary";
-import PaymentPeriods from "@/components/contract-details/payment-periods";
-import ActivityLogSection from "@/components/contract-details/activity-log-section.client";
+import type { TLoanDetails } from "@/types/loan.types";
+import ContractHeader from "@/components/loan-details/loan-header";
+import ContractProfileSection from "@/components/loan-details/loan-profile-section";
+import ContractInfoCards from "@/components/loan-details/loan-info-cards.client";
+import LoanAmountSummary from "@/components/loan-details/loan-amount-summary";
+import PaymentPeriods from "@/components/loan-details/payment-periods";
+import ActivityLogSection from "@/components/loan-details/activity-log-section.client";
 
 type TProps = {
   isOpen: boolean;
   onClose: () => void;
-  contract: TContractDetails | null;
+  contract: TLoanDetails | null;
 };
 
 const ContractDetailsModal = ({ isOpen, onClose, contract }: TProps) => {

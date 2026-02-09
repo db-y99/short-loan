@@ -5,7 +5,7 @@ import { Button } from "@heroui/button";
 import { Divider } from "@heroui/divider";
 import { Trash2, UserPlus } from "lucide-react";
 
-import type { TReference } from "@/types/contracts.types";
+import type { TReference } from "@/types/loan.types";
 
 type TProps = {
   references: TReference[];
