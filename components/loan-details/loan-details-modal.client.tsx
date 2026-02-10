@@ -38,9 +38,9 @@ const ContractDetailsModal = ({
     <Modal
       isOpen={isOpen}
       scrollBehavior="inside"
-      size="full"
+      size="5xl"
       hideCloseButton
-      className="max-w-[1400px] h-[90vh]"
+      className="max-w-[1400px]"
       onClose={onClose}
     >
       <ModalContent className="h-full">
