@@ -50,15 +50,6 @@ const AssetGallery = ({ images }: TProps) => {
     document.body.removeChild(link);
   };
 
-  if (!images.length) {
-    return (
-      <div className="flex items-center justify-center py-8 text-default-400">
-        <ImageIcon className="w-8 h-8 mr-2" />
-        <span>Chưa có ảnh tài sản</span>
-      </div>
-    );
-  }
-
   return (
     <>
       <div className="flex items-center gap-2 justify-between">
@@ -72,30 +63,42 @@ const AssetGallery = ({ images }: TProps) => {
           Thêm ảnh
         </Button>
       </div>
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-        {images.map((image, index) => (
-          <button
-            key={index}
-            type="button"
-            className="relative aspect-square rounded-lg overflow-hidden border border-default-200 hover:border-primary transition-colors cursor-pointer group"
-            onClick={() => handleOpenPreview(image, index)}
-          >
-            <Image
-              alt={`Ảnh ${index + 1}`}
-              classNames={{
-                wrapper: "!max-w-full h-full",
-                img: "w-full h-full object-cover",
-              }}
-              src={image}
-            />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-              <span className="absolute bottom-1 right-1 text-xs bg-black/60 text-white px-1.5 py-0.5 rounded">
-                Ảnh {index + 1}
-              </span>
-            </div>
-          </button>
-        ))}
-      </div>
+      {
+        !images.length && (
+          <div className="flex items-center justify-center py-8 text-default-400">
+            <ImageIcon className="w-8 h-8 mr-2" />
+            <span>Chưa có ảnh tài sản</span>
+          </div>
+        )
+      }
+      {
+        images.length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+            {images.map((image, index) => (
+              <button
+                key={index}
+                type="button"
+                className="relative aspect-square rounded-lg overflow-hidden border border-default-200 hover:border-primary transition-colors cursor-pointer group"
+                onClick={() => handleOpenPreview(image, index)}
+              >
+                <Image
+                  alt={`Ảnh ${index + 1}`}
+                  classNames={{
+                    wrapper: "!max-w-full h-full",
+                    img: "w-full h-full object-cover",
+                  }}
+                  src={image}
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                  <span className="absolute bottom-1 right-1 text-xs bg-black/60 text-white px-1.5 py-0.5 rounded">
+                    Ảnh {index + 1}
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )
+      }
 
       {
         selectedImage && (<Modal

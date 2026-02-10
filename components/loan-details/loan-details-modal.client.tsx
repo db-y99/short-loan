@@ -21,10 +21,18 @@ type TProps = {
   isOpen: boolean;
   onClose: () => void;
   contract: TLoanDetails | null;
+  isLoading?: boolean;
+  error?: string | null;
 };
 
-const ContractDetailsModal = ({ isOpen, onClose, contract }: TProps) => {
-  if (!contract) return null;
+const ContractDetailsModal = ({
+  isOpen,
+  onClose,
+  contract,
+  isLoading = false,
+  error = null,
+}: TProps) => {
+  if (!contract && !isLoading && !error) return null;
 
   return (
     <Modal
@@ -37,50 +45,73 @@ const ContractDetailsModal = ({ isOpen, onClose, contract }: TProps) => {
     >
       <ModalContent className="h-full">
         <ModalHeader className="flex-shrink-0 py-3 px-6 border-b border-default-200">
-          <ContractHeader contract={contract} onClose={onClose} />
+          {contract ? (
+            <ContractHeader contract={contract} onClose={onClose} />
+          ) : (
+            <div className="flex items-center justify-between w-full">
+              <span className="text-lg font-semibold">
+                {isLoading ? "Đang tải..." : error ?? "Chi tiết khoản vay"}
+              </span>
+              <Button variant="flat" size="sm" onPress={onClose}>
+                Đóng
+              </Button>
+            </div>
+          )}
         </ModalHeader>
 
         <ModalBody className="flex-1 p-0 overflow-hidden">
           <div className="flex h-full">
             {/* Left Column - Contract Details */}
             <div className="flex-3 overflow-y-auto p-6 border-r border-default-200">
-              <ContractProfileSection contract={contract} />
-
-              {contract.notes && (
-                <div className="flex items-start gap-3 p-3 mb-4 rounded-xl bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800">
-                  <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
-                  <p className="text-sm text-warning-700 dark:text-warning-400">
-                    {contract.notes}
-                  </p>
+              {isLoading && (
+                <div className="flex items-center justify-center py-16">
+                  <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent" />
                 </div>
               )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <ContractInfoCards
-                    contract={contract}
-                    showAssetGallery
-                  />
+              {error && !isLoading && (
+                <div className="rounded-lg bg-danger-50 px-4 py-6 text-danger text-center">
+                  {error}
                 </div>
-                <LoanAmountSummary contract={contract} />
-                <PaymentPeriods contract={contract} />
-              </div>
+              )}
+              {contract && !isLoading && (
+                <>
+                  <ContractProfileSection contract={contract} />
 
-              {contract.statusMessage && (
-                <div className="mt-4 p-3 rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-primary" />
-                    <p className="text-sm">{contract.statusMessage}</p>
+                  {contract.notes && (
+                    <div className="flex items-start gap-3 p-3 mb-4 rounded-xl bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800">
+                      <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+                      <p className="text-sm text-warning-700 dark:text-warning-400">
+                        {contract.notes}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <ContractInfoCards
+                        contract={contract}
+                        showAssetGallery
+                      />
+                    </div>
+                    <LoanAmountSummary contract={contract} />
+                    <PaymentPeriods contract={contract} />
                   </div>
-                </div>
+
+                  {contract.statusMessage && (
+                    <div className="mt-4 p-3 rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">
+                      <div className="flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-primary" />
+                        <p className="text-sm">{contract.statusMessage}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center flex-col gap-2 mt-4">
+                    <Button color="primary" variant="bordered" className="w-full" size="lg" startContent={<CreditCard size={16} />} onPress={() => { }}>Đóng lãi</Button>
+                    <Button color="primary" variant="solid" className="w-full" size="lg" startContent={<ShoppingCart size={16} />} onPress={() => { }}>Chuộc đồ</Button>
+                  </div>
+                </>
               )}
-
-              <div className="flex items-center flex-col gap-2 mt-4">
-                <Button color="primary" variant="bordered" className="w-full" size="lg" startContent={<CreditCard size={16} />} onPress={() => { }}>Đóng lãi</Button>
-                <Button color="primary" variant="solid" className="w-full" size="lg" startContent={<ShoppingCart size={16} />} onPress={() => { }}>Chuộc đồ</Button>
-              </div>
-
-
             </div>
 
             {/* Right Column - Activity Log */}
@@ -94,16 +125,7 @@ const ContractDetailsModal = ({ isOpen, onClose, contract }: TProps) => {
                 </div>
               </div>
               <div className="flex-1 overflow-hidden">
-                {contract.activityLog && contract.activityLog.length > 0 ? (
-                  <ActivityLogSection entries={contract.activityLog} />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-default-400">
-                    <div className="text-center">
-                      <MessageSquare className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                      <p>Chưa có trao đổi</p>
-                    </div>
-                  </div>
-                )}
+                <ActivityLogSection entries={contract?.activityLog ?? []} />
               </div>
             </div>
           </div>

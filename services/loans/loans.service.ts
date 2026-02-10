@@ -1,0 +1,353 @@
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import type {
+  TLoan,
+  TLoanDetails,
+  TLoanStatus,
+  TPaymentMilestone,
+  TPaymentPeriod,
+  TReference,
+  TActivityLogEntry,
+  TActivityLogType,
+  TLoanFile,
+} from "@/types/loan.types";
+import { LOAN_TYPE_LABEL, ASSET_TYPE_LABEL } from "@/constants/loan";
+import { formatDateShortVN } from "@/lib/format";
+
+/** Lấy danh sách loans với thông tin customer (full_name) */
+export const getLoansService = async (): Promise<TLoan[]> => {
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("loans")
+    .select(
+      `
+      id,
+      code,
+      creator,
+      amount,
+      loan_package,
+      loan_type,
+      asset_name,
+      created_at,
+      approved_at,
+      status,
+      customers!inner (
+        full_name
+      )
+    `
+    )
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => {
+    const cust = row.customers as { full_name: string } | { full_name: string }[] | null;
+    const customer = Array.isArray(cust) ? cust[0] : cust;
+    return {
+      id: row.id,
+      code: row.code,
+      creator: row.creator,
+      customer: (customer?.full_name as string | undefined) ?? "—",
+      asset: row.asset_name ?? "—",
+      amount: Number(row.amount),
+      loan_package: row.loan_package ?? LOAN_TYPE_LABEL[row.loan_type] ?? row.loan_type,
+      created_at: row.created_at,
+      approved_at: row.approved_at,
+      status: row.status as TLoanStatus,
+    } satisfies TLoan;
+  });
+};
+
+type TCreateLoanInput = {
+  code: string;
+  creator: string;
+  customer_id: string;
+  asset_type: string;
+  asset_name: string;
+  chassis_number?: string | null;
+  engine_number?: string | null;
+  imei?: string | null;
+  serial?: string | null;
+  amount: number;
+  loan_package: string | null;
+  loan_type: string;
+  appraisal_fee_percentage?: number | null;
+  appraisal_fee?: number | null;
+  bank_name?: string | null;
+  bank_account_holder?: string | null;
+  bank_account_number?: string | null;
+  notes?: string | null;
+  references: { full_name: string; phone: string; relationship: string | null }[];
+};
+
+/** Tạo loan mới và các bản ghi liên quan (references) */
+export const createLoanService = async (
+  input: TCreateLoanInput
+): Promise<{ id: string; code: string }> => {
+  const supabase = await createSupabaseServerClient();
+
+  const { data: loan, error: loanError } = await supabase
+    .from("loans")
+    .insert({
+      code: input.code,
+      creator: input.creator,
+      customer_id: input.customer_id,
+      asset_type: input.asset_type,
+      asset_name: input.asset_name,
+      chassis_number: input.chassis_number || null,
+      engine_number: input.engine_number || null,
+      imei: input.imei || null,
+      serial: input.serial || null,
+      amount: input.amount,
+      loan_package: input.loan_package,
+      loan_type: input.loan_type,
+      appraisal_fee_percentage: input.appraisal_fee_percentage ?? null,
+      appraisal_fee: input.appraisal_fee ?? null,
+      bank_name: input.bank_name || null,
+      bank_account_holder: input.bank_account_holder || null,
+      bank_account_number: input.bank_account_number || null,
+      notes: input.notes || null,
+      status: "pending",
+    })
+    .select("id, code")
+    .single();
+
+  if (loanError) throw new Error(loanError.message);
+  if (!loan) throw new Error("Failed to create loan");
+
+  if (input.references.length > 0) {
+    const refRows = input.references
+      .filter((r) => r.full_name.trim() || r.phone.trim())
+      .map((r) => ({
+        loan_id: loan.id,
+        full_name: r.full_name.trim() || "—",
+        phone: r.phone.trim() || "—",
+        relationship: r.relationship?.trim() || null,
+      }));
+
+    if (refRows.length > 0) {
+      const { error: refError } = await supabase
+        .from("loan_references")
+        .insert(refRows);
+
+      if (refError) throw new Error(refError.message);
+    }
+  }
+
+  return { id: loan.id, code: loan.code };
+};
+
+const EMPTY_MILESTONES: TPaymentMilestone[] = [];
+const EMPTY_PERIOD: TPaymentPeriod = {
+  title: "—",
+  subtitle: "—",
+  milestones: EMPTY_MILESTONES,
+};
+
+/** Lấy chi tiết khoản vay theo id */
+export const getLoanDetailsService = async (
+  loanId: string
+): Promise<TLoanDetails | null> => {
+  const supabase = await createSupabaseServerClient();
+
+  const { data: loan, error: loanError } = await supabase
+    .from("loans")
+    .select(
+      `
+      id,
+      code,
+      amount,
+      loan_package,
+      loan_type,
+      appraisal_fee_percentage,
+      appraisal_fee,
+      asset_type,
+      asset_name,
+      chassis_number,
+      engine_number,
+      imei,
+      serial,
+      bank_name,
+      bank_account_holder,
+      bank_account_number,
+      notes,
+      status,
+      status_message,
+      signed_at,
+      is_signed,
+      original_file_url,
+      payment_schedule,
+      created_at,
+      customers!inner (
+        full_name,
+        cccd,
+        phone,
+        address,
+        cccd_issue_date,
+        cccd_issue_place,
+        facebook_link,
+        job,
+        income
+      )
+    `
+    )
+    .eq("id", loanId)
+    .single();
+
+  if (loanError || !loan) return null;
+
+  const [refsRes, filesRes, imagesRes, logsRes] = await Promise.all([
+    supabase
+      .from("loan_references")
+      .select("id, full_name, phone, relationship")
+      .eq("loan_id", loanId)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("loan_files")
+      .select("id, name, url")
+      .eq("loan_id", loanId)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("loan_asset_images")
+      .select("url")
+      .eq("loan_id", loanId)
+      .order("position", { ascending: true, nullsFirst: false }),
+    supabase
+      .from("loan_activity_logs")
+      .select("id, type, user_id, user_name, timestamp, content, images, links, system_message, mentions")
+      .eq("loan_id", loanId)
+      .order("timestamp", { ascending: true }),
+  ]);
+
+  type TCustomerRow = {
+    full_name: string;
+    cccd: string;
+    phone: string;
+    address: string;
+    cccd_issue_date: string | null;
+    cccd_issue_place: string | null;
+    facebook_link: string | null;
+    job: string | null;
+    income: number | null;
+  };
+  const cust = loan.customers as TCustomerRow | TCustomerRow[] | null;
+  const customer: TCustomerRow | null = Array.isArray(cust) ? cust[0] ?? null : cust;
+  if (!customer) return null;
+
+  const references: TReference[] = (refsRes.data ?? []).map((r) => ({
+    id: r.id,
+    full_name: r.full_name,
+    phone: r.phone,
+    relationship: r.relationship ?? "",
+  }));
+
+  const originalFiles: TLoanFile[] = (filesRes.data ?? []).map((f) => ({
+    id: f.id,
+    name: f.name,
+    url: f.url,
+  }));
+
+  const assetImages: string[] = (imagesRes.data ?? []).map((i) => i.url);
+
+  const activityLog: TActivityLogEntry[] = (logsRes.data ?? []).map((l) => ({
+    id: l.id,
+    type: l.type as TActivityLogType,
+    userId: l.user_id,
+    userName: l.user_name,
+    timestamp: l.timestamp,
+    content: l.content ?? undefined,
+    images: l.images ?? undefined,
+    links: l.links ?? undefined,
+    systemMessage: l.system_message ?? undefined,
+    mentions: l.mentions ?? undefined,
+  }));
+
+  const schedule = loan.payment_schedule as
+    | { currentPeriod?: TPaymentPeriod; nextPeriod?: TPaymentPeriod }
+    | null
+    | undefined;
+  const currentPeriod = schedule?.currentPeriod ?? EMPTY_PERIOD;
+  const nextPeriod = schedule?.nextPeriod ?? EMPTY_PERIOD;
+
+  return {
+    id: loan.id,
+    code: loan.code,
+    signedAt: loan.signed_at ?? loan.created_at,
+    originalFileUrl: loan.original_file_url ?? undefined,
+    notes: loan.notes ?? "",
+    isSigned: loan.is_signed ?? false,
+    originalFiles: originalFiles.length > 0 ? originalFiles : undefined,
+
+    customer: {
+      fullName: customer.full_name,
+      cccd: customer.cccd,
+      phone: customer.phone,
+      address: customer.address,
+      cccdIssueDate: customer.cccd_issue_date
+        ? formatDateShortVN(customer.cccd_issue_date)
+        : "",
+      cccdIssuePlace: customer.cccd_issue_place ?? "",
+      facebookUrl: customer.facebook_link ?? undefined,
+      job: customer.job ?? "",
+      income: Number(customer.income) || 0,
+    },
+
+    loanAmount: Number(loan.amount),
+    loanType: loan.loan_package ?? LOAN_TYPE_LABEL[loan.loan_type] ?? loan.loan_type,
+    appraisalFeePercentage: loan.appraisal_fee_percentage
+      ? Number(loan.appraisal_fee_percentage)
+      : undefined,
+    appraisalFee: loan.appraisal_fee ? Number(loan.appraisal_fee) : undefined,
+
+    references,
+
+    asset: {
+      type: ASSET_TYPE_LABEL[loan.asset_type] ?? loan.asset_type,
+      name: loan.asset_name,
+      imei: loan.imei ?? undefined,
+      serial: loan.serial ?? undefined,
+      chassisNumber: loan.chassis_number ?? undefined,
+      engineNumber: loan.engine_number ?? undefined,
+      images: assetImages,
+    },
+
+    bank: {
+      name: loan.bank_name ?? "",
+      accountNumber: loan.bank_account_number ?? "",
+      accountHolder: loan.bank_account_holder ?? "",
+    },
+
+    currentPeriod,
+    nextPeriod,
+
+    status: loan.status as TLoanStatus,
+    statusMessage: loan.status_message ?? undefined,
+
+    activityLog: activityLog.length > 0 ? activityLog : undefined,
+  } satisfies TLoanDetails;
+};
+
+/** Sinh mã khoản vay HD-YYYY-NNN */
+export const generateLoanCodeService = async (): Promise<string> => {
+  const supabase = await createSupabaseServerClient();
+  const year = new Date().getFullYear();
+  const prefix = `HD-${year}-`;
+
+  const { data, error } = await supabase
+    .from("loans")
+    .select("code")
+    .like("code", `${prefix}%`)
+    .order("code", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw new Error(error.message);
+
+  let nextNum = 1;
+  if (data?.code) {
+    const match = data.code.match(new RegExp(`^${prefix}(\\d+)$`));
+    if (match) nextNum = parseInt(match[1], 10) + 1;
+  }
+
+  return `${prefix}${String(nextNum).padStart(3, "0")}`;
+};

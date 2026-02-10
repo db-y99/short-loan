@@ -2,7 +2,6 @@
 
 import { Chip, Link } from "@heroui/react";
 import { FileText, CheckCircle2 } from "lucide-react";
-
 import type { TLoanDetails } from "@/types/loan.types";
 
 type TProps = {

@@ -1,56 +1,51 @@
 "use client";
 
 import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
 
 import LoansTable from "@/components/loan-table.client";
 import ContractDetailsModal from "@/components/loan-details/loan-details-modal.client";
+import { getLoanDetailsAction } from "@/features/loans/actions/get-loan-details.action";
 
 import type { TLoan, TLoanDetails } from "@/types/loan.types";
-import { SAMPLE_LOAN_DETAILS } from "@/constants/sample-loan-details";
 
 type TProps = {
   loans: TLoan[];
 };
 
-// TODO: Khi có database, hàm này sẽ gọi API để lấy chi tiết khoản vay
-const getLoanDetails = (loanId: string): TLoanDetails | null => {
-  // Hiện tại trả về mock data cho tất cả loans
-  // Sau này sẽ fetch từ server dựa trên loanId
-  return {
-    ...SAMPLE_LOAN_DETAILS,
-    id: loanId,
-  };
-};
-
 const LoansPageClient = ({ loans }: TProps) => {
+  const router = useRouter();
   const [selectedLoan, setSelectedLoan] = useState<TLoanDetails | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [detailsError, setDetailsError] = useState<string | null>(null);
 
-  const handleRowClick = useCallback((loan: TLoan) => {
-    const details = getLoanDetails(loan.id);
+  const handleRowClick = useCallback(async (loan: TLoan) => {
+    setDetailsError(null);
+    setIsLoadingDetails(true);
+    setIsModalOpen(true);
+    setSelectedLoan(null);
 
-    if (details) {
-      // Merge thông tin cơ bản từ loan vào details
-      setSelectedLoan({
-        ...details,
-        code: loan.code,
-        loanAmount: loan.amount,
-        status: loan.status,
-      });
-      setIsModalOpen(true);
+    const result = await getLoanDetailsAction(loan.id);
+
+    setIsLoadingDetails(false);
+
+    if (result.success) {
+      setSelectedLoan(result.data);
+    } else {
+      setDetailsError(result.error);
     }
   }, []);
 
   const handleCloseModal = useCallback(() => {
     setIsModalOpen(false);
     setSelectedLoan(null);
+    setDetailsError(null);
   }, []);
 
   const handleRefresh = useCallback(() => {
-    // TODO: Refresh data khi có database (loans)
-    // eslint-disable-next-line no-console
-    console.log("Refresh contracts");
-  }, []);
+    router.refresh();
+  }, [router]);
 
   return (
     <>
@@ -65,6 +60,8 @@ const LoansPageClient = ({ loans }: TProps) => {
           contract={selectedLoan}
           isOpen={isModalOpen}
           onClose={handleCloseModal}
+          isLoading={isLoadingDetails}
+          error={detailsError}
         />
       )}
     </>

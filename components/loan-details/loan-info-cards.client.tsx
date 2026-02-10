@@ -97,9 +97,9 @@ const ContractInfoCards = ({
         <CardHeader className="pb-2">
           <SectionHeader icon={Building2} title="Ngân hàng" />
         </CardHeader>
-        <CardBody className="pt-0 space-y-2 gap-2">
+        <CardBody className="space-y-2 gap-2">
           <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-lg p-3 flex items-center justify-between">
-            <div>
+            <div className="flex flex-col gap-1">
               <p className="font-bold text-blue-600 dark:text-blue-400">
                 {contract.bank.name}
               </p>
@@ -127,13 +127,12 @@ const ContractInfoCards = ({
                   key={ref.id}
                   className="flex items-center justify-between p-2 bg-default-50 rounded-lg"
                 >
-                  <div>
-                    <p className="font-medium text-sm">{ref.full_name}</p>
-                    <Link className="text-xs" href={`tel:${ref.phone}`}>
-                      {ref.phone}
-                    </Link>
-                  </div>
-                  <Chip size="sm" variant="flat">
+                  <p className="font-medium">{ref.full_name}</p>
+
+                  <Link href={`tel:${ref.phone}`}>
+                    {ref.phone}
+                  </Link>
+                  <Chip variant="flat">
                     {ref.relationship}
                   </Chip>
                 </div>

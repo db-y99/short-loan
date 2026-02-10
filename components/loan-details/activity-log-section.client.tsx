@@ -17,24 +17,23 @@ type TProps = {
 const ActivityLogSection = ({ entries }: TProps) => {
   const [inputValue, setInputValue] = useState("");
 
-  if (!entries || entries.length === 0) {
-    return (
-      <div className="flex items-center justify-center py-8 text-default-400">
-        <MessageSquare className="w-8 h-8 mr-2" />
-        <span>Chưa có trao đổi</span>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col h-full">
+      {
+        !entries || entries.length === 0 && (
+          <div className="flex items-center justify-center h-full py-8 text-default-400">
+            <MessageSquare className="w-8 h-8 mr-2" />
+            <span>Chưa có trao đổi</span>
+          </div>
+        )
+      }
       <div className="flex-1 h-full overflow-y-auto p-2">
-        {entries.map((entry) => (
+        {entries && entries.length > 0 && entries.map((entry) => (
           <ActivityLogEntry key={entry.id} entry={entry} />
         ))}
       </div>
 
-      <div className="mt-4 pt-2 border-t border-default-200">
+      <div className="mt-4 border-t border-default-200">
         <div className="flex gap-2 p-2">
           <Input
             placeholder="Nhập tin nhắn..."

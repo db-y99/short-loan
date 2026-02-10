@@ -56,7 +56,9 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
 
   // Derive unique values from data for dynamic filters
   const loanPackageOptions = useMemo(() => {
-    const unique = Array.from(new Set(loans.map((c) => c.loan_package)));
+    const unique = Array.from(
+      new Set(loans.map((c) => c.loan_package).filter((p): p is string => !!p))
+    );
 
     return [
       { key: ALL_FILTER_VALUE, label: "Tất cả" },

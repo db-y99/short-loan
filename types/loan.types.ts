@@ -5,6 +5,7 @@ export type TLoanStatus =
   | "disbursed"
   | "completed";
 
+/** Loan row từ DB (loans + customer full_name) - dùng cho danh sách */
 export type TLoan = {
   id: string;
   code: string;
@@ -12,7 +13,7 @@ export type TLoan = {
   customer: string;
   asset: string;
   amount: number;
-  loan_package: string;
+  loan_package: string | null;
   created_at: string;
   approved_at: string | null;
   status: TLoanStatus;
@@ -26,7 +27,6 @@ export type TReference = {
 };
 
 export type TCreateLoanForm = {
-  // Customer info
   full_name: string;
   cccd: string;
   phone: string;
@@ -36,25 +36,19 @@ export type TCreateLoanForm = {
   facebook_link: string;
   job: string;
   income: string;
-  // Bank info
   bank_name: string;
   bank_account_holder: string;
   bank_account_number: string;
-  // Loan info
   asset_type: string;
   asset_name: string;
-  // Vehicle fields (xe máy, ô tô)
   chassis_number: string;
   engine_number: string;
-  // Device fields (điện thoại, laptop)
   imei: string;
   serial: string;
   loan_amount: string;
   loan_type: string;
   notes: string;
-  // References
   references: TReference[];
-  // Attachments
   attachments: File[];
 };
 
@@ -62,7 +56,7 @@ export type TCreateLoanForm = {
 
 export type TLoanFile = {
   id: string;
-  name: string; // "HĐ Chính", "XN Đủ Tiền", "UQ Xử Lý", "HD Thuê"
+  name: string;
   url: string;
 };
 
@@ -80,16 +74,14 @@ export type TPaymentPeriod = {
 };
 
 export type TLoanDetails = {
-  // Loan info
   id: string;
   code: string;
   signedAt: string;
   originalFileUrl?: string;
   notes: string;
-  isSigned?: boolean; // Hợp đồng đã được ký kết
-  originalFiles?: TLoanFile[]; // File Gốc (Soạn thảo)
+  isSigned?: boolean;
+  originalFiles?: TLoanFile[];
 
-  // Customer info
   customer: {
     fullName: string;
     cccd: string;
@@ -102,16 +94,13 @@ export type TLoanDetails = {
     income: number;
   };
 
-  // Loan info
   loanAmount: number;
   loanType: string;
-  appraisalFeePercentage?: number; // Phần trăm phí thẩm định (mặc định 5%)
-  appraisalFee?: number; // Phí thẩm định (nếu không có thì tính từ loanAmount * appraisalFeePercentage)
+  appraisalFeePercentage?: number;
+  appraisalFee?: number;
 
-  // Reference contacts
   references: TReference[];
 
-  // Asset info
   asset: {
     type: string;
     name: string;
@@ -122,22 +111,18 @@ export type TLoanDetails = {
     images: string[];
   };
 
-  // Bank info
   bank: {
     name: string;
     accountNumber: string;
     accountHolder: string;
   };
 
-  // Payment periods
   currentPeriod: TPaymentPeriod;
   nextPeriod: TPaymentPeriod;
 
-  // Status
   status: TLoanStatus;
   statusMessage?: string;
 
-  // Activity log (Trao đổi & Nhật ký)
   activityLog?: TActivityLogEntry[];
 };
 

@@ -15,7 +15,7 @@ import BankInfoSection from "./bank-info-section.client";
 import LoanInfoSection from "./loan-info-section.client";
 import ReferencesSection from "./references-section.client";
 import AttachmentsSection from "./attachments-section.client";
-
+import { createLoanAction } from "@/features/loans/actions/create-loan.action";
 import type {
   TCreateLoanForm,
   TReference,
@@ -24,6 +24,7 @@ import type {
 type TProps = {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 };
 
 const INITIAL_FORM: TCreateLoanForm = {
@@ -52,8 +53,10 @@ const INITIAL_FORM: TCreateLoanForm = {
   attachments: [],
 };
 
-const CreateContractModal = ({ isOpen, onClose }: TProps) => {
+const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
   const [form, setForm] = useState<TCreateLoanForm>(INITIAL_FORM);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFieldChange = useCallback(
     (field: keyof TCreateLoanForm, value: string) => {
@@ -113,15 +116,58 @@ const CreateContractModal = ({ isOpen, onClose }: TProps) => {
 
   const handleClose = useCallback(() => {
     setForm(INITIAL_FORM);
+    setError(null);
     onClose();
   }, [onClose]);
 
-  const handleSubmit = useCallback(() => {
-    // TODO: Gọi server action khi có database
-    // eslint-disable-next-line no-console
-    console.log("Submit form:", form);
-    handleClose();
-  }, [form, handleClose]);
+  const handleSubmit = useCallback(async () => {
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      const fd = new FormData();
+      fd.set("full_name", form.full_name);
+      fd.set("cccd", form.cccd);
+      fd.set("phone", form.phone);
+      fd.set("cccd_issue_date", form.cccd_issue_date);
+      fd.set("cccd_issue_place", form.cccd_issue_place);
+      fd.set("address", form.address);
+      fd.set("facebook_link", form.facebook_link);
+      fd.set("job", form.job);
+      fd.set("income", form.income);
+      fd.set("bank_name", form.bank_name);
+      fd.set("bank_account_holder", form.bank_account_holder);
+      fd.set("bank_account_number", form.bank_account_number);
+      fd.set("asset_type", form.asset_type);
+      fd.set("asset_name", form.asset_name);
+      fd.set("chassis_number", form.chassis_number);
+      fd.set("engine_number", form.engine_number);
+      fd.set("imei", form.imei);
+      fd.set("serial", form.serial);
+      fd.set("loan_amount", form.loan_amount);
+      fd.set("loan_type", form.loan_type);
+      fd.set("notes", form.notes);
+      fd.set(
+        "references",
+        JSON.stringify(
+          form.references.map((r) => ({
+            full_name: r.full_name,
+            phone: r.phone,
+            relationship: r.relationship || null,
+          }))
+        )
+      );
+
+      const result = await createLoanAction(fd);
+      if (result.success) {
+        handleClose();
+        onSuccess?.();
+      } else {
+        setError(result.error);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [form, handleClose, onSuccess]);
 
   return (
     <Modal
@@ -136,6 +182,11 @@ const CreateContractModal = ({ isOpen, onClose }: TProps) => {
         </ModalHeader>
 
         <ModalBody className="flex flex-col gap-8">
+          {error && (
+            <div className="rounded-lg bg-danger-50 px-4 py-3 text-danger text-sm">
+              {error}
+            </div>
+          )}
           <CustomerInfoSection form={form} onChange={handleFieldChange} />
           <BankInfoSection form={form} onChange={handleFieldChange} />
           <LoanInfoSection form={form} onChange={handleFieldChange} />
@@ -153,10 +204,15 @@ const CreateContractModal = ({ isOpen, onClose }: TProps) => {
         </ModalBody>
 
         <ModalFooter>
-          <Button variant="flat" onPress={handleClose}>
+          <Button variant="flat" onPress={handleClose} isDisabled={isSubmitting}>
             Hủy
           </Button>
-          <Button color="primary" onPress={handleSubmit}>
+          <Button
+            color="primary"
+            onPress={handleSubmit}
+            isLoading={isSubmitting}
+            isDisabled={isSubmitting}
+          >
             Tạo hợp đồng
           </Button>
         </ModalFooter>
