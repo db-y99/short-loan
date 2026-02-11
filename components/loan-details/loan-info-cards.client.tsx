@@ -164,6 +164,20 @@ const LoanInfoCards = ({
                 Serial: {loanDetails.asset.serial}
               </p>
             )}
+            {
+              loanDetails.asset.chassisNumber && (
+                <p className="text-sm text-default-500">
+                  Chassis Number: {loanDetails.asset.chassisNumber}
+                </p>
+              )
+            }
+            {
+              loanDetails.asset.engineNumber && (
+                <p className="text-sm text-default-500">
+                  Engine Number: {loanDetails.asset.engineNumber}
+                </p>
+              )
+            }
             <Divider className="my-2" />
             <div className="flex items-center gap-2 justify-between">
               <div>Hình thức: {loanDetails.loanType}</div>
