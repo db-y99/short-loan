@@ -149,3 +149,66 @@ export type TActivityLogEntry = {
   systemMessage?: string;
   mentions?: string[];
 };
+
+export type TAttachmentInput = {
+  name: string;
+  provider: string;
+  file_id: string;
+};
+
+export type TCreateLoanPayload = {
+  full_name: string;
+  cccd: string;
+  phone: string;
+  cccd_issue_date: string;
+  cccd_issue_place: string;
+  address: string;
+  facebook_link: string;
+  job: string;
+  income: string;
+  bank_name: string;
+  bank_account_holder: string;
+  bank_account_number: string;
+  asset_type: string;
+  asset_name: string;
+  chassis_number: string;
+  engine_number: string;
+  imei: string;
+  serial: string;
+  loan_amount: string;
+  loan_type: string;
+  notes: string;
+  references: Array<{
+    full_name: string;
+    phone: string;
+    relationship: string | null;
+  }>;
+  attachments: TAttachmentInput[];
+};
+
+export type TCreateLoanInput = {
+  code: string;
+  creator: string;
+  customer_id: string;
+  asset_type: string;
+  asset_name: string;
+  chassis_number?: string | null;
+  engine_number?: string | null;
+  imei?: string | null;
+  serial?: string | null;
+  amount: number;
+  loan_package: string | null;
+  loan_type: string;
+  appraisal_fee_percentage?: number | null;
+  appraisal_fee?: number | null;
+  bank_name?: string | null;
+  bank_account_holder?: string | null;
+  bank_account_number?: string | null;
+  notes?: string | null;
+  references: {
+    full_name: string;
+    phone: string;
+    relationship: string | null;
+  }[];
+  attachments?: TAttachmentInput[];
+};

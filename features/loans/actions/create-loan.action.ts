@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { CreateLoanSchema, type CreateLoanInput } from "./create-loan.schema";
+import { CreateLoanSchema } from "./create-loan.schema";
 import { upsertCustomerService } from "@/services/customers/customers.service";
 import {
   createLoanService,
@@ -9,47 +9,19 @@ import {
 } from "@/services/loans/loans.service";
 import { LOAN_TYPE_LABEL } from "@/constants/loan";
 import { parseFormattedNumber } from "@/lib/format";
+import { TCreateLoanPayload } from "@/types/loan.types";
 
 type TCreateLoanResult =
   | { success: true; data: { id: string; code: string } }
   | { success: false; error: string };
 
 export const createLoanAction = async (
-  formData: FormData
+  payload: TCreateLoanPayload,
 ): Promise<TCreateLoanResult> => {
   try {
-    const raw = {
-      full_name: formData.get("full_name"),
-      cccd: formData.get("cccd"),
-      phone: formData.get("phone"),
-      cccd_issue_date: formData.get("cccd_issue_date"),
-      cccd_issue_place: formData.get("cccd_issue_place"),
-      address: formData.get("address"),
-      facebook_link: formData.get("facebook_link"),
-      job: formData.get("job"),
-      income: formData.get("income"),
-      bank_name: formData.get("bank_name"),
-      bank_account_holder: formData.get("bank_account_holder"),
-      bank_account_number: formData.get("bank_account_number"),
-      asset_type: formData.get("asset_type"),
-      asset_name: formData.get("asset_name"),
-      chassis_number: formData.get("chassis_number"),
-      engine_number: formData.get("engine_number"),
-      imei: formData.get("imei"),
-      serial: formData.get("serial"),
-      loan_amount: formData.get("loan_amount"),
-      loan_type: formData.get("loan_type"),
-      notes: formData.get("notes"),
-      references: formData.get("references"),
-    };
-
-    const parsedRefs = raw.references
-      ? (JSON.parse(String(raw.references)) as CreateLoanInput["references"])
-      : [];
-
     const input = CreateLoanSchema.parse({
-      ...raw,
-      references: parsedRefs,
+      ...payload,
+      references: payload.references,
     });
 
     const customer = await upsertCustomerService({
@@ -90,6 +62,7 @@ export const createLoanAction = async (
         phone: r.phone,
         relationship: r.relationship ?? null,
       })),
+      attachments: payload.attachments, // File IDs đã được upload
     });
 
     revalidatePath("/");

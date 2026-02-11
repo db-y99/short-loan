@@ -16,10 +16,9 @@ import LoanInfoSection from "./loan-info-section.client";
 import ReferencesSection from "./references-section.client";
 import AttachmentsSection from "./attachments-section.client";
 import { createLoanAction } from "@/features/loans/actions/create-loan.action";
-import type {
-  TCreateLoanForm,
-  TReference,
-} from "@/types/loan.types";
+import type { TCreateLoanForm, TReference } from "@/types/loan.types";
+import { useFileUpload } from "@/hooks/use-file-upload";
+import { PROVIDER_TYPES } from "@/constants/google-drive";
 
 type TProps = {
   isOpen: boolean;
@@ -57,6 +56,9 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
   const [form, setForm] = useState<TCreateLoanForm>(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<string>("");
+
+  const { uploadFiles, isUploading } = useFileUpload();
 
   const handleFieldChange = useCallback(
     (field: keyof TCreateLoanForm, value: string) => {
@@ -117,57 +119,80 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
   const handleClose = useCallback(() => {
     setForm(INITIAL_FORM);
     setError(null);
+    setUploadProgress("");
     onClose();
   }, [onClose]);
 
   const handleSubmit = useCallback(async () => {
     setError(null);
     setIsSubmitting(true);
-    try {
-      const fd = new FormData();
-      fd.set("full_name", form.full_name);
-      fd.set("cccd", form.cccd);
-      fd.set("phone", form.phone);
-      fd.set("cccd_issue_date", form.cccd_issue_date);
-      fd.set("cccd_issue_place", form.cccd_issue_place);
-      fd.set("address", form.address);
-      fd.set("facebook_link", form.facebook_link);
-      fd.set("job", form.job);
-      fd.set("income", form.income);
-      fd.set("bank_name", form.bank_name);
-      fd.set("bank_account_holder", form.bank_account_holder);
-      fd.set("bank_account_number", form.bank_account_number);
-      fd.set("asset_type", form.asset_type);
-      fd.set("asset_name", form.asset_name);
-      fd.set("chassis_number", form.chassis_number);
-      fd.set("engine_number", form.engine_number);
-      fd.set("imei", form.imei);
-      fd.set("serial", form.serial);
-      fd.set("loan_amount", form.loan_amount);
-      fd.set("loan_type", form.loan_type);
-      fd.set("notes", form.notes);
-      fd.set(
-        "references",
-        JSON.stringify(
-          form.references.map((r) => ({
-            full_name: r.full_name,
-            phone: r.phone,
-            relationship: r.relationship || null,
-          }))
-        )
-      );
 
-      const result = await createLoanAction(fd);
+    try {
+      // Bước 1: Upload files trước
+      let uploadedFiles: Array<{ name: string; provider: string; file_id: string }> = [];
+
+      if (form.attachments.length > 0) {
+        setUploadProgress(`Đang upload ${form.attachments.length} file...`);
+        const results = await uploadFiles(form.attachments);
+
+        uploadedFiles = results.map((result) => ({
+          name: result.fileName,
+          provider: PROVIDER_TYPES.GOOGLE_DRIVE,
+          file_id: result.fileId,
+        }));
+
+        setUploadProgress("Upload hoàn tất. Đang tạo hợp đồng...");
+      }
+
+      // Bước 2: Tạo loan với file IDs đã upload
+      const payload = {
+        full_name: form.full_name,
+        cccd: form.cccd,
+        phone: form.phone,
+        cccd_issue_date: form.cccd_issue_date,
+        cccd_issue_place: form.cccd_issue_place,
+        address: form.address,
+        facebook_link: form.facebook_link,
+        job: form.job,
+        income: form.income,
+        bank_name: form.bank_name,
+        bank_account_holder: form.bank_account_holder,
+        bank_account_number: form.bank_account_number,
+        asset_type: form.asset_type,
+        asset_name: form.asset_name,
+        chassis_number: form.chassis_number,
+        engine_number: form.engine_number,
+        imei: form.imei,
+        serial: form.serial,
+        loan_amount: form.loan_amount,
+        loan_type: form.loan_type,
+        notes: form.notes,
+        references: form.references.map((r) => ({
+          full_name: r.full_name,
+          phone: r.phone,
+          relationship: r.relationship || null,
+        })),
+        attachments: uploadedFiles,
+      };
+
+      const result = await createLoanAction(payload);
+
       if (result.success) {
         handleClose();
         onSuccess?.();
       } else {
         setError(result.error);
       }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Đã xảy ra lỗi");
     } finally {
       setIsSubmitting(false);
+      setUploadProgress("");
     }
-  }, [form, handleClose, onSuccess]);
+  }, [form, handleClose, onSuccess, uploadFiles]);
+
+
+  const isLoading = isSubmitting || isUploading;
 
   return (
     <Modal
@@ -204,16 +229,20 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
         </ModalBody>
 
         <ModalFooter>
-          <Button variant="flat" onPress={handleClose} isDisabled={isSubmitting}>
+          <Button
+            variant="flat"
+            onPress={handleClose}
+            isDisabled={isLoading}
+          >
             Hủy
           </Button>
           <Button
             color="primary"
             onPress={handleSubmit}
-            isLoading={isSubmitting}
-            isDisabled={isSubmitting}
+            isLoading={isLoading}
+            isDisabled={isLoading}
           >
-            Tạo hợp đồng
+            {isLoading ? "Đang tạo hợp đồng..." : "Tạo hợp đồng"}
           </Button>
         </ModalFooter>
       </ModalContent>

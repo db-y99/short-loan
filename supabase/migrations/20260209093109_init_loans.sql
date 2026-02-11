@@ -14,7 +14,9 @@ create type "public"."loan_status" as enum ('pending', 'approved', 'rejected', '
     "facebook_link" text,
     "job" text,
     "income" numeric(18,2),
-    "created_at" timestamp with time zone not null default now()
+    "created_at" timestamp with time zone not null default now(),
+    "updated_at" timestamp with time zone not null default now(),
+    "deleted_at" timestamp with time zone
       );
 
 
@@ -31,7 +33,9 @@ create type "public"."loan_status" as enum ('pending', 'approved', 'rejected', '
     "links" text[],
     "system_message" text,
     "mentions" text[],
-    "created_at" timestamp with time zone not null default now()
+    "created_at" timestamp with time zone not null default now(),
+    "updated_at" timestamp with time zone not null default now(),
+    "deleted_at" timestamp with time zone
       );
 
 
@@ -41,7 +45,9 @@ create type "public"."loan_status" as enum ('pending', 'approved', 'rejected', '
     "loan_id" uuid not null,
     "url" text not null,
     "position" integer,
-    "created_at" timestamp with time zone not null default now()
+    "created_at" timestamp with time zone not null default now(),
+    "updated_at" timestamp with time zone not null default now(),
+    "deleted_at" timestamp with time zone
       );
 
 
@@ -50,8 +56,11 @@ create type "public"."loan_status" as enum ('pending', 'approved', 'rejected', '
     "id" uuid not null default gen_random_uuid(),
     "loan_id" uuid not null,
     "name" text not null,
-    "url" text not null,
-    "created_at" timestamp with time zone not null default now()
+    "provider" text not null,
+    "file_id" text not null,
+    "created_at" timestamp with time zone not null default now(),
+    "updated_at" timestamp with time zone not null default now(),
+    "deleted_at" timestamp with time zone
       );
 
 
@@ -62,7 +71,9 @@ create type "public"."loan_status" as enum ('pending', 'approved', 'rejected', '
     "full_name" text not null,
     "phone" text not null,
     "relationship" text,
-    "created_at" timestamp with time zone not null default now()
+    "created_at" timestamp with time zone not null default now(),
+    "updated_at" timestamp with time zone not null default now(),
+    "deleted_at" timestamp with time zone
       );
 
 
@@ -94,8 +105,58 @@ create type "public"."loan_status" as enum ('pending', 'approved', 'rejected', '
     "original_file_url" text,
     "payment_schedule" jsonb,
     "created_at" timestamp with time zone not null default now(),
+    "updated_at" timestamp with time zone not null default now(),
+    "deleted_at" timestamp with time zone,
     "approved_at" timestamp with time zone
       );
+
+
+  create extension if not exists moddatetime schema extensions;
+
+drop trigger if exists handle_updated_at on public.customers;
+
+create or replace function public.handle_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+
+create trigger handle_updated_at
+before update on public.customers
+for each row
+execute procedure extensions.moddatetime(updated_at);
+
+
+create trigger handle_updated_at
+before update on public.loans
+for each row
+execute procedure extensions.moddatetime(updated_at);
+
+create trigger handle_updated_at
+before update on public.loan_files
+for each row
+execute procedure extensions.moddatetime(updated_at);
+
+create trigger handle_updated_at
+before update on public.loan_references
+for each row
+execute procedure extensions.moddatetime(updated_at);
+
+create trigger handle_updated_at
+before update on public.loan_activity_logs
+for each row
+execute procedure extensions.moddatetime(updated_at);
+
+create trigger handle_updated_at
+before update on public.loan_asset_images
+for each row
+execute procedure extensions.moddatetime(updated_at);
+
 
 
 CREATE UNIQUE INDEX contract_activity_logs_pkey ON public.loan_activity_logs USING btree (id);
