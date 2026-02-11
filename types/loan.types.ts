@@ -57,7 +57,8 @@ export type TCreateLoanForm = {
 export type TLoanFile = {
   id: string;
   name: string;
-  url: string;
+  fileId: string;
+  provider: string;
 };
 
 export type TPaymentMilestone = {

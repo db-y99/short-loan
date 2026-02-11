@@ -11,28 +11,30 @@ import { Button } from "@heroui/button";
 import { AlertCircle, CreditCard, MessageCircle, MessageSquare, ShoppingCart } from "lucide-react";
 import type { TLoanDetails } from "@/types/loan.types";
 import ContractHeader from "@/components/loan-details/loan-header";
-import ContractProfileSection from "@/components/loan-details/loan-profile-section";
-import ContractInfoCards from "@/components/loan-details/loan-info-cards.client";
 import LoanAmountSummary from "@/components/loan-details/loan-amount-summary";
 import PaymentPeriods from "@/components/loan-details/payment-periods";
 import ActivityLogSection from "@/components/loan-details/activity-log-section.client";
+import LoanInfoCards from "@/components/loan-details/loan-info-cards.client";
+import LoanProfileSection from "@/components/loan-details/loan-profile-section";
 
 type TProps = {
   isOpen: boolean;
   onClose: () => void;
-  contract: TLoanDetails | null;
+  loanDetails: TLoanDetails | null;
   isLoading?: boolean;
   error?: string | null;
 };
 
-const ContractDetailsModal = ({
+const LoanDetailsModal = ({
   isOpen,
   onClose,
-  contract,
+  loanDetails,
   isLoading = false,
   error = null,
 }: TProps) => {
-  if (!contract && !isLoading && !error) return null;
+  if (!loanDetails && !isLoading && !error) return null;
+
+  console.log(loanDetails);
 
   return (
     <Modal
@@ -45,8 +47,8 @@ const ContractDetailsModal = ({
     >
       <ModalContent className="h-full">
         <ModalHeader className="flex-shrink-0 py-3 px-6 border-b border-default-200">
-          {contract ? (
-            <ContractHeader contract={contract} onClose={onClose} />
+          {loanDetails ? (
+            <ContractHeader loanDetails={loanDetails} onClose={onClose} />
           ) : (
             <div className="flex items-center justify-between w-full">
               <span className="text-lg font-semibold">
@@ -73,35 +75,35 @@ const ContractDetailsModal = ({
                   {error}
                 </div>
               )}
-              {contract && !isLoading && (
+              {loanDetails && !isLoading && (
                 <>
-                  <ContractProfileSection contract={contract} />
+                  <LoanProfileSection loanDetails={loanDetails} />
 
-                  {contract.notes && (
+                  {loanDetails.notes && (
                     <div className="flex items-start gap-3 p-3 mb-4 rounded-xl bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800">
                       <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
                       <p className="text-sm text-warning-700 dark:text-warning-400">
-                        {contract.notes}
+                        {loanDetails.notes}
                       </p>
                     </div>
                   )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="col-span-2">
-                      <ContractInfoCards
-                        contract={contract}
+                      <LoanInfoCards
+                        loanDetails={loanDetails}
                         showAssetGallery
                       />
                     </div>
-                    <LoanAmountSummary contract={contract} />
-                    <PaymentPeriods contract={contract} />
+                    <LoanAmountSummary loanDetails={loanDetails} />
+                    <PaymentPeriods loanDetails={loanDetails} />
                   </div>
 
-                  {contract.statusMessage && (
+                  {loanDetails.statusMessage && (
                     <div className="mt-4 p-3 rounded-xl bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">
                       <div className="flex items-center gap-2">
                         <MessageSquare className="w-4 h-4 text-primary" />
-                        <p className="text-sm">{contract.statusMessage}</p>
+                        <p className="text-sm">{loanDetails.statusMessage}</p>
                       </div>
                     </div>
                   )}
@@ -125,7 +127,7 @@ const ContractDetailsModal = ({
                 </div>
               </div>
               <div className="flex-1 overflow-hidden">
-                <ActivityLogSection entries={contract?.activityLog ?? []} />
+                <ActivityLogSection entries={loanDetails?.activityLog ?? []} />
               </div>
             </div>
           </div>
@@ -142,4 +144,4 @@ const ContractDetailsModal = ({
   );
 };
 
-export default ContractDetailsModal;
+export default LoanDetailsModal;

@@ -6,15 +6,15 @@ import { LOAN_STATUS_COLOR, LOAN_STATUS_LABEL } from "@/constants/loan";
 import { formatCurrencyVND, formatDateTimeVN } from "@/lib/format";
 
 type TProps = {
-  contract: TLoanDetails;
+  loanDetails: TLoanDetails;
   onClose: () => void;
 };
 
-const ContractHeader = ({ contract, onClose }: TProps) => {
+const ContractHeader = ({ loanDetails, onClose }: TProps) => {
   const statusColor =
-    LOAN_STATUS_COLOR[contract.status as TLoanStatus] || "default";
+    LOAN_STATUS_COLOR[loanDetails.status as TLoanStatus] || "default";
   const statusLabel =
-    LOAN_STATUS_LABEL[contract.status as TLoanStatus] || "Không xác định";
+    LOAN_STATUS_LABEL[loanDetails.status as TLoanStatus] || "Không xác định";
 
   return (
     <div className="flex items-center justify-between w-full">
@@ -24,21 +24,21 @@ const ContractHeader = ({ contract, onClose }: TProps) => {
         </div>
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-bold">{contract.code}</h2>
+            <h2 className="text-lg font-bold">{loanDetails.code}</h2>
             <Chip color={statusColor} size="sm" variant="flat">
               {statusLabel}
             </Chip>
           </div>
           <div className="flex items-center gap-4 text-sm text-default-500 mt-0.5">
             <span className="font-semibold text-primary">
-              {contract.customer.fullName}
+              {loanDetails.customer.fullName}
             </span>
             <span>•</span>
             <span className="font-bold text-success">
-              {formatCurrencyVND(contract.loanAmount)}
+              {formatCurrencyVND(loanDetails.loanAmount)}
             </span>
             <span>•</span>
-            <span>{formatDateTimeVN(contract.signedAt)}</span>
+            <span>{formatDateTimeVN(loanDetails.signedAt)}</span>
           </div>
         </div>
       </div>

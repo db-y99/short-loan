@@ -259,7 +259,7 @@ export const getLoanDetailsService = async (
       .order("created_at", { ascending: true }),
     supabase
       .from("loan_files")
-      .select("id, name, url")
+      .select("id, name, file_id, provider")
       .eq("loan_id", loanId)
       .order("created_at", { ascending: true }),
     supabase
@@ -303,7 +303,8 @@ export const getLoanDetailsService = async (
   const originalFiles: TLoanFile[] = (filesRes.data ?? []).map((f) => ({
     id: f.id,
     name: f.name,
-    url: f.url,
+    fileId: f.file_id,
+    provider: f.provider,
   }));
 
   const assetImages: string[] = (imagesRes.data ?? []).map((i) => i.url);

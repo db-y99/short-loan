@@ -24,12 +24,12 @@ import InfoRow from "@/components/info-row";
 
 
 type TProps = {
-  contract: TLoanDetails;
+  loanDetails: TLoanDetails;
   showAssetGallery?: boolean;
 };
 
-const ContractInfoCards = ({
-  contract,
+const LoanInfoCards = ({
+  loanDetails,
   showAssetGallery = false,
 }: TProps) => {
   return (
@@ -42,23 +42,23 @@ const ContractInfoCards = ({
           <InfoRow
             icon={CreditCard}
             label="CCCD"
-            value={contract.customer.cccd}
+            value={loanDetails.customer.cccd}
           />
-          <InfoRow icon={Phone} label="SĐT" value={contract.customer.phone} />
+          <InfoRow icon={Phone} label="SĐT" value={loanDetails.customer.phone} />
 
           <InfoRow
             icon={Briefcase}
             label="Công việc"
-            value={contract.customer.job}
+            value={loanDetails.customer.job}
           />
           <InfoRow
             icon={DollarSign}
             label="Thu nhập"
-            value={formatCurrencyVND(contract.customer.income)}
+            value={formatCurrencyVND(loanDetails.customer.income)}
           />
-          {contract.customer.facebookUrl && (
+          {loanDetails.customer.facebookUrl && (
             <InfoRow
-              href={contract.customer.facebookUrl}
+              href={loanDetails.customer.facebookUrl}
               icon={Facebook}
               isLink
               label="Facebook"
@@ -78,18 +78,18 @@ const ContractInfoCards = ({
           <InfoRow
             icon={MapPin}
             label="Địa chỉ"
-            value={contract.customer.address}
+            value={loanDetails.customer.address}
             className="col-span-2"
           />
           <InfoRow
             icon={Calendar}
             label="Ngày cấp"
-            value={contract.customer.cccdIssueDate}
+            value={loanDetails.customer.cccdIssueDate}
           />
           <InfoRow
             icon={Building2}
             label="Nơi cấp"
-            value={contract.customer.cccdIssuePlace}
+            value={loanDetails.customer.cccdIssuePlace}
           />
         </CardBody>
       </Card>
@@ -101,15 +101,15 @@ const ContractInfoCards = ({
           <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-lg p-3 flex items-center justify-between">
             <div className="flex flex-col gap-1">
               <p className="font-bold text-blue-600 dark:text-blue-400">
-                {contract.bank.name}
+                {loanDetails.bank.name}
               </p>
 
               <p className="text-sm text-default-500">
-                {contract.bank.accountHolder}
+                {loanDetails.bank.accountHolder}
               </p>
             </div>
             <p className="text-lg font-mono font-semibold mt-1">
-              {contract.bank.accountNumber}
+              {loanDetails.bank.accountNumber}
             </p>
           </div>
         </CardBody>
@@ -120,9 +120,9 @@ const ContractInfoCards = ({
           <SectionHeader icon={Users} title="Tham chiếu" />
         </CardHeader>
         <CardBody className="pt-0">
-          {contract.references.length > 0 ? (
+          {loanDetails.references.length > 0 ? (
             <div className="space-y-2">
-              {contract.references.map((ref) => (
+              {loanDetails.references.map((ref) => (
                 <div
                   key={ref.id}
                   className="flex items-center justify-between p-2 bg-default-50 rounded-lg"
@@ -149,31 +149,31 @@ const ContractInfoCards = ({
       <Card shadow="sm" className="col-span-2">
         <CardHeader className="pb-2 flex items-center gap-2">
           <SectionHeader icon={Smartphone} title="Tài sản" />
-          <Chip size="sm" variant="flat">{contract.asset.type}</Chip>
+          <Chip size="sm" variant="flat">{loanDetails.asset.type}</Chip>
         </CardHeader>
         <CardBody className="pt-0">
           <div className="bg-default-50 rounded-lg p-2 mb-3 flex flex-col gap-1">
-            <p className="font-semibold">{contract.asset.name}</p>
-            {contract.asset.imei && (
+            <p className="font-semibold">{loanDetails.asset.name}</p>
+            {loanDetails.asset.imei && (
               <p className="text-sm text-default-500">
-                IMEI: {contract.asset.imei}
+                IMEI: {loanDetails.asset.imei}
               </p>
             )}
-            {contract.asset.serial && (
+            {loanDetails.asset.serial && (
               <p className="text-sm text-default-500">
-                Serial: {contract.asset.serial}
+                Serial: {loanDetails.asset.serial}
               </p>
             )}
             <Divider className="my-2" />
             <div className="flex items-center gap-2 justify-between">
-              <div>Hình thức: {contract.loanType}</div>
+              <div>Hình thức: {loanDetails.loanType}</div>
               <div className="text-sm text-success-500">
                 (Kỳ đầu tiên)
               </div>
             </div>
           </div>
           {showAssetGallery && (
-            <AssetGallery images={contract.asset.images} />
+            <AssetGallery images={loanDetails.asset.images} />
           )}
         </CardBody>
       </Card>
@@ -181,4 +181,4 @@ const ContractInfoCards = ({
   );
 };
 
-export default ContractInfoCards;
+export default LoanInfoCards;

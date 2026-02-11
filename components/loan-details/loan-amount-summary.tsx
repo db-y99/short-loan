@@ -5,15 +5,15 @@ import { formatCurrencyVND } from "@/lib/format";
 import SectionHeader from "@/components/section-header";
 
 type TProps = {
-  contract: TLoanDetails;
+  loanDetails: TLoanDetails;
 };
 
-const LoanAmountSummary = ({ contract }: TProps) => {
-  const appraisalFeePercentage = contract.appraisalFeePercentage ?? 5;
+const LoanAmountSummary = ({ loanDetails }: TProps) => {
+  const appraisalFeePercentage = loanDetails.appraisalFeePercentage ?? 5;
   const appraisalFee =
-    contract.appraisalFee ??
-    Math.round((contract.loanAmount * appraisalFeePercentage) / 100);
-  const actualAmount = contract.loanAmount - appraisalFee;
+    loanDetails.appraisalFee ??
+    Math.round((loanDetails.loanAmount * appraisalFeePercentage) / 100);
+  const actualAmount = loanDetails.loanAmount - appraisalFee;
 
   return (
     <Card shadow="sm" className="col-span-2">
@@ -24,7 +24,7 @@ const LoanAmountSummary = ({ contract }: TProps) => {
         <div className="flex items-center justify-between">
           <span className="text-sm text-default-600">Số tiền vay:</span>
           <span className="text-base font-semibold text-default-900">
-            {formatCurrencyVND(contract.loanAmount)}
+            {formatCurrencyVND(loanDetails.loanAmount)}
           </span>
         </div>
 

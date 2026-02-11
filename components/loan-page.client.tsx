@@ -4,10 +4,10 @@ import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import LoansTable from "@/components/loan-table.client";
-import ContractDetailsModal from "@/components/loan-details/loan-details-modal.client";
 import { getLoanDetailsAction } from "@/features/loans/actions/get-loan-details.action";
 
 import type { TLoan, TLoanDetails } from "@/types/loan.types";
+import LoanDetailsModal from "@/components/loan-details/loan-details-modal.client";
 
 type TProps = {
   loans: TLoan[];
@@ -56,8 +56,8 @@ const LoansPageClient = ({ loans }: TProps) => {
       />
 
       {isModalOpen && (
-        <ContractDetailsModal
-          contract={selectedLoan}
+        <LoanDetailsModal
+          loanDetails={selectedLoan}
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           isLoading={isLoadingDetails}

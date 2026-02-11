@@ -7,10 +7,10 @@ import SectionHeader from "@/components/section-header";
 
 
 type TProps = {
-  contract: TLoanDetails;
+  loanDetails: TLoanDetails;
 };
 
-const PaymentPeriods = ({ contract }: TProps) => {
+const PaymentPeriods = ({ loanDetails }: TProps) => {
   return (
     <div className="col-span-2 grid grid-cols-1 gap-4">
       <Card shadow="sm">
@@ -18,7 +18,7 @@ const PaymentPeriods = ({ contract }: TProps) => {
           <SectionHeader icon={Clock} title="Kỳ hiện tại" />
         </CardHeader>
         <CardBody className="pt-0">
-          <PaymentTable milestones={contract.currentPeriod.milestones} />
+          <PaymentTable milestones={loanDetails.currentPeriod.milestones} />
         </CardBody>
       </Card>
 
@@ -27,7 +27,7 @@ const PaymentPeriods = ({ contract }: TProps) => {
           <SectionHeader icon={Calendar} title="Kỳ kế tiếp" />
         </CardHeader>
         <CardBody className="pt-0">
-          <PaymentTable milestones={contract.nextPeriod.milestones} />
+          <PaymentTable milestones={loanDetails.nextPeriod.milestones} />
         </CardBody>
       </Card>
     </div>
