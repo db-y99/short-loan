@@ -10,6 +10,7 @@ import type {
   TActivityLogType,
   TLoanFile,
   TCreateLoanInput,
+  TUploadFiles,
 } from "@/types/loan.types";
 import { LOAN_TYPE_LABEL, ASSET_TYPE_LABEL } from "@/constants/loan";
 import { formatDateShortVN } from "@/lib/format";
@@ -188,7 +189,7 @@ export const addLoanAssetsService = async ({
   attachments,
 }: {
   loanId: string;
-  attachments: NonNullable<TCreateLoanInput["attachments"]>;
+  attachments: TUploadFiles[];
 }): Promise<true> => {
   const supabase = await createSupabaseServerClient();
 

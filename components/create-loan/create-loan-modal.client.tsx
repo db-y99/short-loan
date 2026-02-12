@@ -17,7 +17,7 @@ import ReferencesSection from "./references-section.client";
 import AttachmentsSection from "./attachments-section.client";
 import { createLoanAction } from "@/features/loans/actions/create-loan.action";
 import { saveLoanAttachmentsAction } from "@/features/loans/actions/save-loan-attachments.action";
-import type { TCreateLoanForm, TReference } from "@/types/loan.types";
+import type { TCreateLoanForm, TReference, TUploadFiles } from "@/types/loan.types";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { PROVIDER_TYPES } from "@/constants/google-drive";
 
@@ -165,11 +165,7 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
 
       if (result.success) {
         // 2) Upload files vào đúng folder đã tạo
-        let uploadedFiles: Array<{
-          name?: string;
-          provider: string;
-          file_id: string;
-        }> = [];
+        let uploadedFiles: TUploadFiles[] = [];
 
         if (form.attachments.length > 0) {
           setUploadProgress(`Đang upload ${form.attachments.length} file...`);

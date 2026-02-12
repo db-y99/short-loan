@@ -219,3 +219,9 @@ export type TAssetIdentity = {
   imei?: string;
   serial?: string;
 };
+
+export type TUploadFiles = {
+  name?: string;
+  provider: string;
+  file_id: string;
+};

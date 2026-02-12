@@ -3,14 +3,16 @@
 import { revalidatePath } from "next/cache";
 import { SaveLoanAttachmentsSchema } from "./save-loan-attachments.schema";
 import { addLoanAssetsService } from "@/services/loans/loans.service";
+import { TUploadFiles } from "@/types/loan.types";
 
 type TSaveLoanAttachmentsResult =
   | { success: true }
   | { success: false; error: string };
 
-export const saveLoanAttachmentsAction = async (
-  payload: unknown,
-): Promise<TSaveLoanAttachmentsResult> => {
+export const saveLoanAttachmentsAction = async (payload: {
+  loanId: string;
+  attachments: TUploadFiles[];
+}): Promise<TSaveLoanAttachmentsResult> => {
   try {
     const input = SaveLoanAttachmentsSchema.parse(payload);
 
@@ -28,4 +30,3 @@ export const saveLoanAttachmentsAction = async (
     };
   }
 };
-
