@@ -210,7 +210,6 @@ export const getLoanDetailsService = async (
     .eq("id", loanId)
     .single();
 
-  console.log({ loan, loanError });
   if (loanError || !loan) return null;
 
   const [refsRes, filesRes, assetsRes, logsRes] = await Promise.all([

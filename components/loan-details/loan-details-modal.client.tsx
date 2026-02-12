@@ -34,8 +34,6 @@ const LoanDetailsModal = ({
 }: TProps) => {
   if (!loanDetails && !isLoading && !error) return null;
 
-  console.log(loanDetails);
-
   return (
     <Modal
       isOpen={isOpen}

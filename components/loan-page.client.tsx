@@ -27,7 +27,6 @@ const LoansPageClient = ({ loans }: TProps) => {
     setSelectedLoan(null);
 
     const result = await getLoanDetailsAction(loan.id);
-    console.log({ result });
 
     setIsLoadingDetails(false);
 
