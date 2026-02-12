@@ -56,19 +56,18 @@ export const ASSET_TYPE_LABEL: Record<string, string> = {
 } as const;
 
 export const LOAN_TYPES = {
-  SEVEN_DAYS: "7_days",
-  FIFTEEN_DAYS: "15_days",
-  THIRTY_DAYS: "30_days",
-  SIXTY_DAYS: "60_days",
-  NINETY_DAYS: "90_days",
+  INSTALLMENT_3_PERIODS: "installment_3_periods",
+  BULLET_PAYMENT_BY_MILESTONE: "bullet_payment_by_milestone",
+  BULLET_PAYMENT_WITH_COLLATERAL_HOLD: "bullet_payment_with_collateral_hold",
 } as const;
 
-export const LOAN_TYPE_LABEL: Record<string, string> = {
-  [LOAN_TYPES.SEVEN_DAYS]: "Gói 7 ngày",
-  [LOAN_TYPES.FIFTEEN_DAYS]: "Gói 15 ngày",
-  [LOAN_TYPES.THIRTY_DAYS]: "Gói 30 ngày",
-  [LOAN_TYPES.SIXTY_DAYS]: "Gói 60 ngày",
-  [LOAN_TYPES.NINETY_DAYS]: "Gói 90 ngày",
+export type TLoanType = (typeof LOAN_TYPES)[keyof typeof LOAN_TYPES];
+
+export const LOAN_TYPE_LABEL: Record<TLoanType, string> = {
+  [LOAN_TYPES.INSTALLMENT_3_PERIODS]: "Gói 1: Vay trả góp (3 kỳ)",
+  [LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE]: "Gói 2: Gốc cuối kỳ (Theo mốc)",
+  [LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD]:
+    "Gói 3: Gốc cuối kỳ + Giữ TS",
 } as const;
 
 export const LOANS_TABLE_COLUMNS = [
