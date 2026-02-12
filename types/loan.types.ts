@@ -176,7 +176,6 @@ export type TCreateLoanPayload = {
   asset_type: string;
   asset_name: string;
   asset_identity: TAssetIdentity;
-  drive_folder_id: string;
   loan_amount: string;
   loan_type: string;
   notes: string;
@@ -185,7 +184,8 @@ export type TCreateLoanPayload = {
     phone: string;
     relationship: string | null;
   }>;
-  attachments: TAttachmentInput[];
+  // Attachments sẽ được save sau khi tạo loan + upload file
+  attachments?: TAttachmentInput[];
 };
 
 export type TCreateLoanInput = {

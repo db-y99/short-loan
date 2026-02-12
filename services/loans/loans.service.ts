@@ -158,6 +158,55 @@ export const createLoanService = async (
   return { id: loan.id, code: loan.code };
 };
 
+/**
+ * 🔹 Update drive folder id cho loan (sau khi tạo folder Drive)
+ */
+export const updateLoanDriveFolderIdService = async ({
+  loanId,
+  driveFolderId,
+}: {
+  loanId: string;
+  driveFolderId: string;
+}): Promise<true> => {
+  const supabase = await createSupabaseServerClient();
+
+  const { error } = await supabase
+    .from("loans")
+    .update({ drive_folder_id: driveFolderId })
+    .eq("id", loanId);
+
+  if (error) throw new Error(error.message);
+  return true;
+};
+
+/**
+ * 🔹 Lưu attachments (asset images) cho loan
+ * - Chỉ insert DB, KHÔNG upload file
+ */
+export const addLoanAssetsService = async ({
+  loanId,
+  attachments,
+}: {
+  loanId: string;
+  attachments: NonNullable<TCreateLoanInput["attachments"]>;
+}): Promise<true> => {
+  const supabase = await createSupabaseServerClient();
+
+  if (!attachments.length) return true;
+
+  const assetRows = attachments.map((f, index) => ({
+    loan_id: loanId,
+    name: f.name ?? null,
+    provider: f.provider,
+    file_id: f.file_id,
+    position: index,
+  }));
+
+  const { error } = await supabase.from("loan_assets").insert(assetRows);
+  if (error) throw new Error(error.message);
+  return true;
+};
+
 const EMPTY_MILESTONES: TPaymentMilestone[] = [];
 const EMPTY_PERIOD: TPaymentPeriod = {
   title: "—",

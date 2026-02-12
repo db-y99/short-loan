@@ -41,9 +41,6 @@ export const CreateLoanSchema = z
       imei: z.string().optional(),
       serial: z.string().optional(),
     }),
-    drive_folder_id: z
-      .string()
-      .min(1, "Thư mục Google drive không được để trống"),
     loan_amount: z.string().min(1, "Số tiền vay không được để trống"),
     loan_type: z
       .string()

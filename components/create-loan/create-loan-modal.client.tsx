@@ -16,6 +16,7 @@ import LoanInfoSection from "./loan-info-section.client";
 import ReferencesSection from "./references-section.client";
 import AttachmentsSection from "./attachments-section.client";
 import { createLoanAction } from "@/features/loans/actions/create-loan.action";
+import { saveLoanAttachmentsAction } from "@/features/loans/actions/save-loan-attachments.action";
 import type { TCreateLoanForm, TReference } from "@/types/loan.types";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { PROVIDER_TYPES } from "@/constants/google-drive";
@@ -128,23 +129,7 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
     setIsSubmitting(true);
 
     try {
-      // Bước 1: Upload files trước
-      let uploadedFiles: Array<{ name: string; provider: string; file_id: string }> = [];
-
-      if (form.attachments.length > 0) {
-        setUploadProgress(`Đang upload ${form.attachments.length} file...`);
-        const results = await uploadFiles(form.attachments);
-
-        uploadedFiles = results.map((result) => ({
-          name: result.fileName,
-          provider: PROVIDER_TYPES.GOOGLE_DRIVE,
-          file_id: result.fileId,
-        }));
-
-        setUploadProgress("Upload hoàn tất. Đang tạo hợp đồng...");
-      }
-
-      // Bước 2: Tạo loan với file IDs đã upload
+      // 1) Tạo loan trước (CHƯA có attachments)
       const payload = {
         full_name: form.full_name,
         cccd: form.cccd,
@@ -166,7 +151,6 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
           imei: form.imei,
           serial: form.serial,
         },
-        drive_folder_id: "1ILFcADTb4h3QMIpE7-LmqpiiSbARqn3L",
         loan_amount: form.loan_amount,
         loan_type: form.loan_type,
         notes: form.notes,
@@ -175,12 +159,44 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
           phone: r.phone,
           relationship: r.relationship || null,
         })),
-        attachments: uploadedFiles,
       };
 
       const result = await createLoanAction(payload);
 
       if (result.success) {
+        // 2) Upload files vào đúng folder đã tạo
+        let uploadedFiles: Array<{
+          name?: string;
+          provider: string;
+          file_id: string;
+        }> = [];
+
+        if (form.attachments.length > 0) {
+          setUploadProgress(`Đang upload ${form.attachments.length} file...`);
+          const results = await uploadFiles(form.attachments, {
+            folderId: result.data.folderId,
+          });
+
+          uploadedFiles = results.map((r) => ({
+            name: r.fileName,
+            provider: PROVIDER_TYPES.GOOGLE_DRIVE,
+            file_id: r.fileId,
+          }));
+        }
+
+        // 3) Save attachments vào DB
+        if (uploadedFiles.length > 0) {
+          setUploadProgress("Đang lưu attachments...");
+          const saveRes = await saveLoanAttachmentsAction({
+            loanId: result.data.id,
+            attachments: uploadedFiles,
+          });
+          if (!saveRes.success) {
+            setError(saveRes.error);
+            return;
+          }
+        }
+
         handleClose();
         onSuccess?.();
       } else {

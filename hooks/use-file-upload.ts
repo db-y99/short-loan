@@ -9,8 +9,14 @@ export const useFileUpload = () => {
 
   const uploadFiles = async (
     files: File[],
-    feature: string = FOLDER_NAMES.SHORT_LOAN,
+    options?: {
+      feature?: string;
+      folderId?: string;
+    },
   ): Promise<TUploadResult[]> => {
+    const feature = options?.feature ?? FOLDER_NAMES.SHORT_LOAN;
+    const folderId = options?.folderId;
+
     setIsUploading(true);
     setUploadError(null);
 
@@ -19,6 +25,9 @@ export const useFileUpload = () => {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("feature", feature);
+        if (folderId) {
+          formData.append("folderId", folderId);
+        }
 
         const res = await fetch("/api/drive/upload", {
           method: "POST",

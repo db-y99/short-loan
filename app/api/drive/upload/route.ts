@@ -10,9 +10,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const feature = formData.get("feature") as string | null;
-
-    console.log("File:", file?.name);
-    console.log("Feature:", feature);
+    const folderIdFromClient = formData.get("folderId") as string | null;
 
     // Validate input
     if (!file) {
@@ -27,7 +25,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get folder ID
-    const folderId = env.SHORT_LOAN_GOOGLE_DRIVE_FOLDER_ID;
+    const folderId = folderIdFromClient || env.SHORT_LOAN_GOOGLE_DRIVE_FOLDER_ID;
     if (!folderId) {
       return NextResponse.json(
         { error: `Feature không hợp lệ: ${feature}` },
@@ -65,8 +63,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         error: err instanceof Error ? err.message : "Upload failed",
-        details:
-          process.env.NODE_ENV === "development" ? String(err) : undefined,
       },
       { status: 500 },
     );

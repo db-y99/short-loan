@@ -121,3 +121,38 @@ export async function streamFileFromDrive(
     fileName: fileMeta.name || "file",
   };
 }
+
+/**
+ * Tạo folder con cho khoản vay.
+ * Format: {loanCode} - {customerName}
+ */
+export async function createLoanFolder({
+  parentFolderId,
+  loanCode,
+  customerName,
+}: {
+  parentFolderId: string;
+  loanCode: string;
+  customerName: string;
+}): Promise<string> {
+  const auth = getAuth();
+  const drive = google.drive({ version: "v3", auth });
+
+  const folderName = `${customerName} - ${loanCode}`;
+
+  const { data } = await drive.files.create({
+    requestBody: {
+      name: folderName,
+      mimeType: "application/vnd.google-apps.folder",
+      parents: [parentFolderId],
+    },
+    fields: "id",
+    supportsAllDrives: true,
+  });
+
+  if (!data.id) {
+    throw new Error("Không tạo được folder khoản vay");
+  }
+
+  return data.id;
+}
