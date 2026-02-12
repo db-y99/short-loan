@@ -12,7 +12,6 @@ import { AlertCircle, CreditCard, MessageCircle, MessageSquare, ShoppingCart } f
 import type { TLoanDetails } from "@/types/loan.types";
 import ContractHeader from "@/components/loan-details/loan-header";
 import LoanAmountSummary from "@/components/loan-details/loan-amount-summary";
-import PaymentPeriods from "@/components/loan-details/payment-periods";
 import ActivityLogSection from "@/components/loan-details/activity-log-section.client";
 import LoanInfoCards from "@/components/loan-details/loan-info-cards.client";
 import LoanProfileSection from "@/components/loan-details/loan-profile-section";
@@ -64,7 +63,7 @@ const LoanDetailsModal = ({
             {/* Left Column - Contract Details */}
             <div className="flex-3 overflow-y-auto p-6 border-r border-default-200">
               {isLoading && (
-                <div className="flex items-center justify-center py-16">
+                <div className="flex items-center justify-center py-16 h-full">
                   <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary border-t-transparent" />
                 </div>
               )}

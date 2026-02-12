@@ -17,17 +17,6 @@ type TProps = {
   assetImages: TAssetImage[];
 };
 
-const getDownloadFilename = (url: string, index: number): string => {
-  try {
-    const pathname = new URL(url, "http://dummy").pathname;
-    const basename = pathname.split("/").pop();
-    if (basename && basename.includes(".")) return basename;
-  } catch {
-    // ignore
-  }
-  return `anh-tai-san-${index + 1}.jpg`;
-};
-
 const AssetGallery = ({ assetImages }: TProps) => {
   const images = assetImages.map((image) => image.fileId);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -44,13 +33,16 @@ const AssetGallery = ({ assetImages }: TProps) => {
 
   const handleDownloadImage = () => {
     if (!selectedImage) return;
+    const fileId = images[selectedIndex];
+
     const link = document.createElement("a");
-    link.href = selectedImage;
-    link.download = getDownloadFilename(selectedImage, selectedIndex);
+    link.href = `/api/drive/download/${fileId}`;
+    link.target = "_blank"; // optional
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    link.remove();
   };
+
 
   return (
     <>
@@ -127,9 +119,11 @@ const AssetGallery = ({ assetImages }: TProps) => {
                 <ModalFooter>
                   <Button
                     color="primary"
-                    startContent={<Download size={16} />}
                     variant="flat"
                     onPress={handleDownloadImage}
+                    startContent={
+                      <Download size={16} />
+                    }
                   >
                     Tải xuống
                   </Button>
