@@ -1,10 +1,10 @@
-import type { ElementType } from "react";
+import type { LucideIcon } from "lucide-react";
 
 const SectionHeader = ({
     icon: Icon,
     title,
 }: {
-    icon: ElementType;
+    icon: LucideIcon;
     title: string;
 }) => (
     <div className="flex items-center gap-2">

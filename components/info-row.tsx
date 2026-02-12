@@ -1,6 +1,6 @@
 import { Link } from "@heroui/link";
 import { cn } from "@heroui/react";
-import type { ElementType } from "react";
+import type { LucideIcon } from "lucide-react";
 
 const InfoRow = ({
     icon: Icon,
@@ -10,7 +10,7 @@ const InfoRow = ({
     href,
     className,
 }: {
-    icon: ElementType;
+    icon: LucideIcon;
     label: string;
     value: string;
     isLink?: boolean;

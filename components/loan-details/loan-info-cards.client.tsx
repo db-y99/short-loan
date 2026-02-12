@@ -1,7 +1,6 @@
 "use client";
 
-import type { ElementType } from "react";
-import { Card, CardBody, CardHeader, Chip, cn, Divider, Link } from "@heroui/react";
+import { Card, CardBody, CardHeader, Chip, Divider, Link } from "@heroui/react";
 import {
   User,
   CreditCard,

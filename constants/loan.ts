@@ -1,5 +1,4 @@
 import type { TActivityLogType, TLoanStatus } from "@/types/loan.types";
-import type { ElementType } from "react";
 import {
   MessageCircle,
   AlertCircle,
@@ -8,6 +7,7 @@ import {
   FileText,
   FileSignature,
   Banknote,
+  type LucideIcon,
 } from "lucide-react";
 
 export const LOAN_STATUS = {
@@ -103,7 +103,7 @@ export const ACTIVITY_SYSTEM_TYPES = [
   ACTIVITY_LOG_TYPE.DISBURSEMENT,
 ] as const;
 
-export const ACTIVITY_ICON_MAP: Record<TActivityLogType, ElementType> = {
+export const ACTIVITY_ICON_MAP: Record<TActivityLogType, LucideIcon> = {
   [ACTIVITY_LOG_TYPE.MESSAGE]: MessageCircle,
   [ACTIVITY_LOG_TYPE.SYSTEM_EVENT]: AlertCircle,
   [ACTIVITY_LOG_TYPE.IMAGE_UPLOAD]: Upload,
