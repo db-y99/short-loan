@@ -5,9 +5,9 @@ import { streamFileFromDrive } from "@/lib/google-drive";
 
 export async function GET(
   req: Request,
-  { params }: { params: { fileId: string } },
+  ctx: { params: Promise<{ fileId: string }> },
 ) {
-  const { fileId } = params;
+  const { fileId } = await ctx.params;
 
   const result = await streamFileFromDrive(fileId);
   if (!result) {
