@@ -63,69 +63,34 @@ export const getLoansService = async (): Promise<TLoan[]> => {
   });
 };
 
-/** Tạo loan mới và các bản ghi liên quan (references) */
-// export const createLoanService = async (
-//   input: TCreateLoanInput,
-// ): Promise<{ id: string; code: string }> => {
-//   const supabase = await createSupabaseServerClient();
-
-//   const { data: loan, error: loanError } = await supabase
-//     .from("loans")
-//     .insert({
-//       code: input.code,
-//       creator: input.creator,
-//       customer_id: input.customer_id,
-//       asset_type: input.asset_type,
-//       asset_name: input.asset_name,
-//       chassis_number: input.chassis_number || null,
-//       engine_number: input.engine_number || null,
-//       imei: input.imei || null,
-//       serial: input.serial || null,
-//       amount: input.amount,
-//       loan_package: input.loan_package,
-//       loan_type: input.loan_type,
-//       appraisal_fee_percentage: input.appraisal_fee_percentage ?? null,
-//       appraisal_fee: input.appraisal_fee ?? null,
-//       bank_name: input.bank_name || null,
-//       bank_account_holder: input.bank_account_holder || null,
-//       bank_account_number: input.bank_account_number || null,
-//       notes: input.notes || null,
-//       status: "pending",
-//     })
-//     .select("id, code")
-//     .single();
-
-//   if (loanError) throw new Error(loanError.message);
-//   if (!loan) throw new Error("Failed to create loan");
-
-//   if (input.references.length > 0) {
-//     const refRows = input.references
-//       .filter((r) => r.full_name.trim() || r.phone.trim())
-//       .map((r) => ({
-//         loan_id: loan.id,
-//         full_name: r.full_name.trim() || "—",
-//         phone: r.phone.trim() || "—",
-//         relationship: r.relationship?.trim() || null,
-//       }));
-
-//     if (refRows.length > 0) {
-//       const { error: refError } = await supabase
-//         .from("loan_references")
-//         .insert(refRows);
-
-//       if (refError) throw new Error(refError.message);
-//     }
-//   }
-
-//   return { id: loan.id, code: loan.code };
-// };
-
+/**
+ * 🔹 Tạo khoản vay
+ * @param input - Thông tin khoản vay
+ * @returns ID và mã khoản vay
+ */
 export const createLoanService = async (
   input: TCreateLoanInput,
 ): Promise<{ id: string; code: string }> => {
   const supabase = await createSupabaseServerClient();
 
-  // 🔹 1. Create loan
+  /**
+   * 🔹 1. Build asset_identity JSONB
+   * Chỉ giữ các field có giá trị
+   */
+  const assetIdentity = {
+    ...(input.asset_identity.chassis_number && {
+      chassis_number: input.asset_identity.chassis_number,
+    }),
+    ...(input.asset_identity.engine_number && {
+      engine_number: input.asset_identity.engine_number,
+    }),
+    ...(input.asset_identity.imei && { imei: input.asset_identity.imei }),
+    ...(input.asset_identity.serial && { serial: input.asset_identity.serial }),
+  };
+
+  /**
+   * 🔹 2. Create loan
+   */
   const { data: loan, error: loanError } = await supabase
     .from("loans")
     .insert({
@@ -134,12 +99,9 @@ export const createLoanService = async (
       customer_id: input.customer_id,
       asset_type: input.asset_type,
       asset_name: input.asset_name,
-      chassis_number: input.chassis_number ?? null,
-      engine_number: input.engine_number ?? null,
-      imei: input.imei ?? null,
-      serial: input.serial ?? null,
+      asset_identity: assetIdentity, // ✅ jsonb đúng schema
       amount: input.amount,
-      loan_package: input.loan_package,
+      loan_package: input.loan_package ?? null,
       loan_type: input.loan_type,
       appraisal_fee_percentage: input.appraisal_fee_percentage ?? null,
       appraisal_fee: input.appraisal_fee ?? null,
@@ -147,6 +109,7 @@ export const createLoanService = async (
       bank_account_holder: input.bank_account_holder ?? null,
       bank_account_number: input.bank_account_number ?? null,
       notes: input.notes ?? null,
+      drive_folder_id: input.drive_folder_id, // 🔥 bắt buộc vì NOT NULL
       status: "pending",
     })
     .select("id, code")
@@ -173,20 +136,23 @@ export const createLoanService = async (
     }
   }
 
-  // 🔹 3. Insert attachments (NEW)
-  if (input.attachments && input.attachments.length > 0) {
-    const fileRows = input.attachments.map((f) => ({
+  /**
+   * 🔹 Insert asset images
+   */
+  if (input.attachments?.length) {
+    const assetRows = input.attachments.map((f, index) => ({
       loan_id: loan.id,
-      name: f.name,
+      name: f.name ?? null,
       provider: f.provider,
       file_id: f.file_id,
+      position: index, // để sort ảnh
     }));
 
-    const { error: fileError } = await supabase
-      .from("loan_files")
-      .insert(fileRows);
+    const { error: assetError } = await supabase
+      .from("loan_assets")
+      .insert(assetRows);
 
-    if (fileError) throw new Error(fileError.message);
+    if (assetError) throw new Error(assetError.message);
   }
 
   return { id: loan.id, code: loan.code };
@@ -218,10 +184,7 @@ export const getLoanDetailsService = async (
       appraisal_fee,
       asset_type,
       asset_name,
-      chassis_number,
-      engine_number,
-      imei,
-      serial,
+      asset_identity,
       bank_name,
       bank_account_holder,
       bank_account_number,
@@ -230,8 +193,6 @@ export const getLoanDetailsService = async (
       status_message,
       signed_at,
       is_signed,
-      original_file_url,
-      payment_schedule,
       created_at,
       customers!inner (
         full_name,
@@ -249,49 +210,50 @@ export const getLoanDetailsService = async (
     .eq("id", loanId)
     .single();
 
+  console.log({ loan, loanError });
   if (loanError || !loan) return null;
 
-  const [refsRes, filesRes, imagesRes, logsRes] = await Promise.all([
+  const [refsRes, filesRes, assetsRes, logsRes] = await Promise.all([
     supabase
       .from("loan_references")
       .select("id, full_name, phone, relationship")
       .eq("loan_id", loanId)
       .order("created_at", { ascending: true }),
+
     supabase
       .from("loan_files")
-      .select("id, name, file_id, provider")
+      .select("id, name, file_id, provider, type")
       .eq("loan_id", loanId)
       .order("created_at", { ascending: true }),
+
     supabase
-      .from("loan_asset_images")
-      .select("url")
+      .from("loan_assets")
+      .select("id, file_id, provider, name")
       .eq("loan_id", loanId)
-      .order("position", { ascending: true, nullsFirst: false }),
+      .order("position", { ascending: true }),
+
     supabase
       .from("loan_activity_logs")
       .select(
-        "id, type, user_id, user_name, timestamp, content, images, links, system_message, mentions",
+        "id, type, user_id, user_name, created_at, content, images, links, system_message, mentions",
       )
       .eq("loan_id", loanId)
-      .order("timestamp", { ascending: true }),
+      .order("created_at", { ascending: true }),
   ]);
 
-  type TCustomerRow = {
-    full_name: string;
-    cccd: string;
-    phone: string;
-    address: string;
-    cccd_issue_date: string | null;
-    cccd_issue_place: string | null;
-    facebook_link: string | null;
-    job: string | null;
-    income: number | null;
-  };
-  const cust = loan.customers as TCustomerRow | TCustomerRow[] | null;
-  const customer: TCustomerRow | null = Array.isArray(cust)
-    ? (cust[0] ?? null)
-    : cust;
+  /* =========================
+     CUSTOMER
+  ========================== */
+
+  const customer = Array.isArray(loan.customers)
+    ? loan.customers[0]
+    : loan.customers;
+
   if (!customer) return null;
+
+  /* =========================
+     REFERENCES
+  ========================== */
 
   const references: TReference[] = (refsRes.data ?? []).map((r) => ({
     id: r.id,
@@ -300,21 +262,39 @@ export const getLoanDetailsService = async (
     relationship: r.relationship ?? "",
   }));
 
+  /* =========================
+     FILES (HỢP ĐỒNG)
+  ========================== */
+
   const originalFiles: TLoanFile[] = (filesRes.data ?? []).map((f) => ({
     id: f.id,
     name: f.name,
     fileId: f.file_id,
     provider: f.provider,
+    type: f.type,
   }));
 
-  const assetImages: string[] = (imagesRes.data ?? []).map((i) => i.url);
+  /* =========================
+     ASSET IMAGES
+  ========================== */
+
+  const assetImages = (assetsRes.data ?? []).map((a) => ({
+    id: a.id,
+    fileId: a.file_id,
+    provider: a.provider,
+    name: a.name,
+  }));
+
+  /* =========================
+     ACTIVITY LOG
+  ========================== */
 
   const activityLog: TActivityLogEntry[] = (logsRes.data ?? []).map((l) => ({
     id: l.id,
     type: l.type as TActivityLogType,
     userId: l.user_id,
     userName: l.user_name,
-    timestamp: l.timestamp,
+    timestamp: l.created_at,
     content: l.content ?? undefined,
     images: l.images ?? undefined,
     links: l.links ?? undefined,
@@ -322,21 +302,24 @@ export const getLoanDetailsService = async (
     mentions: l.mentions ?? undefined,
   }));
 
-  const schedule = loan.payment_schedule as
-    | { currentPeriod?: TPaymentPeriod; nextPeriod?: TPaymentPeriod }
-    | null
-    | undefined;
-  const currentPeriod = schedule?.currentPeriod ?? EMPTY_PERIOD;
-  const nextPeriod = schedule?.nextPeriod ?? EMPTY_PERIOD;
+  /* =========================
+     ASSET IDENTITY (jsonb)
+  ========================== */
+
+  const identity = loan.asset_identity as {
+    chassis_number?: string;
+    engine_number?: string;
+    imei?: string;
+    serial?: string;
+  } | null;
 
   return {
     id: loan.id,
     code: loan.code,
     signedAt: loan.signed_at ?? loan.created_at,
-    originalFileUrl: loan.original_file_url ?? "",
     notes: loan.notes ?? "",
     isSigned: loan.is_signed ?? false,
-    originalFiles: originalFiles.length > 0 ? originalFiles : undefined,
+    originalFiles: originalFiles.length ? originalFiles : undefined,
 
     customer: {
       fullName: customer.full_name,
@@ -355,6 +338,7 @@ export const getLoanDetailsService = async (
     loanAmount: Number(loan.amount),
     loanType:
       loan.loan_package ?? LOAN_TYPE_LABEL[loan.loan_type] ?? loan.loan_type,
+
     appraisalFeePercentage: loan.appraisal_fee_percentage
       ? Number(loan.appraisal_fee_percentage)
       : undefined,
@@ -365,10 +349,10 @@ export const getLoanDetailsService = async (
     asset: {
       type: ASSET_TYPE_LABEL[loan.asset_type] ?? loan.asset_type,
       name: loan.asset_name,
-      imei: loan.imei ?? "",
-      serial: loan.serial ?? "",
-      chassisNumber: loan.chassis_number ?? "",
-      engineNumber: loan.engine_number ?? "",
+      imei: identity?.imei ?? "",
+      serial: identity?.serial ?? "",
+      chassisNumber: identity?.chassis_number ?? "",
+      engineNumber: identity?.engine_number ?? "",
       images: assetImages,
     },
 
@@ -378,13 +362,10 @@ export const getLoanDetailsService = async (
       accountHolder: loan.bank_account_holder ?? "",
     },
 
-    currentPeriod,
-    nextPeriod,
-
     status: loan.status as TLoanStatus,
     statusMessage: loan.status_message ?? undefined,
 
-    activityLog: activityLog.length > 0 ? activityLog : undefined,
+    activityLog: activityLog.length ? activityLog : undefined,
   } satisfies TLoanDetails;
 };
 

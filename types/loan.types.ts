@@ -109,7 +109,7 @@ export type TLoanDetails = {
     serial?: string;
     chassisNumber?: string;
     engineNumber?: string;
-    images: string[];
+    images: TAssetImage[];
   };
 
   bank: {
@@ -118,15 +118,18 @@ export type TLoanDetails = {
     accountHolder: string;
   };
 
-  currentPeriod: TPaymentPeriod;
-  nextPeriod: TPaymentPeriod;
-
   status: TLoanStatus;
   statusMessage?: string;
 
   activityLog?: TActivityLogEntry[];
 };
 
+export type TAssetImage = {
+  id: string;
+  name: string;
+  fileId: string;
+  provider: string;
+};
 // ==================== Activity Log Types ====================
 
 export type TActivityLogType =
@@ -172,10 +175,8 @@ export type TCreateLoanPayload = {
   bank_account_number: string;
   asset_type: string;
   asset_name: string;
-  chassis_number: string;
-  engine_number: string;
-  imei: string;
-  serial: string;
+  asset_identity: TAssetIdentity;
+  drive_folder_id: string;
   loan_amount: string;
   loan_type: string;
   notes: string;
@@ -193,10 +194,8 @@ export type TCreateLoanInput = {
   customer_id: string;
   asset_type: string;
   asset_name: string;
-  chassis_number?: string | null;
-  engine_number?: string | null;
-  imei?: string | null;
-  serial?: string | null;
+  asset_identity: TAssetIdentity;
+  drive_folder_id: string;
   amount: number;
   loan_package: string | null;
   loan_type: string;
@@ -212,4 +211,11 @@ export type TCreateLoanInput = {
     relationship: string | null;
   }[];
   attachments?: TAttachmentInput[];
+};
+
+export type TAssetIdentity = {
+  chassis_number?: string;
+  engine_number?: string;
+  imei?: string;
+  serial?: string;
 };

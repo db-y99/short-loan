@@ -11,9 +11,10 @@ import {
   Image,
 } from "@heroui/react";
 import { Download, ImageIcon } from "lucide-react";
+import { TAssetImage } from "@/types/loan.types";
 
 type TProps = {
-  images: string[];
+  assetImages: TAssetImage[];
 };
 
 const getDownloadFilename = (url: string, index: number): string => {
@@ -27,7 +28,8 @@ const getDownloadFilename = (url: string, index: number): string => {
   return `anh-tai-san-${index + 1}.jpg`;
 };
 
-const AssetGallery = ({ images }: TProps) => {
+const AssetGallery = ({ assetImages }: TProps) => {
+  const images = assetImages.map((image) => image.fileId);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
 
@@ -79,7 +81,7 @@ const AssetGallery = ({ images }: TProps) => {
                 key={index}
                 type="button"
                 className="relative aspect-square rounded-lg overflow-hidden border border-default-200 hover:border-primary transition-colors cursor-pointer group"
-                onClick={() => handleOpenPreview(image, index)}
+                onClick={() => handleOpenPreview(`/api/drive/image/${image}`, index)}
               >
                 <Image
                   alt={`Ảnh ${index + 1}`}
@@ -87,7 +89,7 @@ const AssetGallery = ({ images }: TProps) => {
                     wrapper: "!max-w-full h-full",
                     img: "w-full h-full object-cover",
                   }}
-                  src={image}
+                  src={`/api/drive/image/${image}`}
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                   <span className="absolute bottom-1 right-1 text-xs bg-black/60 text-white px-1.5 py-0.5 rounded">

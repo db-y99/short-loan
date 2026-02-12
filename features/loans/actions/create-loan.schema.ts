@@ -35,10 +35,15 @@ export const CreateLoanSchema = z
         "Loại tài sản không hợp lệ",
       ),
     asset_name: z.string().min(1, "Tên tài sản không được để trống"),
-    chassis_number: z.string().optional(),
-    engine_number: z.string().optional(),
-    imei: z.string().optional(),
-    serial: z.string().optional(),
+    asset_identity: z.object({
+      chassis_number: z.string().optional(),
+      engine_number: z.string().optional(),
+      imei: z.string().optional(),
+      serial: z.string().optional(),
+    }),
+    drive_folder_id: z
+      .string()
+      .min(1, "Thư mục Google drive không được để trống"),
     loan_amount: z.string().min(1, "Số tiền vay không được để trống"),
     loan_type: z
       .string()

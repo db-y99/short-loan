@@ -96,7 +96,7 @@ const LoanDetailsModal = ({
                       />
                     </div>
                     <LoanAmountSummary loanDetails={loanDetails} />
-                    <PaymentPeriods loanDetails={loanDetails} />
+                    {/* <PaymentPeriods loanDetails={loanDetails} /> */}
                   </div>
 
                   {loanDetails.statusMessage && (
