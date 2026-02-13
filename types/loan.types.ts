@@ -121,6 +121,9 @@ export type TLoanDetails = {
   status: TLoanStatus;
   statusMessage?: string;
 
+  /** ID folder Google Drive của khoản vay (dùng cho upload hợp đồng) */
+  driveFolderId?: string;
+
   activityLog?: TActivityLogEntry[];
 };
 

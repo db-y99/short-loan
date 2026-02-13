@@ -12,7 +12,11 @@ import type {
   TCreateLoanInput,
   TUploadFiles,
 } from "@/types/loan.types";
-import { LOAN_TYPE_LABEL, ASSET_TYPE_LABEL } from "@/constants/loan";
+import {
+  LOAN_TYPE_LABEL,
+  ASSET_TYPE_LABEL,
+  type TLoanType,
+} from "@/constants/loan";
 import { formatDateShortVN } from "@/lib/format";
 
 /** Lấy danh sách loans với thông tin customer (full_name) */
@@ -48,6 +52,7 @@ export const getLoansService = async (): Promise<TLoan[]> => {
       | { full_name: string }[]
       | null;
     const customer = Array.isArray(cust) ? cust[0] : cust;
+    const loanTypeKey = row.loan_type as TLoanType;
     return {
       id: row.id,
       code: row.code,
@@ -56,7 +61,7 @@ export const getLoansService = async (): Promise<TLoan[]> => {
       asset: row.asset_name ?? "—",
       amount: Number(row.amount),
       loan_package:
-        row.loan_package ?? LOAN_TYPE_LABEL[row.loan_type] ?? row.loan_type,
+        row.loan_package ?? LOAN_TYPE_LABEL[loanTypeKey] ?? row.loan_type,
       created_at: row.created_at,
       approved_at: row.approved_at,
       status: row.status as TLoanStatus,
@@ -244,6 +249,7 @@ export const getLoanDetailsService = async (
       signed_at,
       is_signed,
       created_at,
+      drive_folder_id,
       customers!inner (
         full_name,
         cccd,
@@ -386,7 +392,9 @@ export const getLoanDetailsService = async (
 
     loanAmount: Number(loan.amount),
     loanType:
-      loan.loan_package ?? LOAN_TYPE_LABEL[loan.loan_type] ?? loan.loan_type,
+      loan.loan_package ??
+      LOAN_TYPE_LABEL[loan.loan_type as TLoanType] ??
+      loan.loan_type,
 
     appraisalFeePercentage: loan.appraisal_fee_percentage
       ? Number(loan.appraisal_fee_percentage)
@@ -413,6 +421,8 @@ export const getLoanDetailsService = async (
 
     status: loan.status as TLoanStatus,
     statusMessage: loan.status_message ?? undefined,
+
+    driveFolderId: loan.drive_folder_id ?? undefined,
 
     activityLog: activityLog.length ? activityLog : undefined,
   } satisfies TLoanDetails;

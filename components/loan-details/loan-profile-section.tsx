@@ -1,7 +1,7 @@
 "use client";
 
 import { Chip, Link } from "@heroui/react";
-import { FileText, CheckCircle2 } from "lucide-react";
+import { FileText, CheckCircle2, FileSignature } from "lucide-react";
 import type { TLoanDetails } from "@/types/loan.types";
 
 type TProps = {
@@ -58,6 +58,17 @@ const LoanProfileSection = ({ loanDetails }: TProps) => {
           </div>
         </div>
       )}
+
+      {/* Tạo/Xem hợp đồng cầm cố PDF */}
+      <div className="mt-3">
+        <Link
+          href={`/loans/${loanDetails.id}/contract`}
+          className="inline-flex items-center gap-2 px-3 py-2 bg-primary/10 border border-primary/30 rounded-lg hover:bg-primary/20 transition-colors text-sm text-primary font-medium"
+        >
+          <FileSignature className="w-4 h-4" />
+          Tạo hợp đồng PDF
+        </Link>
+      </div>
 
       {/* Fallback: Single originalFileUrl */}
       {(!loanDetails.originalFiles || loanDetails.originalFiles.length === 0) &&
