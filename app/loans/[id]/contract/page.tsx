@@ -124,8 +124,8 @@ export default function ContractPage() {
   }
 
   return (
-    <div className="container mx-auto p-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="mx-auto">
+     <div className="mb-2 flex items-center justify-between">
         <Button
           variant="flat"
           size="sm"
@@ -135,6 +135,8 @@ export default function ContractPage() {
           Quay lại
         </Button>
       </div>
+      <div className="mb-4 gap-4 sticky top-0 bg-background/95 backdrop-blur py-4 z-10 border-b border-default-200">
+        <div className="flex flex-col">
 
       <Tabs
         selectedKey={activeType}
@@ -145,9 +147,8 @@ export default function ContractPage() {
           <Tab key={tab.key} title={tab.label} />
         ))}
       </Tabs>
-
-      <div className="mb-8 flex flex-wrap gap-4 sticky top-0 bg-background/95 backdrop-blur py-4 z-10 border-b border-default-200">
-        <Button
+       <div className="flex items-center gap-2">
+         <Button
           color="primary"
           onPress={handleDownload}
           isDisabled={generating || loading}
@@ -164,6 +165,8 @@ export default function ContractPage() {
         >
           {generating ? `Đang xử lý... ${progress}%` : "Lưu lên Drive"}
         </Button>
+       </div>
+        </div>
       </div>
 
       {generating && (
@@ -172,13 +175,13 @@ export default function ContractPage() {
         </div>
       )}
 
-      <div className="flex justify-center bg-default-100 p-8 rounded-xl min-h-[400px]">
+      <div className="flex justify-center bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-8 rounded-xl min-h-[400px]">
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <div className="animate-spin h-10 w-10 rounded-full border-2 border-primary border-t-transparent" />
           </div>
         ) : contractData ? (
-          <div className="shadow-lg">
+          <div style={{ display: "block", width: "fit-content" }}>
             {activeType === CONTRACT_TYPE.ASSET_PLEDGE && (
               <AssetPledgeContractView
                 data={contractData as TAssetPledgeContractData}

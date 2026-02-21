@@ -1,8 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 
 export function usePdfGenerator() {
   const [generating, setGenerating] = useState(false);
@@ -10,7 +8,7 @@ export function usePdfGenerator() {
 
   const generatePDF = async (
     elementId: string,
-    _fileName: string,
+    fileName: string,
   ): Promise<{ blob: Blob; buffer: ArrayBuffer }> => {
     setGenerating(true);
     setProgress(0);
@@ -21,47 +19,112 @@ export function usePdfGenerator() {
 
       setProgress(20);
 
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-        windowWidth: element.scrollWidth,
-        windowHeight: element.scrollHeight,
-        onclone: (clonedDoc) => {
-          const clonedEl = clonedDoc.getElementById(elementId);
-          if (clonedEl) {
-            clonedEl.style.fontFamily = "Times New Roman, serif";
+      // Get all stylesheets from the document
+      const styles = Array.from(document.styleSheets)
+        .map((styleSheet) => {
+          try {
+            return Array.from(styleSheet.cssRules)
+              .map((rule) => rule.cssText)
+              .join("\n");
+          } catch (e) {
+            // Handle CORS issues with external stylesheets
+            return "";
           }
+        })
+        .join("\n");
+
+      // Get the HTML content
+      const html = element.outerHTML;
+      
+      // Create complete HTML document with all styles
+      const styledHtml = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <style>
+              ${styles}
+              
+              /* Additional PDF-specific styles */
+              body {
+                font-family: 'Times New Roman', serif;
+                margin: 0;
+                padding: 0;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+              }
+              * {
+                box-sizing: border-box;
+              }
+              @page {
+                margin: 20mm;
+                size: A4;
+              }
+              /* Remove wrapper padding since @page handles it */
+              .pdf-wrapper {
+                padding: 0;
+              }
+              /* Remove container padding in PDF */
+              .pdf-wrapper #contract-content {
+                padding: 0 !important;
+                width: 100% !important;
+                background-color: white;
+              }
+              @media print {
+                .page-break {
+                  page-break-after: always;
+                  break-after: page;
+                }
+                .no-page-break {
+                  page-break-after: avoid;
+                  break-after: avoid;
+                }
+                /* Hide page numbers when printing */
+                .page-number-badge {
+                  display: none !important;
+                }
+              }
+              /* Ensure pages display vertically */
+              #contract-content {
+                display: block !important;
+              }
+              #contract-content > div {
+                display: block !important;
+                page-break-inside: avoid;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="pdf-wrapper">
+              ${html}
+            </div>
+          </body>
+        </html>
+      `;
+
+      setProgress(40);
+
+      // Call the Puppeteer API
+      const response = await fetch("/api/generate-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify({
+          html: styledHtml,
+          fileName,
+        }),
       });
 
-      setProgress(60);
+      setProgress(70);
 
-      const imgWidth = 210;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const pdf = new jsPDF("p", "mm", "a4");
-      const imgData = canvas.toDataURL("image/jpeg", 0.95);
-      const pageHeight = 297;
-
-      if (imgHeight > pageHeight) {
-        let heightLeft = imgHeight;
-        let position = 0;
-        pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-        while (heightLeft > 0) {
-          position -= pageHeight;
-          pdf.addPage();
-          pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-        }
-      } else {
-        pdf.addImage(imgData, "JPEG", 0, 0, imgWidth, imgHeight);
+      if (!response.ok) {
+        const error = await response.json();
+        console.error("PDF API Error:", error);
+        throw new Error(error.details || error.error || "Failed to generate PDF");
       }
 
-      setProgress(80);
-
-      const pdfBlob = pdf.output("blob");
+      const pdfBlob = await response.blob();
       setProgress(100);
       setGenerating(false);
 
