@@ -52,12 +52,12 @@ export function AssetPledgeContractView({
           <p style={{ margin: "5px 0", fontSize: "12pt" }}>
             Độc lập – Tự do – Hạnh phúc
           </p>
-          <hr style={{ width: "100px", margin: "10px auto", border: "1px solid #000" }} />
+          <div>---o0o---</div>
         </div>
 
         {/* Title */}
         <div style={{ ...S.center, margin: "24px 0" }}>
-          <h1 style={{ fontSize: "18pt", ...S.bold, margin: "10px 0" }}>
+          <h1 style={{ fontSize: "18pt", ...S.bold, margin: "4px 0" }}>
             HỢP ĐỒNG CẦM CỐ TÀI SẢN
           </h1>
           <p style={{ fontSize: "13pt", ...S.bold }}>
@@ -66,13 +66,22 @@ export function AssetPledgeContractView({
         </div>
 
         {/* Preamble */}
-        <p style={{ fontSize: "12pt", marginBottom: "8px" }}>
+       <ul
+        style={{
+          fontSize: "12pt",
+          marginBottom: "16px",
+          paddingLeft: "40px",
+              listStyleType: "disc",
+        }}
+      >
+        <li style={{ marginBottom: "6px" }}>
           Căn cứ Bộ luật Dân sự 2015 và các văn bản hướng dẫn thi hành;
-        </p>
-        <p style={{ fontSize: "12pt", marginBottom: "16px" }}>
+        </li>
+        <li>
           Căn cứ thỏa thuận và nhu cầu của các bên.
-        </p>
-        <p style={{ ...S.center, fontStyle: "italic", marginBottom: "16px" }}>
+        </li>
+      </ul>
+        <p style={{ marginBottom: "16px" }}>
           Hôm nay, ngày {data.NGAY} tháng {data.THANG} năm {data.NAM}, tại 99B
           Nguyễn Trãi, phường Ninh Kiều, thành phố Cần Thơ, chúng tôi gồm:
         </p>
@@ -81,59 +90,70 @@ export function AssetPledgeContractView({
       {/* Bên A */}
       <div style={S.section}>
         <h3 style={S.heading}>BÊN NHẬN CẦM CỐ (BÊN A):</h3>
-        <table style={S.table}>
-          <tbody>
-            <tr>
-              <td style={{ width: "30%", ...S.td }}>Tên đơn vị:</td>
-              <td style={{ ...S.bold, ...S.td }}>{data.BEN_A_TEN}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Địa chỉ:</td>
-              <td style={S.td}>{data.BEN_A_DIA_CHI}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Đại diện bởi:</td>
-              <td style={S.td}>{data.BEN_A_DAI_DIEN}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Chức vụ:</td>
-              <td style={S.td}>{data.BEN_A_CHUC_VU}</td>
-            </tr>
-          </tbody>
-        </table>
+       <ul
+  style={{
+    fontSize: "12pt",
+    marginBottom: "16px",
+    paddingLeft: "40px",
+ listStyleType: "disc",
+  }}
+>
+  <li style={{ marginBottom: "6px" }}>
+    <span style={{ fontWeight: "bold" }}>Tên đơn vị:</span>{" "}
+    {data.BEN_A_TEN}
+  </li>
+
+  <li style={{ marginBottom: "6px" }}>
+    <span style={{ fontWeight: "bold" }}>Địa chỉ:</span>{" "}
+    {data.BEN_A_DIA_CHI}
+  </li>
+
+  <li style={{ marginBottom: "6px" }}>
+    <span style={{ fontWeight: "bold" }}>Đại diện bởi:</span>{" "}
+    <span style={{ fontWeight: "bold" }}>
+      {data.BEN_A_DAI_DIEN}
+    </span>
+  </li>
+
+  <li>
+    <span style={{ fontWeight: "bold" }}>Chức vụ:</span>{" "}
+    {data.BEN_A_CHUC_VU}
+  </li>
+</ul>
       </div>
 
       {/* Bên B */}
       <div style={S.section}>
         <h3 style={S.heading}>BÊN CẦM CỐ (BÊN B):</h3>
-        <table style={S.table}>
-          <tbody>
-            <tr>
-              <td style={{ width: "30%", ...S.td }}>Họ và tên:</td>
-              <td style={{ ...S.bold, ...S.td }}>{data.HO_TEN}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>CCCD:</td>
-              <td style={S.td}>{data.CCCD}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Ngày cấp:</td>
-              <td style={S.td}>{data.NGAY_CAP}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Nơi cấp:</td>
-              <td style={S.td}>{data.NOI_CAP}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Địa chỉ thường trú:</td>
-              <td style={S.td}>{data.DIA_CHI}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Số điện thoại liên hệ:</td>
-              <td style={S.td}>{data.SDT}</td>
-            </tr>
-          </tbody>
-        </table>
+       <ul
+  style={{
+    fontSize: "12pt",
+    marginBottom: "16px",
+    paddingLeft: "40px",
+     listStyleType: "disc",
+  }}
+>
+  <li style={{ marginBottom: "6px" }}>
+    <span style={{ fontWeight: "bold" }}>Họ và tên:</span>{" "}
+    <span style={{ fontWeight: "bold" }}>{data.HO_TEN}</span>.
+  </li>
+
+  <li style={{ marginBottom: "6px" }}>
+    <span style={{ fontWeight: "bold" }}>CCCD:</span> {data.CCCD};{" "}
+    <span style={{ fontWeight: "bold" }}>Ngày cấp:</span> {data.NGAY_CAP};{" "}
+    <span style={{ fontWeight: "bold" }}>Nơi cấp:</span> {data.NOI_CAP}.
+  </li>
+
+  <li style={{ marginBottom: "6px" }}>
+    <span style={{ fontWeight: "bold" }}>Địa chỉ thường trú:</span>{" "}
+    {data.DIA_CHI}.
+  </li>
+
+  <li>
+    <span style={{ fontWeight: "bold" }}>Số điện thoại liên hệ:</span>{" "}
+    {data.SDT}.
+  </li>
+</ul>
       </div>
 
       <div style={S.section}>
@@ -150,24 +170,29 @@ export function AssetPledgeContractView({
           Bên B đồng ý cầm cố tài sản thuộc sở hữu của mình cho Bên A để đảm
           bảo nghĩa vụ thanh toán khoản vay, cụ thể như sau:
         </p>
-        <table style={{ ...S.table, border: "1px solid #000", marginBottom: "12px" }}>
-          <tbody>
-            <tr>
-              <td style={{ width: "28%", ...S.tdBorder }}>Loại tài sản:</td>
-              <td style={S.tdBorder}>{data.LOAI_TS}</td>
-            </tr>
-            <tr>
-              <td style={S.tdBorder}>Chi tiết:</td>
-              <td style={S.tdBorder}>{data.CHI_TIET}</td>
-            </tr>
-            <tr>
-              <td style={S.tdBorder}>Tình trạng tài sản:</td>
-              <td style={S.tdBorder}>
-                {data.TINH_TRANG} (IMEI: {data.IMEI} - Serial: {data.SERIAL})
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <ul
+  style={{
+    fontSize: "12pt",
+    marginBottom: "16px",
+    paddingLeft: "40px",
+     listStyleType: "disc",
+  }}
+>
+  <li style={{ marginBottom: "6px" }}>
+    <span style={{ fontWeight: "bold" }}>Loại tài sản:</span>{" "}
+    {data.LOAI_TS}
+  </li>
+
+  <li style={{ marginBottom: "6px" }}>
+    <span style={{ fontWeight: "bold" }}>Chi tiết:</span>{" "}
+    {data.CHI_TIET} (IMEI: {data.IMEI} - Serial: {data.SERIAL})
+  </li>
+
+  <li>
+    <span style={{ fontWeight: "bold" }}>Tình trạng tài sản:</span>{" "}
+    {data.TINH_TRANG} (IMEI: {data.IMEI} - Serial: {data.SERIAL})
+  </li>
+</ul>
         <p style={{ fontSize: "12pt", marginBottom: "16px" }}>
           <strong>Cam kết về tài sản:</strong> Bên B cam kết tài sản nêu trên
           thuộc quyền sở hữu hợp pháp của Bên B, không có tranh chấp, và không
@@ -181,18 +206,36 @@ export function AssetPledgeContractView({
         <h3 style={S.heading}>
           ĐIỀU 2: NỘI DUNG KHOẢN VAY VÀ PHƯƠNG THỨC THANH TOÁN
         </h3>
-        <p style={{ marginBottom: "8px" }}>
-          Số tiền vay (Gốc): <strong>{data.SO_TIEN_VAY}</strong>.
-        </p>
-        <p style={{ marginBottom: "8px" }}>
-          Thời hạn vay: Tối đa 30 ngày kể từ ngày giải ngân.
-        </p>
-        <p style={{ marginBottom: "8px" }}>Lãi suất: {data.LAI_SUAT}</p>
-        <p style={{ marginBottom: "8px" }}>
-          Phương thức trả nợ: Gốc trả cuối kỳ; Lãi và phí được tính dựa trên
-          thời điểm tất toán thực tế theo các mốc thời gian quy định tại Điều
-          3.
-        </p>
+     <ol
+  style={{
+    fontSize: "12pt",
+    marginBottom: "16px",
+    paddingLeft: "40px",
+        listStyleType: "decimal",
+  }}
+>
+  <li style={{ marginBottom: "6px" }}>
+    <span style={{ fontWeight: "bold" }}>
+      Số tiền vay (Gốc): {data.SO_TIEN_VAY}
+    </span>.
+  </li>
+
+  <li style={{ marginBottom: "6px" }}>
+    <span style={{ fontWeight: "bold" }}>Thời hạn vay:</span>{" "}
+    Tối đa 30 ngày kể từ ngày giải ngân.
+  </li>
+
+  <li style={{ marginBottom: "6px" }}>
+    <span style={{ fontWeight: "bold" }}>Lãi suất:</span>{" "}
+    {data.LAI_SUAT}.
+  </li>
+
+  <li>
+    <span style={{ fontWeight: "bold" }}>Phương thức trả nợ:</span>{" "}
+    Gốc trả cuối kỳ; Lãi và phí được tính dựa trên thời điểm tất toán thực tế
+    theo các mốc thời gian quy định tại Điều 3.
+  </li>
+</ol>
       </div>
 
       {/* Điều 3 */}
@@ -233,106 +276,198 @@ export function AssetPledgeContractView({
         <h3 style={S.heading}>
           ĐIỀU 4: QUYỀN LỰA CHỌN THUÊ LẠI TÀI SẢN CẦM CỐ
         </h3>
-        <p style={{ marginBottom: "8px" }}>
-          <strong>4.1. Quyền tự do lựa chọn:</strong> Bên B (bên cầm cố tài
-          sản) được quyền tự do lựa chọn việc có thuê lại hoặc không thuê lại
-          tài sản đã cầm cố cho Bên A sau khi ký hợp đồng cầm cố này.
-        </p>
-        <p style={{ marginBottom: "8px" }}>
-          <strong>4.2. Tính độc lập của giao dịch:</strong> Việc thuê lại tài
-          sản (nếu có) sẽ được các bên thỏa thuận bằng một Hợp đồng thuê tài
-          sản riêng biệt, độc lập với hợp đồng cầm cố này. Hợp đồng cầm cố và
-          Hợp đồng thuê (nếu có) là hai giao dịch pháp lý độc lập.
-        </p>
-        <p style={{ marginBottom: "8px" }}>
-          <strong>4.3. Xử lý trong trường hợp không thuê lại:</strong> Trường
-          hợp Bên B không thuê lại tài sản, tài sản cầm cố sẽ được Bên A quản
-          lý, lưu giữ và bảo quản tại kho của Bên A theo đúng quy định pháp
-          luật.
-        </p>
-        <p style={{ marginBottom: "8px" }}>
-          <strong>4.4. Xử lý trong trường hợp thuê lại:</strong> Trường hợp
-          Bên B có nhu cầu thuê lại tài sản, các bên sẽ ký hợp đồng thuê tài
-          sản riêng, trong đó quy định cụ thể về giá thuê, thời hạn, và trách
-          nhiệm của các bên.
-        </p>
-        <p style={{ marginBottom: "8px" }}>
-          <strong>4.5. Xác nhận:</strong> Việc thuê lại tài sản là hoàn toàn
-          tự nguyện. Việc không ký hợp đồng thuê không ảnh hưởng đến quyền và
-          nghĩa vụ theo hợp đồng cầm cố này.
-        </p>
+<ol
+  style={{
+    fontSize: "12pt",
+    marginBottom: "16px",
+    paddingLeft: "40px",
+        listStyleType: "decimal",
+  }}
+>
+  <li style={{ marginBottom: "8px" }}>
+    <span style={{ fontWeight: "bold" }}>Quyền tự do lựa chọn:</span>{" "}
+    Bên B (bên cầm cố tài sản) được quyền tự do lựa chọn việc có thuê lại
+    hoặc không thuê lại tài sản đã cầm cố cho Bên A sau khi ký hợp đồng
+    cầm cố này.
+  </li>
+
+  <li style={{ marginBottom: "8px" }}>
+    <span style={{ fontWeight: "bold" }}>Tính độc lập của giao dịch:</span>
+
+    <ul
+      style={{
+        marginTop: "6px",
+        paddingLeft: "40px",
+        listStyleType: "circle",
+      }}
+    >
+      <li style={{ marginBottom: "4px" }}>
+        Việc thuê lại tài sản (nếu có) sẽ được các bên thỏa thuận bằng
+        một Hợp đồng thuê tài sản riêng biệt, độc lập với hợp đồng cầm
+        cố này.
+      </li>
+      <li style={{ marginBottom: "4px" }}>
+        Hợp đồng thuê (nếu được ký) không phải là điều kiện bắt buộc để
+        hợp đồng cầm cố này có hiệu lực.
+      </li>
+      <li>
+        Hợp đồng cầm cố và Hợp đồng thuê (nếu có) là hai giao dịch pháp
+        lý độc lập.
+      </li>
+    </ul>
+  </li>
+
+  <li style={{ marginBottom: "8px" }}>
+    <span style={{ fontWeight: "bold" }}>
+      Xử lý trong trường hợp không thuê lại:
+    </span>{" "}
+    Trường hợp Bên B không thuê lại tài sản, tài sản cầm cố sẽ được
+    Bên A quản lý, lưu giữ và bảo quản tại kho của Bên A theo đúng
+    quy định pháp luật và theo thỏa thuận tại Điều 5 hợp đồng này.
+  </li>
+
+  <li style={{ marginBottom: "8px" }}>
+    <span style={{ fontWeight: "bold" }}>
+      Xử lý trong trường hợp thuê lại:
+    </span>{" "}
+    Trường hợp Bên B có nhu cầu thuê lại tài sản, các bên sẽ ký hợp
+    đồng thuê tài sản riêng, trong đó quy định cụ thể về:
+
+    <ul
+      style={{
+        marginTop: "6px",
+        paddingLeft: "40px",
+        listStyleType: "circle",
+      }}
+    >
+      <li>Giá thuê, phương thức thanh toán;</li>
+      <li>Thời hạn thuê;</li>
+      <li>Quyền và nghĩa vụ của các bên;</li>
+      <li>Trách nhiệm bồi thường, bảo hiểm (nếu có).</li>
+    </ul>
+  </li>
+
+  <li>
+    <span style={{ fontWeight: "bold" }}>Xác nhận của các bên:</span>{" "}
+    Các bên xác nhận rằng việc thuê lại tài sản là hoàn toàn tự
+    nguyện, không bị ép buộc. Việc không ký hợp đồng thuê lại không
+    ảnh hưởng đến quyền và nghĩa vụ của các bên theo hợp đồng cầm cố này.
+  </li>
+</ol>
       </div>
 
       {/* Điều 5 */}
       <div style={S.section}>
         <h3 style={S.heading}>ĐIỀU 5: NGHĨA VỤ CỦA CÁC BÊN</h3>
-        <p style={{ marginBottom: "8px" }}>
-          <strong>5.1. Trách nhiệm của Bên A:</strong>
-        </p>
-        <p style={{ marginBottom: "4px", marginLeft: "10px" }}>
-          Bảo quản tài sản cầm cố đúng theo điều kiện thực tế (Trừ trường hợp
-          đã bàn giao lại cho Bên B thuê theo Điều 4).
-        </p>
-        <p style={{ marginBottom: "4px", marginLeft: "10px" }}>
-          Hoàn trả lại tài sản cho Bên B ngay sau khi Bên B hoàn thành nghĩa
-          vụ tài chính.
-        </p>
-        <p style={{ marginBottom: "8px", marginLeft: "10px" }}>
-          Bên A không chịu trách nhiệm đối với các hao mòn tự nhiên, hư hỏng
-          do tính chất cơ lý hóa của tài sản trong quá trình lưu kho.
-        </p>
-        <p style={{ marginBottom: "8px" }}>
-          <strong>5.2. Trách nhiệm của Bên B:</strong>
-        </p>
-        <p style={{ marginBottom: "4px", marginLeft: "10px" }}>
-          Thanh toán đầy đủ cả gốc và lãi đúng thời hạn đã cam kết.
-        </p>
-        <p style={{ marginLeft: "10px" }}>
-          Chịu trách nhiệm về nguồn gốc và tính pháp lý của tài sản cầm cố.
-        </p>
+        <div style={{ fontSize: "12pt", marginBottom: "16px" }}>
+  <p style={{ fontWeight: "bold", marginBottom: "6px" }}>
+    Trách nhiệm của Bên A:
+  </p>
+
+  <ul
+    style={{
+      paddingLeft: "40px",
+      marginBottom: "12px",
+      listStyleType: "disc",
+    }}
+  >
+    <li style={{ marginBottom: "6px" }}>
+      Bảo quản tài sản cầm cố đúng theo điều kiện thực tế
+      (Trừ trường hợp đã bàn giao lại cho Bên B thuê theo Điều 4).
+    </li>
+    <li style={{ marginBottom: "6px" }}>
+      Hoàn trả lại tài sản cho Bên B ngay sau khi Bên B hoàn thành
+      nghĩa vụ tài chính.
+    </li>
+    <li>
+      Bên A không chịu trách nhiệm đối với các hao mòn tự nhiên,
+      hư hỏng do tính chất cơ lý hóa của tài sản trong quá trình lưu kho.
+    </li>
+  </ul>
+
+  <p style={{ fontWeight: "bold", marginBottom: "6px" }}>
+    Trách nhiệm của Bên B:
+  </p>
+
+  <ul
+    style={{
+      paddingLeft: "40px",
+      listStyleType: "disc",
+    }}
+  >
+    <li style={{ marginBottom: "6px" }}>
+      Thanh toán đầy đủ cả gốc và lãi đúng thời hạn đã cam kết.
+    </li>
+    <li>
+      Chịu trách nhiệm về nguồn gốc và tính pháp lý của tài sản cầm cố.
+    </li>
+  </ul>
+</div>
       </div>
 
       {/* Điều 6 */}
       <div style={S.section}>
         <h3 style={S.heading}>ĐIỀU 6: XỬ LÝ VI PHẠM VÀ TÀI SẢN CẦM CỐ</h3>
-        <p style={{ marginBottom: "8px" }}>
-          <strong>6.1.</strong> Trường hợp Bên B không thực hiện nghĩa vụ
-          thanh toán đúng hạn (quá hạn so với Ngày 30), Bên B sẽ mất quyền
-          hưởng các ưu đãi (nếu có).
-        </p>
-        <p style={{ marginBottom: "8px" }}>
-          <strong>6.2.</strong> Nếu Bên B vi phạm nghĩa vụ thanh toán quá 08
-          (tám) ngày kể từ ngày đến hạn (Mốc 3), Bên A có toàn quyền xử lý tài
-          sản cầm cố để thu hồi nợ (bao gồm nhưng không giới hạn: bán, thanh
-          lý, chuyển nhượng tài sản).
-        </p>
-        <p style={{ marginBottom: "16px" }}>
-          <strong>6.3.</strong> Việc xử lý tài sản được thực hiện theo thỏa
-          thuận tại Hợp đồng này và quy định của pháp luật hiện hành. Bên B
-          mặc nhiên đồng ý và không có quyền khiếu nại về sau.
-        </p>
+       <div style={{ marginBottom: "16px", fontSize: "12pt", lineHeight: 1.6 }}>
+  <ol
+    style={{
+      paddingLeft: "40px",
+      margin: 0,
+          listStyleType: "decimal",
+    }}
+  >
+    <li style={{ marginBottom: "8px" }}>
+      Trường hợp Bên B không thực hiện nghĩa vụ thanh toán đúng hạn
+      (quá hạn so với Ngày 30), Bên B sẽ mất quyền hưởng các ưu đãi (nếu có).
+    </li>
+
+    <li style={{ marginBottom: "8px" }}>
+      Nếu Bên B vi phạm nghĩa vụ thanh toán quá 08 (tám) ngày kể từ
+      ngày đến hạn (Mốc 3), Bên A có toàn quyền xử lý tài sản cầm cố
+      để thu hồi nợ (bao gồm nhưng không giới hạn: bán, thanh lý,
+      chuyển nhượng tài sản).
+    </li>
+
+    <li>
+      Việc xử lý tài sản được thực hiện theo thỏa thuận tại Hợp đồng này
+      và quy định của pháp luật hiện hành. Bên B mặc nhiên đồng ý và
+      không có quyền khiếu nại về sau.
+    </li>
+  </ol>
+</div>
       </div>
 
       {/* Điều 7 */}
       <div style={S.section}>
         <h3 style={S.heading}>ĐIỀU 7: CAM KẾT CỦA BÊN CẦM CỐ</h3>
         <p style={{ marginBottom: "8px" }}>Bên B xác nhận và cam kết:</p>
-        <p style={{ marginBottom: "4px", marginLeft: "10px" }}>
-          Đã được nhân viên Bên A tư vấn, giải thích chi tiết và hiểu rõ về
-          khoản vay, lãi suất, và quyền lựa chọn thuê lại tài sản tại Điều 4.
-        </p>
-        <p style={{ marginBottom: "4px", marginLeft: "10px" }}>
-          Hoàn toàn tự nguyện ký kết hợp đồng này, không bị lừa dối hay ép
-          buộc.
-        </p>
-        <p style={{ marginBottom: "4px", marginLeft: "10px" }}>
-          Cam kết tuân thủ đúng nghĩa vụ trả nợ, không viện dẫn các lý do chủ
-          quan để từ chối hoặc trì hoãn nghĩa vụ đã cam kết.
-        </p>
-        <p style={{ marginBottom: "16px", marginLeft: "10px" }}>
-          Mọi thỏa thuận bằng miệng hoặc tin nhắn không được ghi trong hợp
-          đồng này đều không có giá trị pháp lý.
-        </p>
+      <ol
+    style={{
+      paddingLeft: "40px",
+      margin: 0,
+          listStyleType: "decimal",
+    }}
+  >
+    <li style={{ marginBottom: "8px" }}>
+      Đã được nhân viên Bên A tư vấn, giải thích chi tiết và hiểu rõ về
+      khoản vay, lãi suất và quyền lựa chọn thuê lại tài sản tại Điều 4.
+    </li>
+
+    <li style={{ marginBottom: "8px" }}>
+      Hoàn toàn tự nguyện ký kết hợp đồng này, không bị lừa dối hay ép buộc.
+    </li>
+
+    <li style={{ marginBottom: "8px" }}>
+      Cam kết tuân thủ đúng nghĩa vụ trả nợ, không viện dẫn các lý do chủ quan
+      (như không hiểu, không biết, nhầm lẫn…) để từ chối hoặc trì hoãn nghĩa vụ
+      đã cam kết.
+    </li>
+
+    <li>
+      Mọi thỏa thuận bằng miệng hoặc tin nhắn không được ghi trong hợp đồng này
+      đều không có giá trị pháp lý.
+    </li>
+  </ol>
       </div>
 
       {/* Điều 8 with signatures */}
@@ -355,11 +490,11 @@ export function AssetPledgeContractView({
           }}
         >
           <div style={{ ...S.center, width: "45%" }}>
-            <p style={{ ...S.bold, marginBottom: "80px" }}>ĐẠI DIỆN BÊN A</p>
+            <p style={{ ...S.bold}}>ĐẠI DIỆN BÊN A</p>
             <p>(Ký, ghi rõ họ tên, đóng dấu)</p>
           </div>
           <div style={{ ...S.center, width: "45%" }}>
-            <p style={{ ...S.bold, marginBottom: "80px" }}>BÊN B</p>
+            <p style={{ ...S.bold }}>BÊN B</p>
             <p>(Ký, ghi rõ họ tên)</p>
           </div>
         </div>
