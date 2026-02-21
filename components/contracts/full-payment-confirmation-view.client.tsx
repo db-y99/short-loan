@@ -47,7 +47,7 @@ export function FullPaymentConfirmationView({
         <p style={{ margin: "5px 0", fontSize: "12pt" }}>
           Độc lập – Tự do – Hạnh phúc
         </p>
-        <hr style={{ width: "100px", margin: "10px auto", border: "1px solid #000" }} />
+        <div>---o0o---</div>
       </div>
 
       <div style={{ ...S.center, margin: "24px 0" }}>
@@ -69,71 +69,79 @@ export function FullPaymentConfirmationView({
         <p style={{ ...S.bold, marginBottom: "8px" }}>
           I. BÊN GIAO TIỀN (Bên nhận cầm cố):
         </p>
-        <table style={S.table}>
-          <tbody>
-            <tr>
-              <td style={{ width: "35%", ...S.td }}>Tên đơn vị/Doanh nghiệp:</td>
-              <td style={{ ...S.bold, ...S.td }}>{data.BEN_GIAO_TEN}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Đại diện Ông/Bà:</td>
-              <td style={S.td}>{data.BEN_GIAO_DAI_DIEN}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Chức vụ:</td>
-              <td style={S.td}>{data.BEN_GIAO_CHUC_VU}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Địa chỉ:</td>
-              <td style={S.td}>{data.BEN_GIAO_DIA_CHI}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Mã số thuế/CMND/CCCD số:</td>
-              <td style={S.td}>
-                {data.BEN_GIAO_MST} cấp ngày: 14/01/2025 tại: Ninh Kiều - Thuế
-                cơ sở 1 thành phố Cần Thơ
-              </td>
-            </tr>
-            <tr>
-              <td style={S.td}>Số điện thoại:</td>
-              <td style={S.td}>{data.BEN_GIAO_SDT}</td>
-            </tr>
-          </tbody>
-        </table>
+      <div style={{ fontSize: "12pt", lineHeight: 1.6 }}>
+  <ul
+    style={{
+      paddingLeft: "40px",
+      listStyleType: "disc",
+      margin: 0,
+    }}
+  >
+    <li style={{ marginBottom: "6px" }}>
+      Tên đơn vị/Doanh nghiệp:{" "}
+      <strong>{data.BEN_GIAO_TEN}</strong>
+    </li>
+
+    <li style={{ marginBottom: "6px" }}>
+      Đại diện Ông/Bà:{" "}
+      <strong>{data.BEN_GIAO_DAI_DIEN}</strong>
+    </li>
+
+    <li style={{ marginBottom: "6px" }}>
+      Chức vụ:{" "}
+      <strong>{data.BEN_GIAO_CHUC_VU}</strong>
+    </li>
+
+    <li style={{ marginBottom: "6px" }}>
+      Địa chỉ:{" "}
+      <strong>{data.BEN_GIAO_DIA_CHI}</strong>
+    </li>
+
+    <li style={{ marginBottom: "6px" }}>
+      Mã số thuế/CMND/CCCD số:{" "}
+      <strong>{data.BEN_GIAO_MST}</strong> cấp ngày: 14/01/2025 tại:
+      Ninh Kiều - Thuế cơ sở 1 thành phố Cần Thơ
+    </li>
+
+    <li>
+      Số điện thoại:{" "}
+      <strong>{data.BEN_GIAO_SDT}</strong>
+    </li>
+  </ul>
+</div>
       </div>
 
       <div style={S.section}>
         <p style={{ ...S.bold, marginBottom: "8px" }}>
           II. BÊN NHẬN TIỀN (Bên cầm cố):
         </p>
-        <table style={S.table}>
-          <tbody>
-            <tr>
-              <td style={{ width: "35%", ...S.td }}>Họ và tên:</td>
-              <td style={{ ...S.bold, ...S.td }}>{data.HO_TEN}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>CCCD:</td>
-              <td style={S.td}>{data.CCCD}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Ngày cấp:</td>
-              <td style={S.td}>{data.NGAY_CAP}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Nơi cấp:</td>
-              <td style={S.td}>{data.NOI_CAP}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Địa chỉ thường trú:</td>
-              <td style={S.td}>{data.DIA_CHI}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Số điện thoại liên hệ:</td>
-              <td style={S.td}>{data.SDT}</td>
-            </tr>
-          </tbody>
-        </table>
+       <div style={{ fontSize: "12pt", lineHeight: 1.6 }}>
+  <ul
+    style={{
+      paddingLeft: "40px",
+      listStyleType: "disc",
+      margin: 0,
+    }}
+  >
+    <li style={{ marginBottom: "6px" }}>
+      Họ và tên: <strong>{data.HO_TEN}</strong>
+    </li>
+
+    <li style={{ marginBottom: "6px" }}>
+      CCCD: <strong>{data.CCCD}</strong>; Ngày cấp:{" "}
+      <strong>{data.NGAY_CAP}</strong>; Nơi cấp:{" "}
+      <strong>{data.NOI_CAP}</strong>.
+    </li>
+
+    <li style={{ marginBottom: "6px" }}>
+      Địa chỉ thường trú: <strong>{data.DIA_CHI}</strong>
+    </li>
+
+    <li>
+      Số điện thoại liên hệ: <strong>{data.SDT}</strong>.
+    </li>
+  </ul>
+</div>
       </div>
 
       <div style={S.section}>
@@ -171,17 +179,29 @@ export function FullPaymentConfirmationView({
 
       <div style={S.section}>
         <p style={{ ...S.bold, marginBottom: "8px" }}>IV. CAM KẾT:</p>
-        <p style={{ marginBottom: "8px" }}>
-          Bên Nhận Tiền xác nhận đã nhận đủ số tiền nêu trên và không có bất kỳ
-          khiếu nại nào về số tiền đã nhận.
-        </p>
-        <p style={{ marginBottom: "8px" }}>
-          Việc giao nhận tiền hoàn toàn tự nguyện, không bị ép buộc hay lừa dối.
-        </p>
-        <p style={{ marginBottom: "8px" }}>
-          Giấy xác nhận này là một bộ phận không tách rời của Hợp đồng cầm cố
-          đã ký giữa hai bên.
-        </p>
+        <div style={{ fontSize: "12pt", lineHeight: 1.6 }}>
+  <ol
+    style={{
+      paddingLeft: "40px",
+      listStyleType: "decimal",
+      marginBottom: "8px",
+    }}
+  >
+    <li style={{ marginBottom: "6px" }}>
+      Bên Nhận Tiền xác nhận đã nhận đủ số tiền nêu trên và không có bất kỳ
+      khiếu nại nào về số tiền đã nhận.
+    </li>
+
+    <li style={{ marginBottom: "6px" }}>
+      Việc giao nhận tiền hoàn toàn tự nguyện, không bị ép buộc hay lừa dối.
+    </li>
+
+    <li>
+      Giấy xác nhận này là một bộ phận không tách rời của Hợp đồng cầm cố
+      đã ký giữa hai bên.
+    </li>
+  </ol>
+</div>
       </div>
 
       <div style={S.section}>
@@ -200,13 +220,13 @@ export function FullPaymentConfirmationView({
           }}
         >
           <div style={{ ...S.center, width: "45%" }}>
-            <p style={{ ...S.bold, marginBottom: "60px" }}>
+            <p style={{ ...S.bold }}>
               ĐẠI DIỆN BÊN GIAO TIỀN
             </p>
             <p>(Ký, ghi rõ họ tên)</p>
           </div>
           <div style={{ ...S.center, width: "45%" }}>
-            <p style={{ ...S.bold, marginBottom: "60px" }}>BÊN NHẬN TIỀN</p>
+            <p style={{ ...S.bold }}>BÊN NHẬN TIỀN</p>
             <p>(Ký, ghi rõ họ tên)</p>
           </div>
         </div>

@@ -49,11 +49,11 @@ export function AssetDisposalAuthorizationView({
         <p style={{ margin: "5px 0", fontSize: "12pt" }}>
           Độc lập – Tự do – Hạnh phúc
         </p>
-        <hr style={{ width: "100px", margin: "10px auto", border: "1px solid #000" }} />
+        <div>---o0o---</div>
       </div>
 
       {/* Title */}
-      <div style={{ ...S.center, margin: "30px 0" }}>
+      <div style={{ ...S.center, margin: "20px 0" }}>
         <h1 style={{ fontSize: "16pt", ...S.bold, margin: "10px 0" }}>
           GIẤY ỦY QUYỀN XỬ LÝ TÀI SẢN CẦM CỐ
         </h1>
@@ -62,72 +62,77 @@ export function AssetDisposalAuthorizationView({
       {/* Bên ủy quyền */}
       <div style={S.section}>
         <p style={{ ...S.bold, marginBottom: "10px" }}>BÊN ỦY QUYỀN</p>
-        <table style={S.table}>
-          <tbody>
-            <tr>
-              <td style={{ width: "30%", ...S.td }}>Họ và tên:</td>
-              <td style={{ ...S.bold, ...S.td }}>{data.HO_TEN}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>CCCD:</td>
-              <td style={S.td}>{data.CCCD}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Ngày cấp:</td>
-              <td style={S.td}>{data.NGAY_CAP}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Nơi cấp:</td>
-              <td style={S.td}>{data.NOI_CAP}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Địa chỉ thường trú:</td>
-              <td style={S.td}>{data.DIA_CHI}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Số điện thoại liên hệ:</td>
-              <td style={S.td}>{data.SDT}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div style={{ marginBottom: "20px" }}>
+
+  <ul
+    style={{
+      paddingLeft: "40px",
+      listStyleType: "disc",
+      margin: 0,
+      fontSize: "12pt",
+      lineHeight: 1.6,
+    }}
+  >
+    <li style={{ marginBottom: "6px" }}>
+      Họ và tên: <strong>{data.HO_TEN}</strong>
+    </li>
+
+    <li style={{ marginBottom: "6px" }}>
+      CCCD: <strong>{data.CCCD}</strong>; Ngày cấp:{" "}
+      <strong>{data.NGAY_CAP}</strong>; Nơi cấp:{" "}
+      <strong>{data.NOI_CAP}</strong>.
+    </li>
+
+    <li style={{ marginBottom: "6px" }}>
+      Địa chỉ thường trú: <strong>{data.DIA_CHI}</strong>
+    </li>
+
+    <li>
+      Số điện thoại liên hệ: <strong>{data.SDT}</strong>.
+    </li>
+  </ul>
+</div>
       </div>
 
       {/* Bên được ủy quyền */}
       <div style={S.section}>
         <p style={{ ...S.bold, marginBottom: "10px" }}>BÊN ĐƯỢC ỦY QUYỀN</p>
-        <table style={S.table}>
-          <tbody>
-            <tr>
-              <td style={{ width: "30%", ...S.td }}>
-                Tên đơn vị/Doanh nghiệp:
-              </td>
-              <td style={{ ...S.bold, ...S.td }}>{data.BEN_UU_QUYEN_TEN}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Đại diện Ông/Bà:</td>
-              <td style={S.td}>{data.BEN_UU_QUYEN_DAI_DIEN}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Chức vụ:</td>
-              <td style={S.td}>Giám đốc</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Địa chỉ:</td>
-              <td style={S.td}>{data.BEN_UU_QUYEN_DIA_CHI}</td>
-            </tr>
-            <tr>
-              <td style={S.td}>Mã số thuế:</td>
-              <td style={S.td}>
-                {data.BEN_UU_QUYEN_MST} cấp ngày 14/01/2025 tại Ninh Kiều -
-                Thuế cơ sở 1 thành phố Cần Thơ.
-              </td>
-            </tr>
-            <tr>
-              <td style={S.td}>Số điện thoại:</td>
-              <td style={S.td}>{data.BEN_UU_QUYEN_SDT}</td>
-            </tr>
-          </tbody>
-        </table>
+        <ul
+    style={{
+      paddingLeft: "40px",
+      listStyleType: "disc",
+      margin: 0,
+      fontSize: "12pt",
+      lineHeight: 1.6,
+    }}
+  >
+    <li style={{ marginBottom: "6px" }}>
+      Tên đơn vị/Doanh nghiệp:{" "}
+      <strong>{data.BEN_UU_QUYEN_TEN}</strong>
+    </li>
+
+    <li style={{ marginBottom: "6px" }}>
+      Đại diện Ông/Bà:{" "}
+      <strong>{data.BEN_UU_QUYEN_DAI_DIEN}</strong>
+    </li>
+
+    <li style={{ marginBottom: "6px" }}>
+      Chức vụ: <strong>Giám đốc</strong>
+    </li>
+
+    <li style={{ marginBottom: "6px" }}>
+      Địa chỉ: <strong>{data.BEN_UU_QUYEN_DIA_CHI}</strong>
+    </li>
+
+    <li style={{ marginBottom: "6px" }}>
+      Mã số thuế: <strong>{data.BEN_UU_QUYEN_MST}</strong> cấp ngày{" "}
+      <strong>14/01/2025</strong> tại Ninh Kiều - Thuế cơ sở 1 thành phố Cần Thơ.
+    </li>
+
+    <li>
+      Số điện thoại: <strong>{data.BEN_UU_QUYEN_SDT}</strong>
+    </li>
+  </ul>
       </div>
 
       {/* Điều 1 */}
@@ -135,34 +140,29 @@ export function AssetDisposalAuthorizationView({
         <h3 style={{ fontSize: "14pt", ...S.bold, marginBottom: "10px" }}>
           Điều 1. Tài sản ủy quyền xử lý
         </h3>
-        <table style={S.table}>
-          <tbody>
-            <tr>
-              <td style={{ width: "28%", padding: "8px", border: "1px solid #000" }}>
-                Loại tài sản:
-              </td>
-              <td style={{ padding: "8px", border: "1px solid #000" }}>
-                {data.LOAI_TS}
-              </td>
-            </tr>
-            <tr>
-              <td style={{ padding: "8px", border: "1px solid #000" }}>
-                Chi tiết:
-              </td>
-              <td style={{ padding: "8px", border: "1px solid #000" }}>
-                {data.CHI_TIET} (IMEI: {data.IMEI} - Serial: {data.SERIAL})
-              </td>
-            </tr>
-            <tr>
-              <td style={{ padding: "8px", border: "1px solid #000" }}>
-                Tình trạng tài sản:
-              </td>
-              <td style={{ padding: "8px", border: "1px solid #000" }}>
-                {data.TINH_TRANG}
-              </td>
-            </tr>
-          </tbody>
-        </table>
+       <ul
+    style={{
+      paddingLeft: "40px",
+      listStyleType: "disc",
+      margin: 0,
+      fontSize: "12pt",
+      lineHeight: 1.6,
+    }}
+  >
+    <li style={{ marginBottom: "6px" }}>
+      Loại tài sản: <strong>{data.LOAI_TS}</strong>
+    </li>
+
+    <li style={{ marginBottom: "6px" }}>
+      Chi tiết: <strong>{data.CHI_TIET}</strong> (IMEI:{" "}
+      <strong>{data.IMEI}</strong> - Serial:{" "}
+      <strong>{data.SERIAL}</strong>)
+    </li>
+
+    <li>
+      Tình trạng tài sản: <strong>{data.TINH_TRANG}</strong>
+    </li>
+  </ul>
       </div>
 
       {/* Điều 2 */}
@@ -170,21 +170,39 @@ export function AssetDisposalAuthorizationView({
         <h3 style={{ fontSize: "14pt", ...S.bold, marginBottom: "10px" }}>
           Điều 2. Phạm vi ủy quyền
         </h3>
-        <p style={{ marginBottom: "8px" }}>
-          Bên ủy quyền ủy quyền cho Bên được ủy quyền thực hiện các hành vi
-          thu hồi, bán, chuyển nhượng, sang tên và cấn trừ nghĩa vụ nợ đối với
-          tài sản nêu tại Điều 1 chỉ trong trường hợp Bên ủy quyền vi phạm nghĩa
-          vụ thanh toán theo Hợp đồng cầm cố.
-        </p>
-        <p style={{ marginBottom: "8px" }}>
-          Ủy quyền này không được đơn phương chấm dứt trong thời gian Bên ủy
-          quyền chưa hoàn thành đầy đủ nghĩa vụ tài chính theo Hợp đồng cầm cố.
-        </p>
-        <p style={{ marginBottom: "8px" }}>
-          Trước khi thực hiện việc xử lý tài sản, Bên được ủy quyền có trách
-          nhiệm thông báo cho Bên ủy quyền trong thời hạn hợp lý theo quy định
-          pháp luật, trừ trường hợp pháp luật có quy định khác.
-        </p>
+      <div style={{ fontSize: "12pt", lineHeight: 1.6 }}>
+  <ol
+    style={{
+      paddingLeft: "40px",
+      listStyleType: "decimal",
+      margin: 0,
+    }}
+  >
+    <li style={{ marginBottom: "8px" }}>
+      Bên ủy quyền ủy quyền cho Bên được ủy quyền thực hiện các hành vi
+      thu hồi, bán, chuyển nhượng, sang tên và cấn trừ nghĩa vụ nợ đối với
+      tài sản nêu tại Điều 1{" "}
+      <strong>
+        chỉ trong trường hợp Bên ủy quyền vi phạm nghĩa vụ thanh toán theo Hợp
+        đồng cầm cố
+      </strong>.
+    </li>
+
+    <li style={{ marginBottom: "8px" }}>
+      Ủy quyền này không được đơn phương chấm dứt{" "}
+      <strong>
+        trong thời gian Bên ủy quyền chưa hoàn thành đầy đủ nghĩa vụ tài chính
+      </strong>{" "}
+      theo Hợp đồng cầm cố.
+    </li>
+
+    <li>
+      Trước khi thực hiện việc xử lý tài sản, Bên được ủy quyền có trách
+      nhiệm thông báo cho Bên ủy quyền trong thời hạn hợp lý theo quy định
+      pháp luật, trừ trường hợp pháp luật có quy định khác.
+    </li>
+  </ol>
+</div>
       </div>
 
       {/* Điều 3 */}
@@ -203,12 +221,12 @@ export function AssetDisposalAuthorizationView({
           Điều 4. Xác nhận tự nguyện và đã được giải thích đầy đủ
         </h3>
         <p style={{ marginBottom: "8px" }}>
-          Bên ủy quyền xác nhận rằng việc ký kết Giấy ủy quyền này là hoàn toàn
-          tự nguyện, không bị ép buộc, đe dọa, lừa dối hoặc nhầm lẫn.
+          Bên ủy quyền xác nhận rằng việc ký kết Giấy ủy quyền này là <strong>hoàn toàn
+          tự nguyện</strong>, không bị ép buộc, đe dọa, lừa dối hoặc nhầm lẫn.
         </p>
         <p style={{ marginBottom: "8px" }}>
-          Bên ủy quyền xác nhận đã được Bên được ủy quyền giải thích đầy đủ, rõ
-          ràng và dễ hiểu về nội dung, phạm vi, quyền, nghĩa vụ và hậu quả pháp
+          Bên ủy quyền xác nhận đã được Bên được ủy quyền <strong>giải thích đầy đủ, rõ
+          ràng và dễ hiểu</strong> về nội dung, phạm vi, quyền, nghĩa vụ và hậu quả pháp
           lý phát sinh từ việc ký Giấy ủy quyền này, bao gồm cả quyền xử lý tài
           sản cầm cố trong trường hợp vi phạm nghĩa vụ.
         </p>
@@ -228,13 +246,13 @@ export function AssetDisposalAuthorizationView({
           }}
         >
           <div style={{ ...S.center, width: "45%" }}>
-            <p style={{ ...S.bold, marginBottom: "80px" }}>
+            <p style={{ ...S.bold}}>
               BÊN ĐƯỢC ỦY QUYỀN
             </p>
             <p>(Ký, ghi rõ họ tên, đóng dấu)</p>
           </div>
           <div style={{ ...S.center, width: "45%" }}>
-            <p style={{ ...S.bold, marginBottom: "80px" }}>BÊN ỦY QUYỀN</p>
+            <p style={{ ...S.bold }}>BÊN ỦY QUYỀN</p>
             <p>(Ký, ghi rõ họ tên)</p>
           </div>
         </div>
