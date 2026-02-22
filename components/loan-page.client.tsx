@@ -47,6 +47,18 @@ const LoansPageClient = ({ loans }: TProps) => {
     router.refresh();
   }, [router]);
 
+  const handleRefreshLoanDetails = useCallback(async () => {
+    if (!selectedLoan) return;
+    
+    setIsLoadingDetails(true);
+    const result = await getLoanDetailsAction(selectedLoan.id);
+    setIsLoadingDetails(false);
+
+    if (result.success) {
+      setSelectedLoan(result.data);
+    }
+  }, [selectedLoan]);
+
   return (
     <>
       <LoansTable
@@ -62,6 +74,7 @@ const LoansPageClient = ({ loans }: TProps) => {
           onClose={handleCloseModal}
           isLoading={isLoadingDetails}
           error={detailsError}
+          onRefresh={handleRefreshLoanDetails}
         />
       )}
     </>

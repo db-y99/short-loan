@@ -128,6 +128,7 @@ export const Navbar = () => {
             radius="full"
             variant="light"
           >
+            
             <Bell className="text-default-500" size={20} />
           </Button>
         </Badge>

@@ -1,9 +1,9 @@
 export type TLoanStatus =
-  | "pending"
-  | "approved"
-  | "rejected"
-  | "disbursed"
-  | "completed";
+  | "pending"      // Chờ duyệt
+  | "rejected"     // Từ chối
+  | "disbursed"    // Đang cầm (sau khi duyệt)
+  | "redeemed"     // Đã chuộc
+  | "liquidated";  // Thanh lý
 
 /** Loan row từ DB (loans + customer full_name) - dùng cho danh sách */
 export type TLoan = {
@@ -123,6 +123,12 @@ export type TLoanDetails = {
 
   /** ID folder Google Drive của khoản vay (dùng cho upload hợp đồng) */
   driveFolderId?: string;
+
+  /** Kỳ thanh toán hiện tại */
+  currentPeriod?: TPaymentPeriod;
+
+  /** Kỳ thanh toán kế tiếp (nếu gia hạn) */
+  nextPeriod?: TPaymentPeriod;
 
   activityLog?: TActivityLogEntry[];
 };

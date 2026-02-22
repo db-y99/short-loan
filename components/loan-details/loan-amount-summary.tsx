@@ -3,17 +3,31 @@ import { Calculator } from "lucide-react";
 import type { TLoanDetails } from "@/types/loan.types";
 import { formatCurrencyVND } from "@/lib/format";
 import SectionHeader from "@/components/section-header";
+import { calculateAppraisalFee } from "@/lib/loan-calculation";
+import { LOAN_TYPES } from "@/constants/loan";
 
 type TProps = {
   loanDetails: TLoanDetails;
 };
 
 const LoanAmountSummary = ({ loanDetails }: TProps) => {
-  const appraisalFeePercentage = loanDetails.appraisalFeePercentage ?? 5;
+  // Xác định loan type để tính phí thẩm định
+  let loanType = LOAN_TYPES.INSTALLMENT_3_PERIODS;
+  if (loanDetails.loanType.includes("Theo mốc")) {
+    loanType = LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE;
+  } else if (loanDetails.loanType.includes("Giữ TS")) {
+    loanType = LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD;
+  }
+
+  // Tính phí thẩm định theo công thức mới
   const appraisalFee =
     loanDetails.appraisalFee ??
-    Math.round((loanDetails.loanAmount * appraisalFeePercentage) / 100);
+    calculateAppraisalFee(loanDetails.loanAmount, loanType);
+
   const actualAmount = loanDetails.loanAmount - appraisalFee;
+
+  // Chỉ hiển thị phí thẩm định nếu > 0
+  const showAppraisalFee = appraisalFee > 0;
 
   return (
     <Card shadow="sm" className="col-span-2">
@@ -28,16 +42,20 @@ const LoanAmountSummary = ({ loanDetails }: TProps) => {
           </span>
         </div>
 
-        <Divider />
+        {showAppraisalFee && (
+          <>
+            <Divider />
 
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-default-600">
-            Phí thẩm định ({appraisalFeePercentage}%):
-          </span>
-          <span className="text-base font-semibold text-danger">
-            -{formatCurrencyVND(appraisalFee)}
-          </span>
-        </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-default-600">
+                Phí thẩm định (5%):
+              </span>
+              <span className="text-base font-semibold text-danger">
+                -{formatCurrencyVND(appraisalFee)}
+              </span>
+            </div>
+          </>
+        )}
 
         <Divider />
 
@@ -50,9 +68,12 @@ const LoanAmountSummary = ({ loanDetails }: TProps) => {
           </span>
         </div>
 
-        <p className="text-xs text-default-500 italic mt-2">
-          * Phí thẩm định chỉ thu 1 lần đầu.
-        </p>
+        {showAppraisalFee && (
+          <p className="text-xs text-default-500 italic mt-2">
+            * Phí thẩm định chỉ thu 1 lần đầu (áp dụng cho khoản vay ≥ 5 triệu
+            đồng, chỉ Gói 1).
+          </p>
+        )}
       </CardBody>
     </Card>
   );

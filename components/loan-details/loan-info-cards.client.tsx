@@ -186,7 +186,7 @@ const LoanInfoCards = ({
             </div>
           </div>
           {showAssetGallery && (
-            <AssetGallery assetImages={loanDetails.asset.images} />
+            <AssetGallery assetImages={loanDetails.asset.images} loanId={loanDetails.id} />
           )}
         </CardBody>
       </Card>

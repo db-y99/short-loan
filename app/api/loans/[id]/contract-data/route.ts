@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getLoanDetailsService } from "@/services/loans/loans.service";
 import {
   buildAssetPledgeContractData,
@@ -8,32 +8,40 @@ import {
 } from "@/lib/contract-data";
 import { CONTRACT_TYPE } from "@/types/contract.types";
 
-export const runtime = "nodejs";
-
-type TContractType = (typeof CONTRACT_TYPE)[keyof typeof CONTRACT_TYPE];
-
 export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> },
+  request: NextRequest,
+  { params }: { params: { id: string } },
 ) {
   try {
-    const { id } = await params;
-    const { searchParams } = new URL(req.url);
-    const type = (searchParams.get("type") ?? CONTRACT_TYPE.ASSET_PLEDGE) as TContractType;
+    const loanId = params.id;
+    const searchParams = request.nextUrl.searchParams;
+    const contractType = searchParams.get("type");
 
-    const loan = await getLoanDetailsService(id);
+    if (!contractType) {
+      return NextResponse.json(
+        { error: "Contract type is required" },
+        { status: 400 },
+      );
+    }
+
+    // Lấy loan details
+    const loan = await getLoanDetailsService(loanId);
 
     if (!loan) {
       return NextResponse.json(
-        { error: "Không tìm thấy khoản vay" },
+        { error: "Loan not found" },
         { status: 404 },
       );
     }
 
     const folderId = loan.driveFolderId ?? "";
 
-    let contractData: unknown;
-    switch (type) {
+    // Build contract data based on type
+    let contractData;
+    switch (contractType) {
+      case CONTRACT_TYPE.ASSET_PLEDGE:
+        contractData = buildAssetPledgeContractData(loan, folderId);
+        break;
       case CONTRACT_TYPE.ASSET_LEASE:
         contractData = buildAssetLeaseContractData(loan, folderId);
         break;
@@ -43,17 +51,18 @@ export async function GET(
       case CONTRACT_TYPE.ASSET_DISPOSAL:
         contractData = buildAssetDisposalAuthorizationData(loan, folderId);
         break;
-      case CONTRACT_TYPE.ASSET_PLEDGE:
       default:
-        contractData = buildAssetPledgeContractData(loan, folderId);
-        break;
+        return NextResponse.json(
+          { error: "Invalid contract type" },
+          { status: 400 },
+        );
     }
 
     return NextResponse.json(contractData);
-  } catch (err) {
-    console.error("[CONTRACT_DATA_ERROR]", err);
+  } catch (error) {
+    console.error("[CONTRACT_DATA_API_ERROR]", error);
     return NextResponse.json(
-      { error: "Lỗi khi tải dữ liệu hợp đồng" },
+      { error: "Failed to fetch contract data" },
       { status: 500 },
     );
   }

@@ -8,11 +8,16 @@ import {
   generateLoanCodeService,
   updateLoanDriveFolderIdService,
 } from "@/services/loans/loans.service";
-import { LOAN_TYPE_LABEL } from "@/constants/loan";
+import { LOAN_TYPE_LABEL, LOAN_TYPES, type TLoanType } from "@/constants/loan";
 import { parseFormattedNumber } from "@/lib/format";
 import { TCreateLoanPayload } from "@/types/loan.types";
 import { createLoanFolder } from "@/lib/google-drive";
 import { env } from "@/config/env";
+import { calculateAppraisalFee } from "@/lib/loan-calculation";
+import {
+  createPaymentCycleService,
+  saveDetailedPaymentPeriodsService,
+} from "@/services/payments/payment-periods.service";
 
 type TCreateLoanResult =
   | { success: true; data: { id: string; code: string; folderId: string } }
@@ -51,6 +56,11 @@ export const createLoanAction = async (
     const amount = parseFormattedNumber(input.loan_amount);
     const loanPackage = LOAN_TYPE_LABEL[input.loan_type] ?? input.loan_type;
 
+    // Tính phí thẩm định tự động
+    const loanType = input.loan_type as TLoanType;
+    const appraisalFee = calculateAppraisalFee(amount, loanType);
+    const appraisalFeePercentage = appraisalFee > 0 ? 5 : undefined;
+
     // 1) Create loan trước (chưa có attachments)
     // drive_folder_id tạm thời set = parent folder để satisfy NOT NULL
     const { id } = await createLoanService({
@@ -64,6 +74,8 @@ export const createLoanAction = async (
       amount,
       loan_package: loanPackage,
       loan_type: input.loan_type,
+      appraisal_fee_percentage: appraisalFeePercentage,
+      appraisal_fee: appraisalFee > 0 ? appraisalFee : undefined,
       bank_name: input.bank_name || null,
       bank_account_holder: input.bank_account_holder || null,
       bank_account_number: input.bank_account_number || null,
@@ -84,6 +96,30 @@ export const createLoanAction = async (
 
     // 3) Update loan.drive_folder_id = folderId
     await updateLoanDriveFolderIdService({ loanId: id, driveFolderId: folderId });
+
+    // 4) Tạo payment cycle và periods
+    const signedAt = new Date().toISOString();
+    const startDate = new Date().toISOString().split("T")[0];
+    const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .split("T")[0];
+
+    const cycleId = await createPaymentCycleService({
+      loanId: id,
+      cycleNumber: 1,
+      principal: amount,
+      startDate,
+      endDate,
+    });
+
+    // 5) Lưu payment periods vào DB
+    await saveDetailedPaymentPeriodsService({
+      loanId: id,
+      cycleId,
+      loanAmount: amount,
+      loanType: loanPackage,
+      signedAt,
+    });
 
     revalidatePath("/");
     return { success: true, data: { id, code, folderId } };

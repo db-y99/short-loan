@@ -156,7 +156,7 @@ export default function ContractPage() {
         >
           {generating ? `Đang tạo PDF... ${progress}%` : "Tải xuống PDF"}
         </Button>
-        <Button
+        {/* <Button
           color="success"
           variant="flat"
           onPress={handleUploadToDrive}
@@ -164,7 +164,7 @@ export default function ContractPage() {
           startContent={<CloudUpload className="w-4 h-4" />}
         >
           {generating ? `Đang xử lý... ${progress}%` : "Lưu lên Drive"}
-        </Button>
+        </Button> */}
        </div>
         </div>
       </div>

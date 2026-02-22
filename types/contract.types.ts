@@ -126,3 +126,12 @@ export const CONTRACT_TYPE = {
   FULL_PAYMENT: "full_payment_confirmation",
   ASSET_DISPOSAL: "asset_disposal_authorization",
 } as const;
+
+/** Contract file info từ DB */
+export type TContractFile = {
+  id: string;
+  name: string;
+  type: string;
+  fileId: string;
+  provider: string;
+};

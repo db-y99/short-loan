@@ -18,6 +18,8 @@ import {
   type TLoanType,
 } from "@/constants/loan";
 import { formatDateShortVN } from "@/lib/format";
+import { calculatePaymentPeriods } from "@/lib/payment-calculator";
+import { getPaymentPeriodsService } from "@/services/payments/payment-periods.service";
 
 /** Lấy danh sách loans với thông tin customer (full_name) */
 export const getLoansService = async (): Promise<TLoan[]> => {
@@ -368,6 +370,57 @@ export const getLoanDetailsService = async (
     serial?: string;
   } | null;
 
+  /* =========================
+     PAYMENT PERIODS (Lấy từ DB hoặc tính động)
+  ========================== */
+
+  const loanTypeStr =
+    loan.loan_package ??
+    LOAN_TYPE_LABEL[loan.loan_type as TLoanType] ??
+    loan.loan_type;
+
+  let currentPeriod: TPaymentPeriod | undefined;
+  let nextPeriod: TPaymentPeriod | undefined;
+
+  try {
+    // Lấy cycle hiện tại
+    const { data: cycle } = await supabase
+      .from("loan_payment_cycles")
+      .select("id")
+      .eq("loan_id", loanId)
+      .eq("cycle_number", loan.current_cycle)
+      .single();
+
+    if (cycle) {
+      // Lấy payment periods từ DB
+      const periods = await getPaymentPeriodsService(loanId, cycle.id);
+      currentPeriod = periods.currentPeriod;
+      nextPeriod = periods.nextPeriod;
+
+      console.log("✅ Payment periods loaded from DB");
+    } else {
+      // Fallback: Tính động nếu chưa có trong DB
+      console.log("⚠️ No payment periods in DB, calculating dynamically");
+      const calculated = calculatePaymentPeriods(
+        Number(loan.amount),
+        loanTypeStr,
+        loan.signed_at ?? loan.created_at,
+      );
+      currentPeriod = calculated.currentPeriod;
+      nextPeriod = calculated.nextPeriod;
+    }
+  } catch (error) {
+    // Fallback: Tính động nếu có lỗi
+    console.error("❌ Error loading payment periods from DB:", error);
+    const calculated = calculatePaymentPeriods(
+      Number(loan.amount),
+      loanTypeStr,
+      loan.signed_at ?? loan.created_at,
+    );
+    currentPeriod = calculated.currentPeriod;
+    nextPeriod = calculated.nextPeriod;
+  }
+
   return {
     id: loan.id,
     code: loan.code,
@@ -391,10 +444,7 @@ export const getLoanDetailsService = async (
     },
 
     loanAmount: Number(loan.amount),
-    loanType:
-      loan.loan_package ??
-      LOAN_TYPE_LABEL[loan.loan_type as TLoanType] ??
-      loan.loan_type,
+    loanType: loanTypeStr,
 
     appraisalFeePercentage: loan.appraisal_fee_percentage
       ? Number(loan.appraisal_fee_percentage)
@@ -423,6 +473,9 @@ export const getLoanDetailsService = async (
     statusMessage: loan.status_message ?? undefined,
 
     driveFolderId: loan.drive_folder_id ?? undefined,
+
+    currentPeriod,
+    nextPeriod,
 
     activityLog: activityLog.length ? activityLog : undefined,
   } satisfies TLoanDetails;
