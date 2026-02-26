@@ -12,25 +12,27 @@ import type { TActivityLogEntry } from "@/types/loan.types";
 import ActivityLogEntry from "@/components/loan-details/activity-log-entry";
 import { supabaseClient } from "@/lib/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
+import { useAuth } from "@/lib/contexts/auth-context";
 
 type TProps = {
   entries: TActivityLogEntry[];
   loanId: string;
-  currentUserId?: string;
-  currentUserName?: string;
 };
 
 const ActivityLogSection = ({ 
   entries: initialEntries, 
   loanId,
-  currentUserId = "system",
-  currentUserName = "Hệ thống"
 }: TProps) => {
+  const { user } = useAuth();
   const [inputValue, setInputValue] = useState("");
   const [entries, setEntries] = useState<TActivityLogEntry[]>(initialEntries);
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+
+  // Get user info
+  const currentUserId = user?.id || "system";
+  const currentUserName = user?.user_metadata?.full_name || user?.email || "Hệ thống";
 
   // Update entries when initialEntries changes
   useEffect(() => {
@@ -189,3 +191,4 @@ const ActivityLogSection = ({
 };
 
 export default ActivityLogSection;
+

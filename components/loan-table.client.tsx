@@ -25,6 +25,7 @@ import {
   LOAN_STATUS,
 } from "@/constants/loan";
 import { formatCurrencyVND, formatDateTimeVN } from "@/lib/format";
+import CreateLoanButton from "@/components/create-loan/create-loan-button.client";
 
 type TProps = {
   loans: TLoan[];
@@ -241,6 +242,9 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
             <RefreshCw size={16} />
           </Button>
         </Tooltip>
+
+        {/* Create loan button */}
+        <CreateLoanButton />
       </div>
 
       {/* Result count */}

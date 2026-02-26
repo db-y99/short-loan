@@ -9,16 +9,18 @@ import {
   ModalFooter,
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
-import { AlertCircle, CreditCard, MessageCircle, MessageSquare, ShoppingCart, CheckCircle, XCircle, DollarSign, Loader2 } from "lucide-react";
+import { AlertCircle, CreditCard, MessageSquare, ShoppingCart, CheckCircle, XCircle, DollarSign, Loader2 } from "lucide-react";
 import type { TLoanDetails } from "@/types/loan.types";
 import ContractHeader from "@/components/loan-details/loan-header";
 import LoanAmountSummary from "@/components/loan-details/loan-amount-summary";
-import ActivityLogSection from "@/components/loan-details/activity-log-section.client";
+import { ChatInterface } from "@/components/chat/chat-interface";
 import LoanInfoCards from "@/components/loan-details/loan-info-cards.client";
 import LoanProfileSection from "@/components/loan-details/loan-profile-section";
 import PaymentPeriods from "@/components/loan-details/payment-periods";
 import ContractsSection from "@/components/loan-details/contracts-section";
 import PayInterestModal from "@/components/loan-details/pay-interest-modal.client";
+
+import { useAuth } from "@/lib/contexts/auth-context";
 
 type TProps = {
   isOpen: boolean;
@@ -37,6 +39,7 @@ const LoanDetailsModal = ({
   error = null,
   onRefresh,
 }: TProps) => {
+  const { user } = useAuth();
   const [isDisbursing, setIsDisbursing] = useState(false);
   const [isPayInterestOpen, setIsPayInterestOpen] = useState(false);
   const [message, setMessage] = useState<{
@@ -226,24 +229,16 @@ const LoanDetailsModal = ({
               )}
             </div>
 
-            {/* Right Column - Activity Log */}
-            <div className="w-[400px] flex flex-col flex-2 h-full bg-default-50 dark:bg-default-100/5">
-              <div className="flex-shrink-0 p-4 border-b border-default-200">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <MessageCircle className="w-5 h-5 text-primary" />
-                  </div>
-                  <h3 className="text-lg font-semibold">Trao đổi & Nhật ký</h3>
-                </div>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <ActivityLogSection 
-                  entries={loanDetails?.activityLog ?? []} 
-                  loanId={loanDetails?.id ?? ""}
-                  currentUserId="current-user-id"
-                  currentUserName="Nhân viên"
+            {/* Right Column - Chat Interface */}
+            <div className="w-[500px] flex flex-col flex-2 h-full">
+              {loanDetails && user && (
+                <ChatInterface
+                  loanId={loanDetails.id}
+                  driveFolderId={loanDetails.driveFolderId || ""}
+                  currentUserId={user.id}
+                  currentUserName={user.user_metadata?.full_name || user.email || "User"}
                 />
-              </div>
+              )}
             </div>
           </div>
         </ModalBody>

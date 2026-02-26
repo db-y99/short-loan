@@ -59,12 +59,6 @@ export default function LoginForm() {
       refresh()
 
       router.push(ROUTES.APPROVE)
-
-      // // Refresh auth context
-      // await refresh();
-      
-      // // Force full page reload to ensure middleware picks up the session
-      // window.location.href = ROUTES.APPROVE;
     });
   };
 
