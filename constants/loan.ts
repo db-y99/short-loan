@@ -16,6 +16,8 @@ export const LOAN_STATUS = {
   REJECTED: "rejected",
   DISBURSED: "disbursed",
   COMPLETED: "completed",
+  REDEEMED: "redeemed",
+  LIQUIDATED: "liquidated",
 } as const;
 
 export const LOAN_STATUS_LABEL: Record<TLoanStatus, string> = {
@@ -24,6 +26,8 @@ export const LOAN_STATUS_LABEL: Record<TLoanStatus, string> = {
   [LOAN_STATUS.REJECTED]: "Từ chối",
   [LOAN_STATUS.DISBURSED]: "Đã giải ngân",
   [LOAN_STATUS.COMPLETED]: "Hoàn thành",
+  [LOAN_STATUS.REDEEMED]: "Đã chuộc",
+  [LOAN_STATUS.LIQUIDATED]: "Thanh lý",
 } as const;
 
 export const LOAN_STATUS_COLOR: Record<
@@ -34,7 +38,9 @@ export const LOAN_STATUS_COLOR: Record<
   [LOAN_STATUS.APPROVED]: "success",
   [LOAN_STATUS.REJECTED]: "danger",
   [LOAN_STATUS.DISBURSED]: "primary",
-  [LOAN_STATUS.COMPLETED]: "default",
+  [LOAN_STATUS.COMPLETED]: "success",
+  [LOAN_STATUS.REDEEMED]: "success",
+  [LOAN_STATUS.LIQUIDATED]: "default",
 } as const;
 
 export const ASSET_TYPES = {

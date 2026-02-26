@@ -4,7 +4,7 @@ import type { TLoanDetails } from "@/types/loan.types";
 import { formatCurrencyVND } from "@/lib/format";
 import SectionHeader from "@/components/section-header";
 import { calculateAppraisalFee } from "@/lib/loan-calculation";
-import { LOAN_TYPES } from "@/constants/loan";
+import { LOAN_TYPES, type TLoanType } from "@/constants/loan";
 
 type TProps = {
   loanDetails: TLoanDetails;
@@ -12,7 +12,7 @@ type TProps = {
 
 const LoanAmountSummary = ({ loanDetails }: TProps) => {
   // Xác định loan type để tính phí thẩm định
-  let loanType = LOAN_TYPES.INSTALLMENT_3_PERIODS;
+  let loanType: TLoanType = LOAN_TYPES.INSTALLMENT_3_PERIODS;
   if (loanDetails.loanType.includes("Theo mốc")) {
     loanType = LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE;
   } else if (loanDetails.loanType.includes("Giữ TS")) {

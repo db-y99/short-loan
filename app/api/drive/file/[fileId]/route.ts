@@ -10,10 +10,10 @@ import { streamFileFromDrive } from "@/lib/google-drive";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { fileId: string } }
+  { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
-    const { fileId } = params;
+    const { fileId } = await params;
 
     if (!fileId) {
       return NextResponse.json(
@@ -32,9 +32,9 @@ export async function GET(
     const { stream, mimeType, fileName } = result;
 
     // Convert stream to buffer
-    const chunks: Buffer[] = [];
+    const chunks: Uint8Array[] = [];
     for await (const chunk of stream) {
-      chunks.push(Buffer.from(chunk));
+      chunks.push(chunk);
     }
     const buffer = Buffer.concat(chunks);
 

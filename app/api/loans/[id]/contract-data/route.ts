@@ -10,10 +10,10 @@ import { CONTRACT_TYPE } from "@/types/contract.types";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const loanId = params.id;
+    const { id: loanId } = await params;
     const searchParams = request.nextUrl.searchParams;
     const contractType = searchParams.get("type");
 

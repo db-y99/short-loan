@@ -22,7 +22,10 @@ export async function POST(req: NextRequest) {
     // Lấy tất cả files từ FormData
     const files: Array<{ buffer: Buffer; name: string; mimeType: string }> = [];
     
-    for (const [key, value] of formData.entries()) {
+    // Convert FormData entries to array to avoid iterator issues
+    const entries = Array.from(formData.entries());
+    
+    for (const [key, value] of entries) {
       if (key.startsWith("file_") && value instanceof File) {
         const arrayBuffer = await value.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);

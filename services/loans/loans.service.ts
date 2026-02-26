@@ -248,6 +248,7 @@ export const getLoanDetailsService = async (
       notes,
       status,
       status_message,
+      current_cycle,
       signed_at,
       is_signed,
       created_at,

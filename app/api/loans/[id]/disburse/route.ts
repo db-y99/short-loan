@@ -3,11 +3,11 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createSupabaseServerClient();
-    const loanId = params.id;
+    const { id: loanId } = await params;
 
     // Kiểm tra loan tồn tại và đang ở trạng thái pending
     const { data: loan, error: fetchError } = await supabase

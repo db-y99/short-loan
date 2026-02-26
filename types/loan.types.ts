@@ -1,7 +1,9 @@
 export type TLoanStatus =
   | "pending"      // Chờ duyệt
+  | "approved"     // Đã duyệt
   | "rejected"     // Từ chối
   | "disbursed"    // Đang cầm (sau khi duyệt)
+  | "completed"    // Đã hoàn thành (chuộc đồ)
   | "redeemed"     // Đã chuộc
   | "liquidated";  // Thanh lý
 
