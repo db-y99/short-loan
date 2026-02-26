@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardBody, CardHeader, Chip, Divider, Link } from "@heroui/react";
+import { Card, CardBody, CardHeader, Chip, Divider, Link, Button } from "@heroui/react";
 import {
   User,
   CreditCard,
@@ -13,6 +13,7 @@ import {
   Users,
   Smartphone,
   Calendar,
+  UserPlus,
 } from "lucide-react";
 
 import type { TLoanDetails } from "@/types/loan.types";
@@ -25,11 +26,13 @@ import InfoRow from "@/components/info-row";
 type TProps = {
   loanDetails: TLoanDetails;
   showAssetGallery?: boolean;
+  onAddReference?: () => void; // Thêm callback
 };
 
 const LoanInfoCards = ({
   loanDetails,
   showAssetGallery = false,
+  onAddReference,
 }: TProps) => {
   return (
     <div className="gap-4 flex flex-col">
@@ -115,8 +118,19 @@ const LoanInfoCards = ({
       </Card>
 
       <Card shadow="sm">
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-2 flex items-center justify-between">
           <SectionHeader icon={Users} title="Tham chiếu" />
+          {onAddReference && (
+            <Button
+              color="primary"
+              variant="light"
+              size="sm"
+              startContent={<UserPlus className="w-4 h-4" />}
+              onPress={onAddReference}
+            >
+              Thêm
+            </Button>
+          )}
         </CardHeader>
         <CardBody className="pt-0">
           {loanDetails.references.length > 0 ? (

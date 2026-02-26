@@ -9,7 +9,7 @@ import {
   ModalFooter,
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
-import { AlertCircle, CreditCard, MessageSquare, ShoppingCart, CheckCircle, XCircle, DollarSign, Loader2 } from "lucide-react";
+import { AlertCircle, CreditCard, MessageSquare, ShoppingCart, CheckCircle, XCircle, DollarSign, Loader2, UserPlus } from "lucide-react";
 import type { TLoanDetails } from "@/types/loan.types";
 import ContractHeader from "@/components/loan-details/loan-header";
 import LoanAmountSummary from "@/components/loan-details/loan-amount-summary";
@@ -19,6 +19,7 @@ import LoanProfileSection from "@/components/loan-details/loan-profile-section";
 import PaymentPeriods from "@/components/loan-details/payment-periods";
 import ContractsSection from "@/components/loan-details/contracts-section";
 import PayInterestModal from "@/components/loan-details/pay-interest-modal.client";
+import AddReferenceModal from "@/components/loan-details/add-reference-modal";
 
 import { useAuth } from "@/lib/contexts/auth-context";
 
@@ -42,6 +43,7 @@ const LoanDetailsModal = ({
   const { user } = useAuth();
   const [isDisbursing, setIsDisbursing] = useState(false);
   const [isPayInterestOpen, setIsPayInterestOpen] = useState(false);
+  const [isAddReferenceOpen, setIsAddReferenceOpen] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -98,6 +100,20 @@ const LoanDetailsModal = ({
     setMessage({
       type: "success",
       text: "Đóng lãi thành công!",
+    });
+    
+    if (onRefresh) {
+      setTimeout(() => {
+        onRefresh();
+        setMessage(null);
+      }, 1500);
+    }
+  };
+
+  const handleAddReferenceSuccess = () => {
+    setMessage({
+      type: "success",
+      text: "Thêm tham chiếu thành công!",
     });
     
     if (onRefresh) {
@@ -182,6 +198,7 @@ const LoanDetailsModal = ({
                       <LoanInfoCards
                         loanDetails={loanDetails}
                         showAssetGallery
+                        onAddReference={() => setIsAddReferenceOpen(true)}
                       />
                     </div>
                     <LoanAmountSummary loanDetails={loanDetails} />
@@ -268,12 +285,21 @@ const LoanDetailsModal = ({
 
       {/* Pay Interest Modal */}
       {loanDetails && (
-        <PayInterestModal
-          isOpen={isPayInterestOpen}
-          onClose={() => setIsPayInterestOpen(false)}
-          loanId={loanDetails.id}
-          onSuccess={handlePayInterestSuccess}
-        />
+        <>
+          <PayInterestModal
+            isOpen={isPayInterestOpen}
+            onClose={() => setIsPayInterestOpen(false)}
+            loanId={loanDetails.id}
+            onSuccess={handlePayInterestSuccess}
+          />
+
+          <AddReferenceModal
+            isOpen={isAddReferenceOpen}
+            onClose={() => setIsAddReferenceOpen(false)}
+            loanId={loanDetails.id}
+            onSuccess={handleAddReferenceSuccess}
+          />
+        </>
       )}
     </Modal>
   );
