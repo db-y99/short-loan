@@ -54,10 +54,10 @@ export const createLoanAction = async (
 
     const code = await generateLoanCodeService();
     const amount = parseFormattedNumber(input.loan_amount);
-    const loanPackage = LOAN_TYPE_LABEL[input.loan_type] ?? input.loan_type;
+    const loanType = input.loan_type as TLoanType;
+    const loanPackage = LOAN_TYPE_LABEL[loanType] ?? input.loan_type;
 
     // Tính phí thẩm định tự động
-    const loanType = input.loan_type as TLoanType;
     const appraisalFee = calculateAppraisalFee(amount, loanType);
     const appraisalFeePercentage = appraisalFee > 0 ? 5 : undefined;
 

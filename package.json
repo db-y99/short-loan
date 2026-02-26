@@ -10,7 +10,7 @@
     "create-user": "tsx scripts/create-user.ts",
     "create-default-user": "tsx scripts/create-default-user.ts",
     "validate-env": "node scripts/validate-env.js",
-    "prebuild": "node scripts/validate-env.js"
+    "migrate-payment-cycles": "tsx scripts/migrate-payment-cycles.ts"
   },
   "dependencies": {
     "@heroui/accordion": "2.2.27",

@@ -19,6 +19,8 @@ import LoanProfileSection from "@/components/loan-details/loan-profile-section";
 import PaymentPeriods from "@/components/loan-details/payment-periods";
 import ContractsSection from "@/components/loan-details/contracts-section";
 import PayInterestModal from "@/components/loan-details/pay-interest-modal.client";
+import PaymentHistoryModal from "@/components/loan-details/payment-history-modal";
+import RedeemModal from "@/components/loan-details/redeem-modal.client";
 import AddReferenceModal from "@/components/loan-details/add-reference-modal";
 
 import { useAuth } from "@/lib/contexts/auth-context";
@@ -43,6 +45,8 @@ const LoanDetailsModal = ({
   const { user } = useAuth();
   const [isDisbursing, setIsDisbursing] = useState(false);
   const [isPayInterestOpen, setIsPayInterestOpen] = useState(false);
+  const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
+  const [isRedeemOpen, setIsRedeemOpen] = useState(false);
   const [isAddReferenceOpen, setIsAddReferenceOpen] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -121,6 +125,21 @@ const LoanDetailsModal = ({
         onRefresh();
         setMessage(null);
       }, 1500);
+    }
+  };
+
+  const handleRedeemSuccess = () => {
+    setMessage({
+      type: "success",
+      text: "Chuộc đồ thành công!",
+    });
+    
+    if (onRefresh) {
+      setTimeout(() => {
+        onRefresh();
+        setMessage(null);
+        onClose(); // Close the main modal after redeem
+      }, 2000);
     }
   };
 
@@ -231,12 +250,22 @@ const LoanDetailsModal = ({
                         Đóng lãi
                       </Button>
                       <Button
-                        color="primary"
+                        color="default"
+                        variant="flat"
+                        className="w-full"
+                        size="md"
+                        startContent={<MessageSquare size={16} />}
+                        onPress={() => setIsPaymentHistoryOpen(true)}
+                      >
+                        Xem lịch sử đóng lãi
+                      </Button>
+                      <Button
+                        color="success"
                         variant="solid"
                         className="w-full"
                         size="lg"
                         startContent={<ShoppingCart size={16} />}
-                        onPress={() => {}}
+                        onPress={() => setIsRedeemOpen(true)}
                       >
                         Chuộc đồ
                       </Button>
@@ -283,7 +312,7 @@ const LoanDetailsModal = ({
         </ModalFooter>
       </ModalContent>
 
-      {/* Pay Interest Modal */}
+      {/* Modals */}
       {loanDetails && (
         <>
           <PayInterestModal
@@ -291,6 +320,20 @@ const LoanDetailsModal = ({
             onClose={() => setIsPayInterestOpen(false)}
             loanId={loanDetails.id}
             onSuccess={handlePayInterestSuccess}
+          />
+
+          <PaymentHistoryModal
+            isOpen={isPaymentHistoryOpen}
+            onClose={() => setIsPaymentHistoryOpen(false)}
+            loanId={loanDetails.id}
+          />
+
+          <RedeemModal
+            isOpen={isRedeemOpen}
+            onClose={() => setIsRedeemOpen(false)}
+            loanId={loanDetails.id}
+            loanAmount={loanDetails.loanAmount}
+            onSuccess={handleRedeemSuccess}
           />
 
           <AddReferenceModal
