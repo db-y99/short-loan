@@ -7,6 +7,7 @@ import { FileText, Download, Eye, Loader2, Plus, CheckCircle, XCircle, RefreshCw
 import type { TLoanFile } from "@/types/loan.types";
 import { generateContractsAction, regenerateContractsAction } from "@/features/contracts/actions/generate-contracts.action";
 import ContractPreviewModal from "@/components/contracts/contract-preview-modal";
+import RegenerateConfirmModal from "@/components/contracts/regenerate-confirm-modal";
 
 type TProps = {
   loanId: string;
@@ -16,6 +17,7 @@ type TProps = {
 const ContractsSection = ({ loanId, contracts = [] }: TProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [localContracts, setLocalContracts] = useState<TLoanFile[]>(contracts);
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -57,12 +59,10 @@ const ContractsSection = ({ loanId, contracts = [] }: TProps) => {
   };
 
   const handleRegenerateContracts = async () => {
-    if (!confirm("Bạn có chắc muốn tạo lại tất cả hợp đồng? Hợp đồng cũ sẽ bị xóa.")) {
-      return;
-    }
-
     setIsRegenerating(true);
     setMessage(null);
+    setIsConfirmOpen(false);
+    
     try {
       const result = await regenerateContractsAction(loanId);
 
@@ -163,7 +163,7 @@ const ContractsSection = ({ loanId, contracts = [] }: TProps) => {
                   )
                 }
                 isDisabled={isRegenerating}
-                onPress={handleRegenerateContracts}
+                onPress={() => setIsConfirmOpen(true)}
               >
                 {isRegenerating ? "Đang tạo lại..." : "Tạo lại"}
               </Button>
@@ -250,6 +250,14 @@ const ContractsSection = ({ loanId, contracts = [] }: TProps) => {
         }}
         contract={selectedContract}
         loanId={loanId}
+      />
+
+      {/* Regenerate Confirmation Modal */}
+      <RegenerateConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        onConfirm={handleRegenerateContracts}
+        isLoading={isRegenerating}
       />
     </>
   );

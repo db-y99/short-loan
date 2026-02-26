@@ -120,22 +120,42 @@ const LoanInfoCards = ({
         </CardHeader>
         <CardBody className="pt-0">
           {loanDetails.references.length > 0 ? (
-            <div className="space-y-2">
-              {loanDetails.references.map((ref) => (
-                <div
-                  key={ref.id}
-                  className="flex items-center justify-between p-2 bg-default-50 rounded-lg"
-                >
-                  <p className="font-medium">{ref.full_name}</p>
-
-                  <Link href={`tel:${ref.phone}`}>
-                    {ref.phone}
-                  </Link>
-                  <Chip variant="flat">
-                    {ref.relationship}
-                  </Chip>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-default-200">
+                    <th className="text-left py-2 px-2 font-semibold text-default-600">
+                      Họ tên
+                    </th>
+                    <th className="text-left py-2 px-2 font-semibold text-default-600">
+                      Số điện thoại
+                    </th>
+                    <th className="text-left py-2 px-2 font-semibold text-default-600">
+                      Quan hệ
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loanDetails.references.map((ref) => (
+                    <tr
+                      key={ref.id}
+                      className="border-b border-default-100 hover:bg-default-50"
+                    >
+                      <td className="py-2 px-2 font-medium">{ref.full_name}</td>
+                      <td className="py-2 px-2">
+                        <Link href={`tel:${ref.phone}`} className="text-primary hover:underline">
+                          {ref.phone}
+                        </Link>
+                      </td>
+                      <td className="py-2 px-2">
+                        <Chip size="sm" variant="flat">
+                          {ref.relationship}
+                        </Chip>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : (
             <p className="text-sm text-default-400 text-center py-2">

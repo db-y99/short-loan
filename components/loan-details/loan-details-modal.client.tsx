@@ -237,7 +237,12 @@ const LoanDetailsModal = ({
                 </div>
               </div>
               <div className="flex-1 overflow-hidden">
-                <ActivityLogSection entries={loanDetails?.activityLog ?? []} />
+                <ActivityLogSection 
+                  entries={loanDetails?.activityLog ?? []} 
+                  loanId={loanDetails?.id ?? ""}
+                  currentUserId="current-user-id"
+                  currentUserName="Nhân viên"
+                />
               </div>
             </div>
           </div>
