@@ -52,12 +52,15 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 2: Generate PDF from HTML using Puppeteer
+    const internalSecret = process.env.INTERNAL_API_SECRET || "dev-secret-key";
+    
     const pdfResponse = await fetch(
       `${req.nextUrl.origin}/api/generate-pdf`,
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-internal-secret": internalSecret, // Add internal auth
         },
         body: JSON.stringify({
           html,

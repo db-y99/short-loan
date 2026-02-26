@@ -27,26 +27,32 @@ export async function generateContractsService(
   error?: string;
 }> {
   try {
+    console.log(`[GENERATE_CONTRACTS] Starting for loan: ${loanId}`);
     const supabase = await createSupabaseServerClient();
 
     // Lấy loan details
     const { getLoanDetailsService } = await import(
       "@/services/loans/loans.service"
     );
+    console.log(`[GENERATE_CONTRACTS] Fetching loan details...`);
     const loan = await getLoanDetailsService(loanId);
 
     if (!loan) {
+      console.error(`[GENERATE_CONTRACTS] Loan not found: ${loanId}`);
       return { success: false, error: "Không tìm thấy khoản vay" };
     }
+    console.log(`[GENERATE_CONTRACTS] Loan found: ${loan.code}`);
 
     // Kiểm tra drive folder
     const folderId = loan.driveFolderId;
     if (!folderId) {
+      console.error(`[GENERATE_CONTRACTS] No drive folder for loan: ${loanId}`);
       return {
         success: false,
         error: "Khoản vay chưa có folder Drive. Vui lòng tạo folder trước.",
       };
     }
+    console.log(`[GENERATE_CONTRACTS] Drive folder ID: ${folderId}`);
 
     // Lấy contract_version từ metadata trong bảng loans
     const { data: loanData } = await supabase
@@ -92,7 +98,7 @@ export async function generateContractsService(
     // BƯỚC 1: Generate tất cả PDF song song
     console.time("Generate PDFs");
     const pdfPromises = contractsData.map((contract) =>
-      generateContractPDF(contract.data, contract.type).catch((err: Error) => {
+      generateContractPDFDirect(contract.data, contract.type).catch((err: Error) => {
         console.error(`[PDF_GEN_ERROR] ${contract.name}:`, err);
         return null;
       })
@@ -221,32 +227,14 @@ export async function generateContractsService(
 }
 
 /**
- * Generate PDF buffer từ contract data
+ * Generate PDF buffer từ contract data - DIRECT CALL (không qua HTTP)
  */
-async function generateContractPDF(
+async function generateContractPDFDirect(
   contractData: any,
   contractType: string,
 ): Promise<Buffer> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-
-  const response = await fetch(`${baseUrl}/api/contracts/generate-pdf`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contractData,
-      contractType,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || "Failed to generate PDF");
-  }
-
-  const arrayBuffer = await response.arrayBuffer();
-  return Buffer.from(arrayBuffer);
+  const { generateContractPDF } = await import("@/lib/pdf-generator");
+  return await generateContractPDF(contractData, contractType);
 }
 
 /**

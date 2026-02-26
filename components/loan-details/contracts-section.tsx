@@ -8,6 +8,7 @@ import type { TLoanFile } from "@/types/loan.types";
 import { generateContractsAction, regenerateContractsAction } from "@/features/contracts/actions/generate-contracts.action";
 import ContractPreviewModal from "@/components/contracts/contract-preview-modal";
 import RegenerateConfirmModal from "@/components/contracts/regenerate-confirm-modal";
+import ContractErrorDetails from "@/components/contracts/contract-error-details";
 
 type TProps = {
   loanId: string;
@@ -172,20 +173,16 @@ const ContractsSection = ({ loanId, contracts = [] }: TProps) => {
         </CardHeader>
         <CardBody className="pt-0 space-y-3">
           {message && (
-            <div
-              className={`flex items-center gap-2 p-3 rounded-lg ${
-                message.type === "success"
-                  ? "bg-success-50 text-success-700 dark:bg-success-900/20 dark:text-success-400"
-                  : "bg-danger-50 text-danger-700 dark:bg-danger-900/20 dark:text-danger-400"
-              }`}
-            >
+            <>
               {message.type === "success" ? (
-                <CheckCircle className="w-4 h-4" />
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-success-50 text-success-700 dark:bg-success-900/20 dark:text-success-400">
+                  <CheckCircle className="w-4 h-4" />
+                  <p className="text-sm">{message.text}</p>
+                </div>
               ) : (
-                <XCircle className="w-4 h-4" />
+                <ContractErrorDetails error={message.text} />
               )}
-              <p className="text-sm">{message.text}</p>
-            </div>
+            </>
           )}
 
           {localContracts.length === 0 ? (
