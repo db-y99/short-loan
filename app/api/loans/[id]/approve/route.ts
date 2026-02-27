@@ -2,15 +2,19 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LOAN_STATUS } from "@/constants/loan";
 
+/**
+ * POST /api/loans/[id]/approve
+ * Duyệt khoản vay (chuyển từ pending sang approved)
+ */
 export async function POST(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createSupabaseServerClient();
     const { id: loanId } = await params;
 
-    // Kiểm tra loan tồn tại và đang ở trạng thái signed
+    // Kiểm tra loan tồn tại và đang ở trạng thái pending
     const { data: loan, error: fetchError } = await supabase
       .from("loans")
       .select("id, status")
@@ -24,18 +28,18 @@ export async function POST(
       );
     }
 
-    if (loan.status !== LOAN_STATUS.SIGNED) {
+    if (loan.status !== LOAN_STATUS.PENDING) {
       return NextResponse.json(
-        { success: false, error: "Khoản vay chưa được ký hợp đồng" },
+        { success: false, error: "Khoản vay không ở trạng thái chờ duyệt" },
         { status: 400 }
       );
     }
 
-    // Cập nhật trạng thái sang disbursed và ghi nhận thời gian giải ngân
+    // Cập nhật trạng thái sang approved
     const { error: updateError } = await supabase
       .from("loans")
       .update({
-        status: LOAN_STATUS.DISBURSED,
+        status: LOAN_STATUS.APPROVED,
         approved_at: new Date().toISOString(),
       })
       .eq("id", loanId);
@@ -50,10 +54,10 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: "Giải ngân thành công",
+      message: "Duyệt khoản vay thành công",
     });
   } catch (error) {
-    console.error("Error disbursing loan:", error);
+    console.error("Error approving loan:", error);
     return NextResponse.json(
       { success: false, error: "Lỗi server" },
       { status: 500 }

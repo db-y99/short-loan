@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { LOAN_STATUS } from "@/constants/loan";
 
 /**
  * POST /api/loans/[id]/pay-interest
@@ -51,7 +52,7 @@ export async function POST(
       );
     }
 
-    if (loan.status !== "disbursed") {
+    if (loan.status !== LOAN_STATUS.DISBURSED) {
       return NextResponse.json(
         { success: false, error: "Khoản vay chưa được giải ngân" },
         { status: 400 }
@@ -173,10 +174,17 @@ export async function GET(
       );
     }
 
-    // Get payment history
+    // Get payment history with user info
     const { data: payments, error } = await supabase
       .from("loan_payment_transactions")
-      .select("*")
+      .select(`
+        *,
+        created_by_user:created_by(
+          id,
+          email,
+          raw_user_meta_data
+        )
+      `)
       .eq("loan_id", loanId)
       .eq("transaction_type", "interest_payment")
       .order("created_at", { ascending: false });

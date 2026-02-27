@@ -11,35 +11,38 @@ import {
 } from "lucide-react";
 
 export const LOAN_STATUS = {
-  PENDING: "pending",
-  APPROVED: "approved",
-  REJECTED: "rejected",
-  DISBURSED: "disbursed",
-  COMPLETED: "completed",
-  REDEEMED: "redeemed",
-  LIQUIDATED: "liquidated",
+  PENDING: "pending", // Chờ duyệt
+  APPROVED: "approved", // Đã duyệt (Chờ ký)
+  SIGNED: "signed", // Đã ký (Chờ giải ngân)
+  DISBURSED: "disbursed", // Đang cầm
+  REDEEMED: "redeemed", // Đã chuộc
+  REJECTED: "rejected", // Từ chối
+  COMPLETED: "completed", // Hoàn thành (legacy - không dùng nữa)
+  LIQUIDATED: "liquidated", // Thanh lý (legacy - không dùng nữa)
 } as const;
 
 export const LOAN_STATUS_LABEL: Record<TLoanStatus, string> = {
   [LOAN_STATUS.PENDING]: "Chờ duyệt",
-  [LOAN_STATUS.APPROVED]: "Đã duyệt",
-  [LOAN_STATUS.REJECTED]: "Từ chối",
-  [LOAN_STATUS.DISBURSED]: "Đã giải ngân",
-  [LOAN_STATUS.COMPLETED]: "Hoàn thành",
+  [LOAN_STATUS.APPROVED]: "Đã duyệt (Chờ ký)",
+  [LOAN_STATUS.SIGNED]: "Đã ký (Chờ giải ngân)",
+  [LOAN_STATUS.DISBURSED]: "Đang cầm",
   [LOAN_STATUS.REDEEMED]: "Đã chuộc",
-  [LOAN_STATUS.LIQUIDATED]: "Thanh lý",
+  [LOAN_STATUS.REJECTED]: "Từ chối",
+  [LOAN_STATUS.COMPLETED]: "Hoàn thành (Legacy)",
+  [LOAN_STATUS.LIQUIDATED]: "Thanh lý (Legacy)",
 } as const;
 
 export const LOAN_STATUS_COLOR: Record<
   TLoanStatus,
-  "warning" | "success" | "danger" | "primary" | "default"
+  "warning" | "success" | "danger" | "primary" | "default" | "secondary"
 > = {
   [LOAN_STATUS.PENDING]: "warning",
-  [LOAN_STATUS.APPROVED]: "success",
-  [LOAN_STATUS.REJECTED]: "danger",
-  [LOAN_STATUS.DISBURSED]: "primary",
-  [LOAN_STATUS.COMPLETED]: "success",
+  [LOAN_STATUS.APPROVED]: "primary",
+  [LOAN_STATUS.SIGNED]: "secondary",
+  [LOAN_STATUS.DISBURSED]: "success",
   [LOAN_STATUS.REDEEMED]: "success",
+  [LOAN_STATUS.REJECTED]: "danger",
+  [LOAN_STATUS.COMPLETED]: "default",
   [LOAN_STATUS.LIQUIDATED]: "default",
 } as const;
 

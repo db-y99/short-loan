@@ -12,10 +12,26 @@ type TProps = {
 
 const LoanAmountSummary = ({ loanDetails }: TProps) => {
   // Xác định loan type để tính phí thẩm định
+  // Check tất cả các pattern có thể của loanType string
   let loanType: TLoanType = LOAN_TYPES.INSTALLMENT_3_PERIODS;
-  if (loanDetails.loanType.includes("Theo mốc")) {
+  
+  const loanTypeStr = loanDetails.loanType.toLowerCase();
+  
+  // Gói 2: Gốc cuối kỳ / Trả lãi định kỳ / Theo mốc
+  if (
+    loanTypeStr.includes("gói 2") || 
+    loanTypeStr.includes("theo mốc") ||
+    loanTypeStr.includes("trả lãi định kỳ") ||
+    loanTypeStr.includes("gốc cuối kỳ") && !loanTypeStr.includes("giữ")
+  ) {
     loanType = LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE;
-  } else if (loanDetails.loanType.includes("Giữ TS")) {
+  } 
+  // Gói 3: Giữ TS / Giữ tài sản
+  else if (
+    loanTypeStr.includes("gói 3") || 
+    loanTypeStr.includes("giữ ts") ||
+    loanTypeStr.includes("giữ tài sản")
+  ) {
     loanType = LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD;
   }
 

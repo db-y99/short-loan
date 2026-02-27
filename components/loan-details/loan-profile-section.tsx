@@ -1,37 +1,120 @@
 "use client";
 
-import { Chip, Link } from "@heroui/react";
-import { FileText, CheckCircle2, FileSignature } from "lucide-react";
+import { useState } from "react";
+import { Chip, Link, Button } from "@heroui/react";
+import { FileText, CheckCircle2, FileSignature, QrCode, PenTool } from "lucide-react";
 import type { TLoanDetails } from "@/types/loan.types";
+import { LOAN_STATUS } from "@/constants/loan";
+import { formatDateTimeVN } from "@/lib/format";
+import ContractSigningModal from "@/components/contracts/contract-signing-modal";
 
 type TProps = {
   loanDetails: TLoanDetails;
 };
 
 const LoanProfileSection = ({ loanDetails }: TProps) => {
-  const isSigned = loanDetails.isSigned ?? (loanDetails.status === "disbursed" || loanDetails.status === "completed");
+  const [showQR, setShowQR] = useState(false);
+  const [showSigningModal, setShowSigningModal] = useState(false);
+  const [isSigning, setIsSigning] = useState(false);
+  const isSigned = loanDetails.isSigned ?? (
+    loanDetails.status === LOAN_STATUS.SIGNED || 
+    loanDetails.status === LOAN_STATUS.DISBURSED || 
+    loanDetails.status === LOAN_STATUS.REDEEMED
+  );
+  const isApproved = loanDetails.status === LOAN_STATUS.APPROVED;
+  const isSignedStatus = loanDetails.status === LOAN_STATUS.SIGNED;
+
+  const handleDirectSign = () => {
+    setShowSigningModal(true);
+  };
+
+  const handleSign = async () => {
+    setIsSigning(true);
+    try {
+      const response = await fetch(`/api/loans/${loanDetails.id}/sign`, {
+        method: "POST",
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        alert("Ký hợp đồng thành công!");
+        setShowSigningModal(false);
+        window.location.reload(); // Refresh để cập nhật UI
+      } else {
+        alert(result.error || "Có lỗi xảy ra khi ký hợp đồng");
+      }
+    } catch (error) {
+      console.error("Error signing contract:", error);
+      alert("Lỗi khi ký hợp đồng");
+    } finally {
+      setIsSigning(false);
+    }
+  };
+
+  const handleShowQR = () => {
+    setShowQR(!showQR);
+  };
 
   return (
+    <>
     <div className="mb-4 p-4 bg-default-50 rounded-xl border border-default-200">
       {/* Title */}
       <h3 className="text-base font-bold text-primary uppercase mb-3">
         HỒ SƠ HỢP ĐỒNG:
       </h3>
 
-      {/* Status Badge */}
+      {/* Status Badge - Hiển thị khi đã ký */}
       {isSigned && (
-        <div className="mb-4">
-          <Chip
-            color="success"
-            variant="flat"
-            startContent={<CheckCircle2 className="w-4 h-4" />}
-            classNames={{
-              base: "bg-success-50 dark:bg-success-900/20 border border-success-200 dark:border-success-800",
-              content: "text-success-700 dark:text-success-400 font-medium",
-            }}
+        <div className="mb-4 p-3 bg-success-50 dark:bg-success-900/20 rounded-lg border border-success-200 dark:border-success-800">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-5 h-5 text-success-600 dark:text-success-400" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-success-700 dark:text-success-400">
+                Hợp đồng đã được ký kết vào lúc {formatDateTimeVN(loanDetails.signedAt)}.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Signing Buttons - Show when approved but not signed yet */}
+      {isApproved && !isSigned && (
+        <div className="mb-4 flex gap-2">
+          <Button
+            color="primary"
+            variant="solid"
+            startContent={<PenTool className="w-4 h-4" />}
+            onPress={handleDirectSign}
+            isDisabled={isSigning}
+            className="flex-1"
           >
-            Hợp đồng đã được ký kết.
-          </Chip>
+            {isSigning ? "Đang ký..." : "Ký trực tiếp"}
+          </Button>
+          <Button
+            color="secondary"
+            variant="bordered"
+            startContent={<QrCode className="w-4 h-4" />}
+            onPress={handleShowQR}
+            isDisabled={isSigning}
+            className="flex-1"
+          >
+            QR khách ký
+          </Button>
+        </div>
+      )}
+
+      {/* QR Code Display */}
+      {showQR && isApproved && !isSigned && (
+        <div className="mb-4 p-4 bg-white dark:bg-default-100 rounded-lg border-2 border-secondary text-center">
+          <p className="text-sm text-default-600 mb-3">Quét mã QR để khách hàng ký hợp đồng:</p>
+          <div className="flex justify-center items-center h-48 bg-default-100 dark:bg-default-200 rounded-lg">
+            <QrCode className="w-24 h-24 text-default-400" />
+            {/* TODO: Replace with actual QR code */}
+          </div>
+          <p className="text-xs text-default-500 mt-3">
+            Link: {window.location.origin}/loans/{loanDetails.id}/sign
+          </p>
         </div>
       )}
 
@@ -90,6 +173,15 @@ const LoanProfileSection = ({ loanDetails }: TProps) => {
           </div>
         )}
     </div>
+
+    {/* Contract Signing Modal */}
+    <ContractSigningModal
+      isOpen={showSigningModal}
+      onClose={() => setShowSigningModal(false)}
+      loanId={loanDetails.id}
+      onSign={handleSign}
+    />
+  </>
   );
 };
 

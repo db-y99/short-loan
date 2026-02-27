@@ -103,6 +103,15 @@ const PaymentHistoryModal = ({ isOpen, onClose, loanId }: TProps) => {
             </div>
           ) : (
             <div className="space-y-4">
+              {/* Hiển thị lịch sử đóng lãi trước nếu có */}
+              {payments.length > 0 && (
+                <PaymentHistorySection
+                  payments={payments}
+                  totalInterestPaid={totalInterestPaid}
+                />
+              )}
+              
+              {/* Sau đó hiển thị payment progress */}
               {periods.length > 0 && (
                 <PaymentProgressCard
                   periods={periods}
@@ -111,12 +120,8 @@ const PaymentHistoryModal = ({ isOpen, onClose, loanId }: TProps) => {
                 />
               )}
               
-              {payments.length > 0 ? (
-                <PaymentHistorySection
-                  payments={payments}
-                  totalInterestPaid={totalInterestPaid}
-                />
-              ) : (
+              {/* Nếu không có gì thì hiển thị empty state */}
+              {payments.length === 0 && periods.length === 0 && (
                 <div className="text-center py-12 text-default-500">
                   <History className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>Chưa có lịch sử đóng lãi</p>

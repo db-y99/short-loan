@@ -1,5 +1,3 @@
-"use client";
-
 import { useState } from "react";
 import {
   Modal,
@@ -11,6 +9,7 @@ import {
 import { Button } from "@heroui/button";
 import { AlertCircle, CreditCard, MessageSquare, ShoppingCart, CheckCircle, XCircle, DollarSign, Loader2, UserPlus } from "lucide-react";
 import type { TLoanDetails } from "@/types/loan.types";
+import { LOAN_STATUS } from "@/constants/loan";
 import ContractHeader from "@/components/loan-details/loan-header";
 import LoanAmountSummary from "@/components/loan-details/loan-amount-summary";
 import { ChatInterface } from "@/components/chat/chat-interface";
@@ -48,6 +47,7 @@ const LoanDetailsModal = ({
   const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
   const [isRedeemOpen, setIsRedeemOpen] = useState(false);
   const [isAddReferenceOpen, setIsAddReferenceOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0); // Thêm state để force refresh
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -56,7 +56,14 @@ const LoanDetailsModal = ({
   const handleDisburse = async () => {
     if (!loanDetails) return;
 
-    if (!confirm("Xác nhận duyệt và giải ngân khoản vay này?\n\nSau khi duyệt:\n- Chuyển sang trạng thái Đang cầm\n- Bắt đầu tính lãi từ thời điểm này\n- Có thể đóng lãi và chuộc đồ")) {
+    const isApproving = loanDetails.status === LOAN_STATUS.PENDING;
+    const isDisbursing = loanDetails.status === LOAN_STATUS.SIGNED;
+
+    const confirmMessage = isApproving
+      ? "Xác nhận duyệt khoản vay này?\n\nSau khi duyệt:\n- Chuyển sang trạng thái Đã duyệt (Chờ ký)\n- Có thể ký hợp đồng"
+      : "Xác nhận giải ngân khoản vay này?\n\nSau khi giải ngân:\n- Chuyển sang trạng thái Đang cầm\n- Bắt đầu tính lãi từ thời điểm này\n- Có thể đóng lãi và chuộc đồ";
+
+    if (!confirm(confirmMessage)) {
       return;
     }
 
@@ -64,7 +71,11 @@ const LoanDetailsModal = ({
     setMessage(null);
 
     try {
-      const response = await fetch(`/api/loans/${loanDetails.id}/disburse`, {
+      const endpoint = isApproving 
+        ? `/api/loans/${loanDetails.id}/approve`
+        : `/api/loans/${loanDetails.id}/disburse`;
+
+      const response = await fetch(endpoint, {
         method: "POST",
       });
 
@@ -73,7 +84,7 @@ const LoanDetailsModal = ({
       if (result.success) {
         setMessage({
           type: "success",
-          text: "Duyệt và giải ngân thành công!",
+          text: isApproving ? "Duyệt thành công!" : "Giải ngân thành công!",
         });
         
         // Refresh data
@@ -87,7 +98,7 @@ const LoanDetailsModal = ({
         setMessage({ type: "error", text: result.error || "Có lỗi xảy ra" });
       }
     } catch (error) {
-      setMessage({ type: "error", text: "Lỗi khi giải ngân" });
+      setMessage({ type: "error", text: isApproving ? "Lỗi khi duyệt" : "Lỗi khi giải ngân" });
       console.error(error);
     } finally {
       setIsDisbursing(false);
@@ -97,14 +108,18 @@ const LoanDetailsModal = ({
   if (!loanDetails && !isLoading && !error) return null;
 
   // Kiểm tra trạng thái
-  const isPending = loanDetails?.status === "pending";
-  const isDisbursed = loanDetails?.status === "disbursed";
+  const isPending = loanDetails?.status === LOAN_STATUS.PENDING;
+  const isSigned = loanDetails?.status === LOAN_STATUS.SIGNED;
+  const isDisbursed = loanDetails?.status === LOAN_STATUS.DISBURSED;
 
   const handlePayInterestSuccess = () => {
     setMessage({
       type: "success",
       text: "Đóng lãi thành công!",
     });
+    
+    // Tăng refreshKey để force refresh PaymentPeriods
+    setRefreshKey(prev => prev + 1);
     
     if (onRefresh) {
       setTimeout(() => {
@@ -221,7 +236,7 @@ const LoanDetailsModal = ({
                       />
                     </div>
                     <LoanAmountSummary loanDetails={loanDetails} />
-                    <PaymentPeriods loanDetails={loanDetails} />
+                    <PaymentPeriods loanDetails={loanDetails} refreshKey={refreshKey} />
                     <ContractsSection
                       loanId={loanDetails.id}
                       contracts={loanDetails.originalFiles}
@@ -295,6 +310,22 @@ const LoanDetailsModal = ({
           </Button>
           {isPending && (
             <Button
+              color="primary"
+              startContent={
+                isDisbursing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="w-4 h-4" />
+                )
+              }
+              isDisabled={isDisbursing}
+              onPress={handleDisburse}
+            >
+              {isDisbursing ? "Đang xử lý..." : "Duyệt"}
+            </Button>
+          )}
+          {isSigned && (
+            <Button
               color="success"
               startContent={
                 isDisbursing ? (
@@ -306,7 +337,7 @@ const LoanDetailsModal = ({
               isDisabled={isDisbursing}
               onPress={handleDisburse}
             >
-              {isDisbursing ? "Đang xử lý..." : "Duyệt & Giải ngân"}
+              {isDisbursing ? "Đang xử lý..." : "Giải ngân"}
             </Button>
           )}
         </ModalFooter>

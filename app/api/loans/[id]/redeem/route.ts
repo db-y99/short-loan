@@ -149,11 +149,11 @@ export async function POST(
         .eq("id", cycle.id);
     }
 
-    // 3. Update loan status to completed
+    // 3. Update loan status to redeemed
     const { error: updateError } = await supabase
       .from("loans")
       .update({
-        status: "completed",
+        status: "redeemed",
         status_message: `Đã chuộc đồ - Trả gốc ${principalAmount.toLocaleString("vi-VN")} VNĐ + Lãi ${interestAmount.toLocaleString("vi-VN")} VNĐ`,
         updated_at: new Date().toISOString(),
       })

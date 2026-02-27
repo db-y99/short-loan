@@ -492,10 +492,32 @@ export function AssetPledgeContractView({
           <div style={{ ...S.center, width: "45%" }}>
             <p style={{ ...S.bold}}>ĐẠI DIỆN BÊN A</p>
             <p>(Ký, ghi rõ họ tên, đóng dấu)</p>
+            {data.DRAFT_SIGNATURE && (
+              <div style={{ marginTop: "10px" }}>
+                <img 
+                  src={data.DRAFT_SIGNATURE} 
+                  alt="Chữ ký Bên A" 
+                  style={{ maxWidth: "200px", height: "auto" }}
+                />
+              </div>
+            )}
           </div>
           <div style={{ ...S.center, width: "45%" }}>
             <p style={{ ...S.bold }}>BÊN B</p>
             <p>(Ký, ghi rõ họ tên)</p>
+            {data.OFFICIAL_SIGNATURE && (
+              <div style={{ marginTop: "10px" }}>
+                <img 
+                  src={data.OFFICIAL_SIGNATURE} 
+                  alt="Chữ ký Bên B" 
+                  style={{ maxWidth: "200px", height: "auto" }}
+                />
+                <p style={{ marginTop: "10px", fontWeight: "bold" }}>
+                  {data.HO_TEN?.toUpperCase()}
+                </p>
+                <p>Ngày {data.SIGNED_DATE}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
