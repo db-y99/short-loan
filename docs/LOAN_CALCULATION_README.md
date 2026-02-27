@@ -23,7 +23,8 @@ lib/
 
 **Điều kiện áp dụng:**
 - Khoản vay >= 5.000.000đ
-- Chỉ áp dụng cho Gói 1 (Trả góp)
+- Áp dụng cho Gói 1 (Trả góp) và Gói 2 (Theo mốc)
+- Gói 3 không có phí thẩm định
 
 **Công thức:**
 ```

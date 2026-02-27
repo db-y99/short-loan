@@ -1,56 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { TMilestone } from "@/types/contract.types";
+import { COMPANY_INFO } from "@/constants/company";
+import { formatDateShortVN } from "@/lib/format";
 
 // Helper functions
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(amount);
+function formatVND(n: number): string {
+  return new Intl.NumberFormat("vi-VN").format(n) + " VNĐ";
 }
 
-function formatDate(date: Date): string {
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
-}
-
-function getLoanPackageInterestRate(loanPackage: string): string {
-  const rates: Record<string, string> = {
-    "7_days": "10%/tháng (tương đương 0,33%/ngày)",
-    "15_days": "10%/tháng (tương đương 0,33%/ngày)",
-    "30_days": "10%/tháng (tương đương 0,33%/ngày)",
-  };
-  return rates[loanPackage] || "10%/tháng";
-}
-
-function calculateMilestones(loanPackage: string, loanAmount: number): TMilestone[] {
-  const milestones: TMilestone[] = [];
-  
-  // Simplified milestone calculation - adjust based on your business logic
-  if (loanPackage === "7_days") {
-    milestones.push(
-      { moc: 1, ngay: 7, tongTien: formatCurrency(loanAmount * 1.07) },
-      { moc: 2, ngay: 14, tongTien: formatCurrency(loanAmount * 1.14) },
-      { moc: 3, ngay: 30, tongTien: formatCurrency(loanAmount * 1.30) }
-    );
-  } else if (loanPackage === "15_days") {
-    milestones.push(
-      { moc: 1, ngay: 15, tongTien: formatCurrency(loanAmount * 1.15) },
-      { moc: 2, ngay: 22, tongTien: formatCurrency(loanAmount * 1.22) },
-      { moc: 3, ngay: 30, tongTien: formatCurrency(loanAmount * 1.30) }
-    );
-  } else {
-    milestones.push(
-      { moc: 1, ngay: 30, tongTien: formatCurrency(loanAmount * 1.30) },
-      { moc: 2, ngay: 37, tongTien: formatCurrency(loanAmount * 1.37) },
-      { moc: 3, ngay: 45, tongTien: formatCurrency(loanAmount * 1.45) }
-    );
+/**
+ * Lấy mô tả lãi suất/phí theo gói vay - SAME AS contract-data.ts
+ */
+function getLoanInterestRateDescription(loanType: string): string {
+  if (loanType.includes("trả góp") || loanType.includes("3 kỳ")) {
+    return "Lãi suất 0,033%/ngày + Phí thuê tài sản";
+  } else if (loanType.includes("Theo mốc")) {
+    return "Phí theo mốc: 5% (7 ngày), 8% (18 ngày), 12% (30 ngày)";
+  } else if (loanType.includes("Giữ TS")) {
+    return "Phí theo mốc: 1,25% (7 ngày), 3,5% (18 ngày), 5% (30 ngày)";
   }
-  
-  return milestones;
+  return "0,99%/30 ngày";
 }
 
 /**
@@ -77,46 +47,19 @@ export async function GET(
       );
     }
 
-    // Fetch loan details with customer and references
-    const { data: loan, error: loanError } = await supabase
-      .from("loans")
-      .select(`
-        *,
-        customer:customers(
-          id,
-          full_name,
-          cccd,
-          phone,
-          address,
-          cccd_issue_date,
-          cccd_issue_place,
-          job,
-          income
-        ),
-        references:loan_references(
-          id,
-          full_name,
-          phone,
-          relationship
-        )
-      `)
-      .eq("id", loanId)
-      .single();
+    // Use getLoanDetailsService to get full loan data with currentPeriod
+    const { getLoanDetailsService } = await import("@/services/loans/loans.service");
+    const loanDetails = await getLoanDetailsService(loanId);
 
-      console.log({loanError, loan})
-
-    if (loanError || !loan) {
+    if (!loanDetails) {
       return NextResponse.json(
         { success: false, error: "Không tìm thấy khoản vay" },
         { status: 404 }
       );
     }
 
-    // Parse asset_identity
-    const assetIdentity = loan.asset_identity || {};
-
     // Get signed date or current date
-    const signedDate = loan.signed_at ? new Date(loan.signed_at) : new Date();
+    const signedDate = loanDetails.signedAt ? new Date(loanDetails.signedAt) : new Date();
     const ngay = signedDate.getDate();
     const thang = signedDate.getMonth() + 1;
     const nam = signedDate.getFullYear();
@@ -124,76 +67,99 @@ export async function GET(
     // Format signed date string
     const signedDateStr = `${String(ngay).padStart(2, '0')}/${String(thang).padStart(2, '0')}/${nam}`;
 
-    // Calculate milestones based on loan package
-    const loanAmount = Number(loan.amount);
-    const milestones = calculateMilestones(loan.loan_package, loanAmount);
+    // Get loan amount
+    const loanAmount = loanDetails.loanAmount;
 
-    // Format asset details
-    const assetDetail = `${loan.asset_name || ""}`;
-    const assetType = loan.asset_type || "";
+    // Get milestones from currentPeriod - SAME AS contract-data.ts
+    const milestones: TMilestone[] = loanDetails.currentPeriod?.milestones.map((m, index) => ({
+      moc: index + 1,
+      ngay: m.days,
+      tongTien: formatVND(m.totalRedemption),
+    })) ?? [
+      { moc: 1, ngay: 7, tongTien: formatVND(loanAmount) },
+      { moc: 2, ngay: 18, tongTien: formatVND(loanAmount) },
+      { moc: 3, ngay: 30, tongTien: formatVND(loanAmount) },
+    ];
 
-    // Format contract data for all contract types
+    console.log("Milestones from currentPeriod:", milestones);
+
+    // Format asset details with IMEI/Serial - SAME AS contract-data.ts
+    const assetType = loanDetails.asset.type;
+    const assetName = loanDetails.asset.name;
+    const imei = loanDetails.asset.imei || "";
+    const serial = loanDetails.asset.serial || "";
+    
+    const imeiStr = imei ? ` (IMEI: ${imei}` : "";
+    const serialStr = serial
+      ? imeiStr
+        ? ` - Serial: ${serial})`
+        : ` (Serial: ${serial})`
+      : imeiStr
+        ? ")"
+        : "";
+    const chiTiet = `${assetName}${imeiStr}${serialStr}`.trim() || "—";
+
+    // Format loan type
+    const loanTypeStr = loanDetails.loanType;
+
+    // Format contract data for all contract types - USE loanDetails
     const contractData = {
       // Asset Pledge Contract
-      MA_HD: loan.code,
+      MA_HD: loanDetails.code,
       NGAY: ngay,
       THANG: thang,
       NAM: nam,
-      BEN_A_TEN: "CÔNG TY TNHH DỊCH VỤ TÀI CHÍNH ABC",
-      BEN_A_DIA_CHI: "99B Nguyễn Trãi, phường Ninh Kiều, thành phố Cần Thơ",
-      BEN_A_DAI_DIEN: "Nguyễn Văn A",
-      BEN_A_CHUC_VU: "Giám đốc",
-      BEN_A_MST: "1234567890",
-      BEN_A_SDT: "0123456789",
-      HO_TEN: loan.customer?.full_name || "",
-      CCCD: loan.customer?.cccd || "",
-      NGAY_CAP: loan.customer?.cccd_issue_date || "",
-      NOI_CAP: loan.customer?.cccd_issue_place || "",
-      DIA_CHI: loan.customer?.address || "",
-      SDT: loan.customer?.phone || "",
+      BEN_A_TEN: COMPANY_INFO.NAME,
+      BEN_A_DIA_CHI: COMPANY_INFO.ADDRESS,
+      BEN_A_DAI_DIEN: `Bà ${COMPANY_INFO.REPRESENTATIVE.toUpperCase()}`,
+      BEN_A_CHUC_VU: COMPANY_INFO.POSITION,
+      BEN_A_MST: COMPANY_INFO.TAX_CODE,
+      BEN_A_SDT: COMPANY_INFO.PHONE,
+      HO_TEN: loanDetails.customer.fullName,
+      CCCD: loanDetails.customer.cccd,
+      NGAY_CAP: loanDetails.customer.cccdIssueDate,
+      NOI_CAP: loanDetails.customer.cccdIssuePlace,
+      DIA_CHI: loanDetails.customer.address,
+      SDT: loanDetails.customer.phone,
       LOAI_TS: assetType,
-      CHI_TIET: assetDetail,
-      IMEI: assetIdentity.imei || "",
-      SERIAL: assetIdentity.serial || "",
-      TINH_TRANG: "Còn mới, hoạt động tốt",
-      SO_TIEN_VAY: formatCurrency(loanAmount),
-      LAI_SUAT: getLoanPackageInterestRate(loan.loan_package),
+      CHI_TIET: chiTiet,
+      IMEI: imei || "—",
+      SERIAL: serial || "—",
+      TINH_TRANG: loanDetails.assetCondition || "Đang cầm cố",
+      SO_TIEN_VAY: formatVND(loanAmount),
+      LAI_SUAT: getLoanInterestRateDescription(loanTypeStr),
       MILESTONES: milestones,
       
-      // Signatures - convert file IDs to URLs
-      DRAFT_SIGNATURE: loan.draft_signature_file_id 
-        ? `/api/drive/image/${loan.draft_signature_file_id}` 
-        : null,
-      OFFICIAL_SIGNATURE: loan.official_signature_file_id 
-        ? `/api/drive/image/${loan.official_signature_file_id}` 
-        : null,
+      // Signatures - will be added when signing
+      DRAFT_SIGNATURE: null,
+      OFFICIAL_SIGNATURE: null,
       SIGNED_DATE: signedDateStr,
       
       // Asset Lease Contract specific
-      MA_HD_CAM_CO: loan.code,
-      SO_HD_THUE: `${loan.code}-THUE`,
-      NGAY_BAT_DAU: formatDate(signedDate),
+      MA_HD_CAM_CO: loanDetails.code,
+      SO_HD_THUE: `${loanDetails.code}-T`,
+      NGAY_BAT_DAU: formatDateShortVN(loanDetails.signedAt),
       
       // Full Payment Confirmation specific
-      NGAY_HD: formatDate(signedDate),
-      BEN_GIAO_TEN: "CÔNG TY TNHH DỊCH VỤ TÀI CHÍNH ABC",
-      BEN_GIAO_DIA_CHI: "99B Nguyễn Trãi, phường Ninh Kiều, thành phố Cần Thơ",
-      BEN_GIAO_DAI_DIEN: "Nguyễn Văn A",
-      BEN_GIAO_CHUC_VU: "Giám đốc",
-      BEN_GIAO_MST: "1234567890",
-      BEN_GIAO_SDT: "0123456789",
-      TAI_SAN: `${assetType} - ${assetDetail}`,
-      SO_TIEN: formatCurrency(loanAmount),
-      NGAN_HANG: loan.bank_name || "",
-      SO_TAI_KHOAN: loan.bank_account_number || "",
-      TEN_TAI_KHOAN: loan.bank_account_holder || "",
+      NGAY_HD: formatDateShortVN(loanDetails.signedAt),
+      BEN_GIAO_TEN: COMPANY_INFO.NAME,
+      BEN_GIAO_DIA_CHI: COMPANY_INFO.ADDRESS,
+      BEN_GIAO_DAI_DIEN: COMPANY_INFO.REPRESENTATIVE,
+      BEN_GIAO_CHUC_VU: COMPANY_INFO.POSITION,
+      BEN_GIAO_MST: COMPANY_INFO.TAX_CODE,
+      BEN_GIAO_SDT: COMPANY_INFO.PHONE,
+      TAI_SAN: assetName || "",
+      SO_TIEN: formatVND(loanAmount),
+      NGAN_HANG: loanDetails.bank.name,
+      SO_TAI_KHOAN: loanDetails.bank.accountNumber,
+      TEN_TAI_KHOAN: loanDetails.bank.accountHolder,
       
       // Asset Disposal Authorization specific
-      BEN_UU_QUYEN_TEN: "CÔNG TY TNHH DỊCH VỤ TÀI CHÍNH ABC",
-      BEN_UU_QUYEN_DIA_CHI: "99B Nguyễn Trãi, phường Ninh Kiều, thành phố Cần Thơ",
-      BEN_UU_QUYEN_DAI_DIEN: "Nguyễn Văn A",
-      BEN_UU_QUYEN_MST: "1234567890",
-      BEN_UU_QUYEN_SDT: "0123456789",
+      BEN_UU_QUYEN_TEN: COMPANY_INFO.NAME,
+      BEN_UU_QUYEN_DIA_CHI: COMPANY_INFO.ADDRESS,
+      BEN_UU_QUYEN_DAI_DIEN: COMPANY_INFO.REPRESENTATIVE,
+      BEN_UU_QUYEN_MST: COMPANY_INFO.TAX_CODE,
+      BEN_UU_QUYEN_SDT: COMPANY_INFO.PHONE,
       
       drive_folder_id: "",
     };

@@ -195,7 +195,6 @@ export function AssetLeaseContractView({
         </li>
         <li>
           Chi tiết (Nhãn hiệu/Model): {data.CHI_TIET}
-          (IMEI: {data.IMEI} - Serial: {data.SERIAL})
         </li>
       </ul>
     </li>

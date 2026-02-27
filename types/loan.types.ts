@@ -115,6 +115,9 @@ export type TLoanDetails = {
     images: TAssetImage[];
   };
 
+  /** Tình trạng tài sản cầm cố */
+  assetCondition?: string;
+
   bank: {
     name: string;
     accountNumber: string;

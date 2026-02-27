@@ -154,9 +154,7 @@ export function AssetDisposalAuthorizationView({
     </li>
 
     <li style={{ marginBottom: "6px" }}>
-      Chi tiết: <strong>{data.CHI_TIET}</strong> (IMEI:{" "}
-      <strong>{data.IMEI}</strong> - Serial:{" "}
-      <strong>{data.SERIAL}</strong>)
+      Chi tiết: <strong>{data.CHI_TIET}</strong>
     </li>
 
     <li>

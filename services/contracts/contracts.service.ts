@@ -301,6 +301,25 @@ export async function regenerateContractsService(
       };
     }
 
+    // Reset loan status về approved và xóa chữ ký để có thể ký lại
+    const { error: updateError } = await supabase
+      .from("loans")
+      .update({
+        status: "approved",
+        signed_at: null,
+        draft_signature_file_id: null,
+        official_signature_file_id: null,
+      })
+      .eq("id", loanId);
+
+    if (updateError) {
+      console.error("[RESET_LOAN_STATUS_ERROR]", updateError);
+      return {
+        success: false,
+        error: "Không thể reset trạng thái khoản vay",
+      };
+    }
+
     // Tạo hợp đồng mới (version sẽ tự động tăng trong generateContractsService)
     return await generateContractsService(loanId);
   } catch (error) {

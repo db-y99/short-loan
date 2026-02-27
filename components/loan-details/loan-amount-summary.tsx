@@ -87,7 +87,7 @@ const LoanAmountSummary = ({ loanDetails }: TProps) => {
         {showAppraisalFee && (
           <p className="text-xs text-default-500 italic mt-2">
             * Phí thẩm định chỉ thu 1 lần đầu (áp dụng cho khoản vay ≥ 5 triệu
-            đồng, chỉ Gói 1).
+            đồng, Gói 1 & 2).
           </p>
         )}
       </CardBody>

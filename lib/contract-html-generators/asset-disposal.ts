@@ -112,7 +112,7 @@ export function generateAssetDisposalHTML(data: TAssetDisposalAuthorizationData)
           Loại tài sản: <strong>${data.LOAI_TS}</strong>
         </li>
         <li>
-          Chi tiết: <strong>${data.CHI_TIET}</strong> (IMEI: <strong>${data.IMEI}</strong> - Serial: <strong>${data.SERIAL}</strong>)
+          Chi tiết: <strong>${data.CHI_TIET}</strong>
         </li>
         <li>
           Tình trạng tài sản: <strong>${data.TINH_TRANG}</strong>

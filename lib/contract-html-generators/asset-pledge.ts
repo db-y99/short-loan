@@ -96,7 +96,7 @@ export function generateAssetPledgeHTML(data: TAssetPledgeContractData): string 
       <p style="margin-bottom: 8px;">Bên B đồng ý cầm cố tài sản thuộc sở hữu của mình cho Bên A để đảm bảo nghĩa vụ thanh toán khoản vay, cụ thể như sau:</p>
       <ul style="font-size: 12pt; list-style-type: disc;">
         <li><span class="bold">Loại tài sản:</span> ${data.LOAI_TS}</li>
-        <li><span class="bold">Chi tiết:</span> ${data.CHI_TIET} (IMEI: ${data.IMEI} - Serial: ${data.SERIAL})</li>
+        <li><span class="bold">Chi tiết:</span> ${data.CHI_TIET}</li>
         <li><span class="bold">Tình trạng tài sản:</span> ${data.TINH_TRANG}</li>
       </ul>
       <p style="font-size: 12pt; margin-bottom: 16px;"><strong>Cam kết về tài sản:</strong> Bên B cam kết tài sản nêu trên thuộc quyền sở hữu hợp pháp của Bên B, không có tranh chấp, và không bị ràng buộc bởi bất kỳ nghĩa vụ nào đối với bên thứ ba tại thời điểm ký kết.</p>

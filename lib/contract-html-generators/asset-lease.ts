@@ -108,7 +108,7 @@ export function generateAssetLeaseHTML(data: TAssetLeaseContractData): string {
             <strong>Tài sản thuê:</strong> Bên A đồng ý cho Bên B thuê tài sản (mà Bên B đã cầm cố và bàn giao quyền quản lý cho Bên A theo Hợp đồng cầm cố số ${data.MA_HD_CAM_CO}), cụ thể:
             <ul style="padding-left: 40px; margin-top: 6px; list-style-type: circle;">
               <li style="margin-bottom: 6px;">Loại tài sản: ${data.LOAI_TS}</li>
-              <li>Chi tiết (Nhãn hiệu/Model): ${data.CHI_TIET} (IMEI: ${data.IMEI} - Serial: ${data.SERIAL})</li>
+              <li>Chi tiết (Nhãn hiệu/Model): ${data.CHI_TIET}</li>
             </ul>
           </li>
           <li style="margin-bottom: 10px;"><strong>Xác nhận bàn giao:</strong> Bên B xác nhận đã nhận tài sản đúng mô tả và tình trạng hoạt động bình thường khi ký hợp đồng này.</li>

@@ -185,12 +185,12 @@ export function AssetPledgeContractView({
 
   <li style={{ marginBottom: "6px" }}>
     <span style={{ fontWeight: "bold" }}>Chi tiết:</span>{" "}
-    {data.CHI_TIET} (IMEI: {data.IMEI} - Serial: {data.SERIAL})
+    {data.CHI_TIET}
   </li>
 
   <li>
     <span style={{ fontWeight: "bold" }}>Tình trạng tài sản:</span>{" "}
-    {data.TINH_TRANG} (IMEI: {data.IMEI} - Serial: {data.SERIAL})
+    {data.TINH_TRANG}
   </li>
 </ul>
         <p style={{ fontSize: "12pt", marginBottom: "16px" }}>

@@ -8,7 +8,7 @@
 
 ### 2. Tạo Core Calculation Library
 📁 **lib/loan-calculation.ts**
-- ✅ Tính phí thẩm định (5% cho >= 5 triệu, chỉ Gói 1)
+- ✅ Tính phí thẩm định (5% cho >= 5 triệu, áp dụng Gói 1 & 2)
 - ✅ Gói 1: Trả góp 3 kỳ với lãi 0.033%/ngày + phí thuê
 - ✅ Gói 2: Gốc cuối kỳ (5%, 8%, 12%)
 - ✅ Gói 3: Gốc cuối kỳ + Giữ TS (1.25%, 3.5%, 5%)

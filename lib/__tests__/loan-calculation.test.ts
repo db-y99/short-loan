@@ -35,17 +35,22 @@ describe("Loan Calculation Library", () => {
       expect(fee2).toBe(500_000); // 10M × 5% = 500K
     });
 
-    it("should return 0 for non-installment loan types", () => {
-      const fee1 = calculateAppraisalFee(
-        10_000_000,
-        LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE,
-      );
-      const fee2 = calculateAppraisalFee(
+    it("should return 0 for non-Gói 3 loan types", () => {
+      // Gói 3 không có phí thẩm định
+      const fee = calculateAppraisalFee(
         10_000_000,
         LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD,
       );
-      expect(fee1).toBe(0);
-      expect(fee2).toBe(0);
+      expect(fee).toBe(0);
+    });
+
+    it("should calculate 5% for Gói 2 with amount >= 5,000,000", () => {
+      // Gói 2 có phí thẩm định nếu >= 5 triệu
+      const fee = calculateAppraisalFee(
+        10_000_000,
+        LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE,
+      );
+      expect(fee).toBe(500_000); // 10M × 5% = 500K
     });
   });
 
@@ -188,14 +193,27 @@ describe("Loan Calculation Library", () => {
       expect(result.bulletPayments).toBeUndefined();
     });
 
-    it("should calculate Gói 2 without appraisal fee", () => {
+    it("should calculate Gói 2 with appraisal fee for amount >= 5M", () => {
       const result = calculateLoan(
         10_000_000,
         LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE,
       );
 
+      expect(result.appraisalFee).toBe(500_000); // 10M × 5% = 500K
+      expect(result.netAmount).toBe(9_500_000); // 10M - 500K
+      expect(result.bulletPayments).toBeDefined();
+      expect(result.bulletPayments).toHaveLength(3);
+      expect(result.installments).toBeUndefined();
+    });
+
+    it("should calculate Gói 2 without appraisal fee for amount < 5M", () => {
+      const result = calculateLoan(
+        4_000_000,
+        LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE,
+      );
+
       expect(result.appraisalFee).toBe(0);
-      expect(result.netAmount).toBe(10_000_000);
+      expect(result.netAmount).toBe(4_000_000);
       expect(result.bulletPayments).toBeDefined();
       expect(result.bulletPayments).toHaveLength(3);
       expect(result.installments).toBeUndefined();

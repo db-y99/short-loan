@@ -242,6 +242,7 @@ export const getLoanDetailsService = async (
       asset_type,
       asset_name,
       asset_identity,
+      asset_condition,
       bank_name,
       bank_account_holder,
       bank_account_number,
@@ -497,6 +498,8 @@ export const getLoanDetailsService = async (
       engineNumber: identity?.engine_number ?? "",
       images: assetImages,
     },
+
+    assetCondition: loan.asset_condition ?? undefined,
 
     bank: {
       name: loan.bank_name ?? "",
