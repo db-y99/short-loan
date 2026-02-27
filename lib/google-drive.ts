@@ -156,3 +156,18 @@ export async function createLoanFolder({
 
   return data.id;
 }
+
+/**
+ * Get file từ Drive as Buffer (dùng cho PDF generation)
+ */
+export async function getFileFromDrive(fileId: string): Promise<Buffer> {
+  const auth = getAuth();
+  const drive = google.drive({ version: "v3", auth });
+
+  const res = await drive.files.get(
+    { fileId, alt: "media", supportsAllDrives: true },
+    { responseType: "arraybuffer" },
+  );
+
+  return Buffer.from(res.data as ArrayBuffer);
+}

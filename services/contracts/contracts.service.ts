@@ -312,3 +312,251 @@ export async function regenerateContractsService(
     };
   }
 }
+
+/**
+ * Generate 4 signed contract PDFs (sau khi ký hợp đồng)
+ * Tạo PDF có chữ ký và lưu vào DB + Drive
+ */
+export async function generateSignedContractsService(
+  loanId: string,
+): Promise<{
+  success: boolean;
+  contracts?: TContractFile[];
+  error?: string;
+}> {
+  try {
+    console.log(`[GENERATE_SIGNED_CONTRACTS] Starting for loan: ${loanId}`);
+    const supabase = await createSupabaseServerClient();
+
+    // XÓA TẤT CẢ HỢP ĐỒNG CŨ TRƯỚC KHI TẠO MỚI
+    console.log(`[GENERATE_SIGNED_CONTRACTS] Deleting old contracts...`);
+    const { error: deleteError } = await supabase
+      .from("loan_files")
+      .delete()
+      .eq("loan_id", loanId);
+
+    if (deleteError) {
+      console.error(`[GENERATE_SIGNED_CONTRACTS] Error deleting old contracts:`, deleteError);
+      // Continue anyway, don't fail the process
+    }
+
+    // Lấy loan details
+    const { getLoanDetailsService } = await import(
+      "@/services/loans/loans.service"
+    );
+    const loan = await getLoanDetailsService(loanId);
+
+    if (!loan) {
+      console.error(`[GENERATE_SIGNED_CONTRACTS] Loan not found: ${loanId}`);
+      return { success: false, error: "Không tìm thấy khoản vay" };
+    }
+
+    // Kiểm tra drive folder
+    const folderId = loan.driveFolderId;
+    if (!folderId) {
+      console.error(`[GENERATE_SIGNED_CONTRACTS] No drive folder for loan: ${loanId}`);
+      return {
+        success: false,
+        error: "Khoản vay chưa có folder Drive",
+      };
+    }
+
+    // Lấy signature URLs từ loan
+    const { data: loanData } = await supabase
+      .from("loans")
+      .select("draft_signature_file_id, official_signature_file_id, metadata")
+      .eq("id", loanId)
+      .single();
+
+    if (!loanData?.draft_signature_file_id || !loanData?.official_signature_file_id) {
+      return {
+        success: false,
+        error: "Chưa có chữ ký",
+      };
+    }
+
+    // Fetch signatures and convert to base64 for PDF embedding
+    let officialSignatureBase64: string | null = null;
+    
+    try {
+      // Fetch official signature from Drive
+      const { getFileFromDrive } = await import("@/lib/google-drive");
+      const officialSigBuffer = await getFileFromDrive(loanData.official_signature_file_id);
+      officialSignatureBase64 = `data:image/png;base64,${officialSigBuffer.toString('base64')}`;
+    } catch (fetchError) {
+      console.error("Error fetching signatures:", fetchError);
+      return {
+        success: false,
+        error: "Không thể tải chữ ký từ Drive",
+      };
+    }
+
+    // Get contract version - reset to 1 since we're deleting old ones
+    const newVersion = 1;
+    const versionSuffix = ""; // No suffix for version 1
+
+    // Build contract data with signatures
+    const contractsData = [
+      {
+        type: CONTRACT_TYPE.ASSET_PLEDGE,
+        name: "HĐ Cầm Cố Tài Sản (Đã ký)",
+        fileName: `HD-CamCo-DaKy-${loan.code}${versionSuffix}.pdf`,
+        data: {
+          ...buildAssetPledgeContractData(loan, folderId),
+          OFFICIAL_SIGNATURE: officialSignatureBase64,
+        },
+      },
+      {
+        type: CONTRACT_TYPE.ASSET_LEASE,
+        name: "HĐ Thuê Tài Sản (Đã ký)",
+        fileName: `HD-Thue-DaKy-${loan.code}${versionSuffix}.pdf`,
+        data: {
+          ...buildAssetLeaseContractData(loan, folderId),
+          OFFICIAL_SIGNATURE: officialSignatureBase64,
+        },
+      },
+      {
+        type: CONTRACT_TYPE.FULL_PAYMENT,
+        name: "XN Đã Nhận Đủ Tiền (Đã ký)",
+        fileName: `XN-NhanTien-DaKy-${loan.code}${versionSuffix}.pdf`,
+        data: {
+          ...buildFullPaymentConfirmationData(loan, folderId),
+          OFFICIAL_SIGNATURE: officialSignatureBase64,
+        },
+      },
+      {
+        type: CONTRACT_TYPE.ASSET_DISPOSAL,
+        name: "UQ Xử Lý Tài Sản (Đã ký)",
+        fileName: `UQ-XuLy-DaKy-${loan.code}${versionSuffix}.pdf`,
+        data: {
+          ...buildAssetDisposalAuthorizationData(loan, folderId),
+          OFFICIAL_SIGNATURE: officialSignatureBase64,
+        },
+      },
+    ];
+
+    // Generate all PDFs in parallel
+    console.time("Generate Signed PDFs");
+    const pdfPromises = contractsData.map((contract) =>
+      generateContractPDFDirect(contract.data, contract.type).catch((err: Error) => {
+        console.error(`[SIGNED_PDF_GEN_ERROR] ${contract.name}:`, err);
+        return null;
+      })
+    );
+    const pdfBuffers = await Promise.all(pdfPromises);
+    console.timeEnd("Generate Signed PDFs");
+
+    // Filter successful PDFs
+    const validContracts = contractsData
+      .map((contract, index) => ({
+        ...contract,
+        pdfBuffer: pdfBuffers[index],
+      }))
+      .filter((contract) => contract.pdfBuffer !== null);
+
+    if (validContracts.length === 0) {
+      return {
+        success: false,
+        error: "Không thể tạo PDF có chữ ký",
+      };
+    }
+
+    // Upload all files to Drive in parallel
+    console.time("Upload Signed PDFs to Drive");
+    const { uploadToDrive } = await import("@/lib/google-drive");
+    const uploadPromises = validContracts.map((contract) =>
+      uploadToDrive(
+        contract.pdfBuffer!,
+        contract.fileName,
+        "application/pdf",
+        folderId,
+      ).catch((err: Error) => {
+        console.error(`[SIGNED_DRIVE_UPLOAD_ERROR] ${contract.name}:`, err);
+        return null;
+      })
+    );
+    const uploadResults = await Promise.all(uploadPromises);
+    console.timeEnd("Upload Signed PDFs to Drive");
+
+    // Filter successful uploads
+    const successfulUploads = validContracts
+      .map((contract, index) => ({
+        ...contract,
+        fileId: uploadResults[index]?.fileId,
+      }))
+      .filter((contract) => contract.fileId);
+
+    if (successfulUploads.length === 0) {
+      return {
+        success: false,
+        error: "Không thể upload hợp đồng đã ký lên Drive",
+      };
+    }
+
+    // Insert all records to DB in parallel
+    console.time("Insert Signed PDFs to DB");
+    const dbPromises = successfulUploads.map(async (contract) => {
+      const { data, error } = await supabase
+        .from("loan_files")
+        .insert({
+          loan_id: loanId,
+          name: contract.name,
+          type: contract.type,
+          provider: "google_drive",
+          file_id: contract.fileId!,
+        })
+        .select("id, name, type, file_id, provider")
+        .single();
+
+      if (error || !data) {
+        console.error(`[SIGNED_DB_INSERT_ERROR] ${contract.name}:`, error);
+        return null;
+      }
+
+      return {
+        id: data.id,
+        name: data.name,
+        type: data.type,
+        fileId: data.file_id,
+        provider: data.provider,
+      };
+    });
+
+    const dbResults = await Promise.all(dbPromises);
+    console.timeEnd("Insert Signed PDFs to DB");
+
+    const uploadedContracts = dbResults.filter((contract) => contract !== null) as TContractFile[];
+
+    if (uploadedContracts.length === 0) {
+      return {
+        success: false,
+        error: "Không thể lưu hợp đồng đã ký vào DB",
+      };
+    }
+
+    // Update signed_contract_version in metadata (always 1 since we delete old ones)
+    const updatedMetadata = {
+      ...(loanData?.metadata || {}),
+      signed_contract_version: newVersion,
+    };
+
+    await supabase
+      .from("loans")
+      .update({ metadata: updatedMetadata })
+      .eq("id", loanId);
+
+    console.log(`[GENERATE_SIGNED_CONTRACTS] Successfully created ${uploadedContracts.length} signed PDFs (replaced old contracts)`);
+
+    return {
+      success: true,
+      contracts: uploadedContracts,
+    };
+  } catch (error) {
+    console.error("[GENERATE_SIGNED_CONTRACTS_ERROR]", error);
+    return {
+      success: false,
+      error:
+        error instanceof Error ? error.message : "Lỗi khi tạo hợp đồng đã ký",
+    };
+  }
+}

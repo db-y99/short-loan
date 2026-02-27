@@ -110,7 +110,7 @@ const ContractSigningModal = ({
       const result = await response.json();
 
       if (result.success) {
-        await onSign();
+        onSign(); // Just call callback to close modal and show success
       } else {
         alert(result.error || "Có lỗi xảy ra khi ký hợp đồng");
       }

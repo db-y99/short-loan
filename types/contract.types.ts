@@ -30,6 +30,8 @@ export type TAssetPledgeContractData = {
   LAI_SUAT: string;
   MILESTONES: TMilestone[];
   drive_folder_id: string;
+  DRAFT_SIGNATURE?: string;
+  OFFICIAL_SIGNATURE?: string;
 };
 
 /** Dữ liệu Hợp đồng thuê tài sản */
@@ -58,6 +60,8 @@ export type TAssetLeaseContractData = {
   MILESTONES: TMilestone[];
   NGAY_BAT_DAU: string;
   drive_folder_id: string;
+  DRAFT_SIGNATURE?: string;
+  OFFICIAL_SIGNATURE?: string;
 };
 
 /** Dữ liệu Xác nhận đã nhận đủ tiền */
@@ -85,6 +89,8 @@ export type TFullPaymentConfirmationData = {
   SO_TAI_KHOAN: string;
   TEN_TAI_KHOAN: string;
   drive_folder_id: string;
+  DRAFT_SIGNATURE?: string;
+  OFFICIAL_SIGNATURE?: string;
 };
 
 /** Dữ liệu Giấy ủy quyền xử lý tài sản cầm cố */
@@ -110,6 +116,8 @@ export type TAssetDisposalAuthorizationData = {
   SERIAL: string;
   TINH_TRANG: string;
   drive_folder_id: string;
+  DRAFT_SIGNATURE?: string;
+  OFFICIAL_SIGNATURE?: string;
 };
 
 /** Union type cho tất cả contract data */

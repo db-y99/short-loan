@@ -25,8 +25,24 @@ export async function POST(
     const { id: loanId } = await params;
 
     // Get signatures from request body
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (e) {
+      return NextResponse.json(
+        { success: false, error: "Invalid request body" },
+        { status: 400 }
+      );
+    }
+    
     const { draftSignature, officialSignature } = body;
+
+    if (!draftSignature || !officialSignature) {
+      return NextResponse.json(
+        { success: false, error: "Thiếu chữ ký. Vui lòng ký cả chữ ký nháy và chữ ký chính thức." },
+        { status: 400 }
+      );
+    }
 
     // Check authentication
     const {
@@ -135,6 +151,26 @@ export async function POST(
       user_name: user.email || "System",
       system_message: `Hợp đồng đã được ký kết`,
     });
+
+    // Generate 4 signed contract PDFs
+    console.log("[SIGN_CONTRACT] Generating signed PDFs...");
+    try {
+      const { generateSignedContractsService } = await import(
+        "@/services/contracts/contracts.service"
+      );
+      
+      const result = await generateSignedContractsService(loanId);
+      
+      if (!result.success) {
+        console.error("[SIGN_CONTRACT] Failed to generate PDFs:", result.error);
+        // Don't fail the signing process, just log the error
+      } else {
+        console.log("[SIGN_CONTRACT] Successfully generated", result.contracts?.length, "PDFs");
+      }
+    } catch (pdfError) {
+      console.error("[SIGN_CONTRACT] Error generating PDFs:", pdfError);
+      // Don't fail the signing process
+    }
 
     return NextResponse.json({
       success: true,

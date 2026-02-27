@@ -29,27 +29,11 @@ const LoanProfileSection = ({ loanDetails }: TProps) => {
   };
 
   const handleSign = async () => {
-    setIsSigning(true);
-    try {
-      const response = await fetch(`/api/loans/${loanDetails.id}/sign`, {
-        method: "POST",
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        alert("Ký hợp đồng thành công!");
-        setShowSigningModal(false);
-        window.location.reload(); // Refresh để cập nhật UI
-      } else {
-        alert(result.error || "Có lỗi xảy ra khi ký hợp đồng");
-      }
-    } catch (error) {
-      console.error("Error signing contract:", error);
-      alert("Lỗi khi ký hợp đồng");
-    } finally {
-      setIsSigning(false);
-    }
+    // This function is called by the modal after successful signing
+    // Just close modal and reload
+    alert("Ký hợp đồng thành công!");
+    setShowSigningModal(false);
+    window.location.reload(); // Refresh để cập nhật UI
   };
 
   const handleShowQR = () => {

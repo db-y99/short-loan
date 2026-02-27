@@ -254,10 +254,16 @@ export function generateAssetLeaseHTML(data: TAssetLeaseContractData): string {
         <div class="center" style="width: 45%;">
           <p class="bold">BÊN CHO THUÊ</p>
           <p>(Ký, ghi rõ họ tên, đóng dấu)</p>
+          <div style="height: 120px;"></div>
         </div>
         <div class="center" style="width: 45%;">
           <p class="bold">BÊN THUÊ</p>
           <p>(Ký, ghi rõ họ tên)</p>
+          ${data.OFFICIAL_SIGNATURE ? `
+            <img src="${data.OFFICIAL_SIGNATURE}" alt="Chữ ký" style="max-width: 200px; max-height: 100px; margin: 10px auto; display: block;" />
+            <p class="bold" style="margin-top: 10px;">${data.HO_TEN}</p>
+            <p style="margin-top: 5px; font-size: 11pt;">Ngày ${data.NGAY}/${data.THANG}/${data.NAM}</p>
+          ` : '<div style="height: 120px;"></div>'}
         </div>
       </div>
     </div>

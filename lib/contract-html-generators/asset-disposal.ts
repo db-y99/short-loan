@@ -174,10 +174,16 @@ export function generateAssetDisposalHTML(data: TAssetDisposalAuthorizationData)
         <div class="signature-box">
           <p class="bold">BÊN ĐƯỢC ỦY QUYỀN</p>
           <p>(Ký, ghi rõ họ tên, đóng dấu)</p>
+          <div style="height: 120px;"></div>
         </div>
         <div class="signature-box">
           <p class="bold">BÊN ỦY QUYỀN</p>
           <p>(Ký, ghi rõ họ tên)</p>
+          ${data.OFFICIAL_SIGNATURE ? `
+            <img src="${data.OFFICIAL_SIGNATURE}" alt="Chữ ký" style="max-width: 200px; max-height: 100px; margin: 10px auto; display: block;" />
+            <p class="bold" style="margin-top: 10px;">${data.HO_TEN}</p>
+            <p style="margin-top: 5px; font-size: 11pt;">Ngày ${data.NGAY}/${data.THANG}/${data.NAM}</p>
+          ` : '<div style="height: 120px;"></div>'}
         </div>
       </div>
     </div>
