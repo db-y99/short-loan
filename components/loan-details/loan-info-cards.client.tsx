@@ -26,13 +26,15 @@ import InfoRow from "@/components/info-row";
 type TProps = {
   loanDetails: TLoanDetails;
   showAssetGallery?: boolean;
-  onAddReference?: () => void; // Thêm callback
+  onAddReference?: () => void;
+  onUpdateAssetCondition?: () => void; // Thêm callback mới
 };
 
 const LoanInfoCards = ({
   loanDetails,
   showAssetGallery = false,
   onAddReference,
+  onUpdateAssetCondition,
 }: TProps) => {
   return (
     <div className="gap-4 flex flex-col">
@@ -180,9 +182,20 @@ const LoanInfoCards = ({
       </Card>
 
       <Card shadow="sm" className="col-span-2">
-        <CardHeader className="pb-2 flex items-center gap-2">
-          <SectionHeader icon={Smartphone} title="Tài sản" />
-          <Chip size="sm" variant="flat">{loanDetails.asset.type}</Chip>
+        <CardHeader className="pb-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <SectionHeader icon={Smartphone} title="Tài sản" />
+            <Chip size="sm" variant="flat">{loanDetails.asset.type}</Chip>
+          </div>
+            <Button
+              color="secondary"
+              variant="light"
+              size="sm"
+              startContent={<UserPlus className="w-4 h-4" />}
+              onPress={onUpdateAssetCondition}
+            >
+              Cập nhật tình trạng
+            </Button>
         </CardHeader>
         <CardBody className="pt-0">
           <div className="bg-default-50 rounded-lg p-2 mb-3 flex flex-col gap-1">
@@ -211,6 +224,19 @@ const LoanInfoCards = ({
                 </p>
               )
             }
+            {loanDetails.assetCondition && (
+              <>
+                <Divider className="my-2" />
+                <div className="bg-warning-50 dark:bg-warning-900/20 rounded-md p-2">
+                  <p className="text-xs font-semibold text-warning-700 dark:text-warning-400 mb-1">
+                    Tình trạng tài sản:
+                  </p>
+                  <p className="text-sm">
+                    {loanDetails.assetCondition}
+                  </p>
+                </div>
+              </>
+            )}
             <Divider className="my-2" />
             <div className="flex items-center gap-2 justify-between">
               <div>Hình thức: {loanDetails.loanType}</div>

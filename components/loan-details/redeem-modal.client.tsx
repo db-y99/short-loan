@@ -15,6 +15,7 @@ import { Card, CardBody } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Loader2, ShoppingCart, Info, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
 import { formatCurrencyVND } from "@/lib/format";
+import ConfirmModal from "@/components/confirm-modal";
 
 type TProps = {
   isOpen: boolean;
@@ -32,6 +33,8 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, onSuccess }: TProps)
   const [isLoadingProgress, setIsLoadingProgress] = useState(false);
   const [totalInterestDue, setTotalInterestDue] = useState(0);
   const [totalInterestPaid, setTotalInterestPaid] = useState(0);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmMessage, setConfirmMessage] = useState("");
   const [message, setMessage] = useState<{
     type: "success" | "error" | "info" | "warning";
     text: string;
@@ -123,24 +126,28 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, onSuccess }: TProps)
       return;
     }
 
-    // Confirm
+    // Build confirm message
     const totalAmount = numericPrincipal + numericInterest;
     const remainingInterest = totalInterestDue - totalInterestPaid;
     
-    let confirmMessage = `Xác nhận chuộc đồ?\n\n`;
-    confirmMessage += `Tiền gốc: ${formatCurrencyVND(numericPrincipal)}\n`;
-    confirmMessage += `Tiền lãi: ${formatCurrencyVND(numericInterest)}\n`;
-    confirmMessage += `Tổng cộng: ${formatCurrencyVND(totalAmount)}\n\n`;
+    let msg = `Tiền gốc: ${formatCurrencyVND(numericPrincipal)}\n`;
+    msg += `Tiền lãi: ${formatCurrencyVND(numericInterest)}\n`;
+    msg += `Tổng cộng: ${formatCurrencyVND(totalAmount)}\n\n`;
     
     if (numericInterest < remainingInterest) {
-      confirmMessage += `⚠️ Lưu ý: Còn thiếu ${formatCurrencyVND(remainingInterest - numericInterest)} lãi\n\n`;
+      msg += `⚠️ Lưu ý: Còn thiếu ${formatCurrencyVND(remainingInterest - numericInterest)} lãi\n\n`;
     }
     
-    confirmMessage += `Sau khi chuộc đồ, khoản vay sẽ chuyển sang trạng thái "Hoàn thành"`;
+    msg += `Sau khi chuộc đồ, khoản vay sẽ chuyển sang trạng thái "Hoàn thành"`;
 
-    if (!confirm(confirmMessage)) {
-      return;
-    }
+    setConfirmMessage(msg);
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirmRedeem = async () => {
+    const numericPrincipal = parseAmount(principalAmount);
+    const numericInterest = parseAmount(interestAmount);
+    const totalAmount = numericPrincipal + numericInterest;
 
     setIsSubmitting(true);
     setMessage(null);
@@ -343,6 +350,18 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, onSuccess }: TProps)
           </Button>
         </ModalFooter>
       </ModalContent>
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        isOpen={isConfirmOpen}
+        onClose={() => setIsConfirmOpen(false)}
+        title="Xác nhận chuộc đồ"
+        message={confirmMessage}
+        onConfirm={handleConfirmRedeem}
+        confirmColor="success"
+        confirmText="Xác nhận chuộc đồ"
+        isLoading={isSubmitting}
+      />
     </Modal>
   );
 };

@@ -7,7 +7,7 @@ import {
   ModalFooter,
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
-import { AlertCircle, CreditCard, MessageSquare, ShoppingCart, CheckCircle, XCircle, DollarSign, Loader2, UserPlus } from "lucide-react";
+import { AlertCircle, CreditCard, MessageSquare, ShoppingCart, CheckCircle, XCircle, DollarSign, Loader2, UserPlus, FileEdit } from "lucide-react";
 import type { TLoanDetails } from "@/types/loan.types";
 import { LOAN_STATUS } from "@/constants/loan";
 import ContractHeader from "@/components/loan-details/loan-header";
@@ -21,6 +21,8 @@ import PayInterestModal from "@/components/loan-details/pay-interest-modal.clien
 import PaymentHistoryModal from "@/components/loan-details/payment-history-modal";
 import RedeemModal from "@/components/loan-details/redeem-modal.client";
 import AddReferenceModal from "@/components/loan-details/add-reference-modal";
+import UpdateAssetConditionModal from "@/components/loan-details/update-asset-condition-modal";
+import ConfirmModal from "@/components/confirm-modal";
 
 import { useAuth } from "@/lib/contexts/auth-context";
 
@@ -47,6 +49,14 @@ const LoanDetailsModal = ({
   const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
   const [isRedeemOpen, setIsRedeemOpen] = useState(false);
   const [isAddReferenceOpen, setIsAddReferenceOpen] = useState(false);
+  const [isUpdateConditionOpen, setIsUpdateConditionOpen] = useState(false);
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    confirmColor?: "primary" | "success" | "warning" | "danger";
+  } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0); // Thêm state để force refresh
   const [message, setMessage] = useState<{
     type: "success" | "error";
@@ -59,50 +69,55 @@ const LoanDetailsModal = ({
     const isApproving = loanDetails.status === LOAN_STATUS.PENDING;
     const isDisbursing = loanDetails.status === LOAN_STATUS.SIGNED;
 
-    const confirmMessage = isApproving
+    const title = isApproving ? "Xác nhận duyệt" : "Xác nhận giải ngân";
+    const message = isApproving
       ? "Xác nhận duyệt khoản vay này?\n\nSau khi duyệt:\n- Chuyển sang trạng thái Đã duyệt (Chờ ký)\n- Có thể ký hợp đồng"
       : "Xác nhận giải ngân khoản vay này?\n\nSau khi giải ngân:\n- Chuyển sang trạng thái Đang cầm\n- Bắt đầu tính lãi từ thời điểm này\n- Có thể đóng lãi và chuộc đồ";
 
-    if (!confirm(confirmMessage)) {
-      return;
-    }
+    setConfirmConfig({
+      title,
+      message,
+      confirmColor: isApproving ? "primary" : "success",
+      onConfirm: async () => {
+        setIsDisbursing(true);
+        setMessage(null);
 
-    setIsDisbursing(true);
-    setMessage(null);
+        try {
+          const endpoint = isApproving 
+            ? `/api/loans/${loanDetails.id}/approve`
+            : `/api/loans/${loanDetails.id}/disburse`;
 
-    try {
-      const endpoint = isApproving 
-        ? `/api/loans/${loanDetails.id}/approve`
-        : `/api/loans/${loanDetails.id}/disburse`;
+          const response = await fetch(endpoint, {
+            method: "POST",
+          });
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-      });
+          const result = await response.json();
 
-      const result = await response.json();
-
-      if (result.success) {
-        setMessage({
-          type: "success",
-          text: isApproving ? "Duyệt thành công!" : "Giải ngân thành công!",
-        });
-        
-        // Refresh data
-        if (onRefresh) {
-          setTimeout(() => {
-            onRefresh();
-            setMessage(null);
-          }, 1500);
+          if (result.success) {
+            setMessage({
+              type: "success",
+              text: isApproving ? "Duyệt thành công!" : "Giải ngân thành công!",
+            });
+            
+            // Refresh data
+            if (onRefresh) {
+              setTimeout(() => {
+                onRefresh();
+                setMessage(null);
+              }, 1500);
+            }
+          } else {
+            setMessage({ type: "error", text: result.error || "Có lỗi xảy ra" });
+          }
+        } catch (error) {
+          setMessage({ type: "error", text: isApproving ? "Lỗi khi duyệt" : "Lỗi khi giải ngân" });
+          console.error(error);
+        } finally {
+          setIsDisbursing(false);
         }
-      } else {
-        setMessage({ type: "error", text: result.error || "Có lỗi xảy ra" });
-      }
-    } catch (error) {
-      setMessage({ type: "error", text: isApproving ? "Lỗi khi duyệt" : "Lỗi khi giải ngân" });
-      console.error(error);
-    } finally {
-      setIsDisbursing(false);
-    }
+      },
+    });
+    setIsConfirmOpen(true);
   };
 
   if (!loanDetails && !isLoading && !error) return null;
@@ -155,6 +170,20 @@ const LoanDetailsModal = ({
         setMessage(null);
         onClose(); // Close the main modal after redeem
       }, 2000);
+    }
+  };
+
+  const handleUpdateConditionSuccess = () => {
+    setMessage({
+      type: "success",
+      text: "Cập nhật tình trạng tài sản thành công!",
+    });
+    
+    if (onRefresh) {
+      setTimeout(() => {
+        onRefresh();
+        setMessage(null);
+      }, 1500);
     }
   };
 
@@ -233,6 +262,7 @@ const LoanDetailsModal = ({
                         loanDetails={loanDetails}
                         showAssetGallery
                         onAddReference={() => setIsAddReferenceOpen(true)}
+                        onUpdateAssetCondition={() => setIsUpdateConditionOpen(true)}
                       />
                     </div>
                     <LoanAmountSummary loanDetails={loanDetails} />
@@ -286,6 +316,19 @@ const LoanDetailsModal = ({
                       </Button>
                     </div>
                   )}
+
+                  <div className="mt-4">
+                    <Button
+                      color="secondary"
+                      variant="flat"
+                      className="w-full"
+                      size="md"
+                      startContent={<FileEdit size={16} />}
+                      onPress={() => setIsUpdateConditionOpen(true)}
+                    >
+                      Cập nhật tình trạng tài sản
+                    </Button>
+                  </div>
                 </>
               )}
             </div>
@@ -373,7 +416,28 @@ const LoanDetailsModal = ({
             loanId={loanDetails.id}
             onSuccess={handleAddReferenceSuccess}
           />
+
+          <UpdateAssetConditionModal
+            isOpen={isUpdateConditionOpen}
+            onClose={() => setIsUpdateConditionOpen(false)}
+            loanId={loanDetails.id}
+            currentCondition={loanDetails.assetCondition}
+            onSuccess={handleUpdateConditionSuccess}
+          />
         </>
+      )}
+
+      {/* Confirm Modal */}
+      {confirmConfig && (
+        <ConfirmModal
+          isOpen={isConfirmOpen}
+          onClose={() => setIsConfirmOpen(false)}
+          title={confirmConfig.title}
+          message={confirmConfig.message}
+          onConfirm={confirmConfig.onConfirm}
+          confirmColor={confirmConfig.confirmColor}
+          isLoading={isDisbursing}
+        />
       )}
     </Modal>
   );

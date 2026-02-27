@@ -120,6 +120,14 @@ const LoanInfoSection = ({ form, onChange }: TProps) => {
       </div>
 
       <Textarea
+        label="Tình trạng tài sản"
+        placeholder="Ví dụ: Còn mới, hoạt động tốt, có vài vết xước nhỏ..."
+        value={form.asset_condition || ""}
+        onValueChange={(v) => onChange("asset_condition", v)}
+        minRows={2}
+      />
+
+      <Textarea
         label="Ghi chú"
         placeholder="Ghi chú thêm về hợp đồng..."
         value={form.notes}

@@ -48,6 +48,7 @@ export type TCreateLoanForm = {
   engine_number: string;
   imei: string;
   serial: string;
+  asset_condition?: string;
   loan_amount: string;
   loan_type: string;
   notes: string;
