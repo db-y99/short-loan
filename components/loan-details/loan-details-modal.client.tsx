@@ -316,19 +316,6 @@ const LoanDetailsModal = ({
                       </Button>
                     </div>
                   )}
-
-                  <div className="mt-4">
-                    <Button
-                      color="secondary"
-                      variant="flat"
-                      className="w-full"
-                      size="md"
-                      startContent={<FileEdit size={16} />}
-                      onPress={() => setIsUpdateConditionOpen(true)}
-                    >
-                      Cập nhật tình trạng tài sản
-                    </Button>
-                  </div>
                 </>
               )}
             </div>
