@@ -206,7 +206,7 @@ export type TCreateLoanPayload = {
 
 export type TCreateLoanInput = {
   code: string;
-  creator: string;
+  profile_id: string;
   customer_id: string;
   asset_type: string;
   asset_name: string;

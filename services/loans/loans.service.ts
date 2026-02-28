@@ -31,7 +31,6 @@ export const getLoansService = async (): Promise<TLoan[]> => {
       `
       id,
       code,
-      creator,
       amount,
       loan_package,
       loan_type,
@@ -41,6 +40,10 @@ export const getLoansService = async (): Promise<TLoan[]> => {
       status,
       customers!inner (
         full_name
+      ),
+      profiles!inner (
+        full_name,
+        email
       )
     `,
     )
@@ -54,11 +57,18 @@ export const getLoansService = async (): Promise<TLoan[]> => {
       | { full_name: string }[]
       | null;
     const customer = Array.isArray(cust) ? cust[0] : cust;
+    
+    const prof = row.profiles as
+      | { full_name: string; email: string }
+      | { full_name: string; email: string }[]
+      | null;
+    const profile = Array.isArray(prof) ? prof[0] : prof;
+    
     const loanTypeKey = row.loan_type as TLoanType;
     return {
       id: row.id,
       code: row.code,
-      creator: row.creator,
+      creator: profile?.full_name ?? profile?.email ?? "—",
       customer: (customer?.full_name as string | undefined) ?? "—",
       asset: row.asset_name ?? "—",
       amount: Number(row.amount),
@@ -103,7 +113,7 @@ export const createLoanService = async (
     .from("loans")
     .insert({
       code: input.code,
-      creator: input.creator,
+      profile_id: input.profile_id,
       customer_id: input.customer_id,
       asset_type: input.asset_type,
       asset_name: input.asset_name,

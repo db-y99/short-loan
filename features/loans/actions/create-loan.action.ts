@@ -18,6 +18,7 @@ import {
   createPaymentCycleService,
   saveDetailedPaymentPeriodsService,
 } from "@/services/payments/payment-periods.service";
+import { getCurrentUser } from "@/lib/actions/auth";
 
 type TCreateLoanResult =
   | { success: true; data: { id: string; code: string; folderId: string } }
@@ -27,6 +28,15 @@ export const createLoanAction = async (
   payload: TCreateLoanPayload,
 ): Promise<TCreateLoanResult> => {
   try {
+    // Lấy thông tin user đang đăng nhập
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return {
+        success: false,
+        error: "Bạn cần đăng nhập để tạo khoản vay",
+      };
+    }
+
     const input = CreateLoanSchema.parse({
       ...payload,
       references: payload.references,
@@ -65,7 +75,7 @@ export const createLoanAction = async (
     // drive_folder_id tạm thời set = parent folder để satisfy NOT NULL
     const { id } = await createLoanService({
       code,
-      creator: "system",
+      profile_id: currentUser.id,
       customer_id: customer.id,
       asset_type: input.asset_type,
       asset_name: input.asset_name,
