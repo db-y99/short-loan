@@ -32,6 +32,7 @@ export type TAssetPledgeContractData = {
   drive_folder_id: string;
   DRAFT_SIGNATURE?: string;
   OFFICIAL_SIGNATURE?: string;
+  SIGNED_DATE?: string;
 };
 
 /** Dữ liệu Hợp đồng thuê tài sản */

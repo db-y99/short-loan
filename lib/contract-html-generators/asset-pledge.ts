@@ -1,6 +1,10 @@
 import type { TAssetPledgeContractData } from "@/types/contract.types";
 
 export function generateAssetPledgeHTML(data: TAssetPledgeContractData): string {
+  const draftSignatureHTML = data.DRAFT_SIGNATURE 
+    ? `<img src="${data.DRAFT_SIGNATURE}" alt="Chữ ký nháy" style="max-width: 80px; max-height: 40px; vertical-align: middle; margin-left: 8px;" />` 
+    : '';
+  
   const milestonesHTML = (data.MILESTONES ?? [])
     .map(
       (m) => `
@@ -120,7 +124,7 @@ export function generateAssetPledgeHTML(data: TAssetPledgeContractData): string 
           <tr>
             <th>Mốc thanh toán</th>
             <th>Thời điểm tất toán</th>
-            <th>Tổng tiền phải thanh toán</th>
+            <th>Tổng tiền phải thanh toán ${draftSignatureHTML}</th>
           </tr>
         </thead>
         <tbody>${milestonesHTML}</tbody>

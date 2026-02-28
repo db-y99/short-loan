@@ -395,11 +395,18 @@ export async function generateSignedContractsService(
     }
 
     // Fetch signatures and convert to base64 for PDF embedding
+    let draftSignatureBase64: string | null = null;
     let officialSignatureBase64: string | null = null;
     
     try {
-      // Fetch official signature from Drive
+      // Fetch signatures from Drive
       const { getFileFromDrive } = await import("@/lib/google-drive");
+      
+      // Fetch draft signature (Chữ ký nháy - Bên A)
+      const draftSigBuffer = await getFileFromDrive(loanData.draft_signature_file_id);
+      draftSignatureBase64 = `data:image/png;base64,${draftSigBuffer.toString('base64')}`;
+      
+      // Fetch official signature (Chữ ký chính thức - Bên B)
       const officialSigBuffer = await getFileFromDrive(loanData.official_signature_file_id);
       officialSignatureBase64 = `data:image/png;base64,${officialSigBuffer.toString('base64')}`;
     } catch (fetchError) {
@@ -422,6 +429,7 @@ export async function generateSignedContractsService(
         fileName: `HD-CamCo-DaKy-${loan.code}${versionSuffix}.pdf`,
         data: {
           ...buildAssetPledgeContractData(loan, folderId),
+          DRAFT_SIGNATURE: draftSignatureBase64,
           OFFICIAL_SIGNATURE: officialSignatureBase64,
         },
       },
@@ -431,6 +439,7 @@ export async function generateSignedContractsService(
         fileName: `HD-Thue-DaKy-${loan.code}${versionSuffix}.pdf`,
         data: {
           ...buildAssetLeaseContractData(loan, folderId),
+          DRAFT_SIGNATURE: draftSignatureBase64,
           OFFICIAL_SIGNATURE: officialSignatureBase64,
         },
       },
@@ -440,6 +449,7 @@ export async function generateSignedContractsService(
         fileName: `XN-NhanTien-DaKy-${loan.code}${versionSuffix}.pdf`,
         data: {
           ...buildFullPaymentConfirmationData(loan, folderId),
+          DRAFT_SIGNATURE: draftSignatureBase64,
           OFFICIAL_SIGNATURE: officialSignatureBase64,
         },
       },
@@ -449,6 +459,7 @@ export async function generateSignedContractsService(
         fileName: `UQ-XuLy-DaKy-${loan.code}${versionSuffix}.pdf`,
         data: {
           ...buildAssetDisposalAuthorizationData(loan, folderId),
+          DRAFT_SIGNATURE: draftSignatureBase64,
           OFFICIAL_SIGNATURE: officialSignatureBase64,
         },
       },
