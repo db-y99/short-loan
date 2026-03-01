@@ -1,21 +1,13 @@
 -- Function để tự động tạo profile khi user mới đăng ký
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
-DECLARE
-  default_role_id uuid;
 BEGIN
-  -- Lấy role_id mặc định (role 'user')
-  SELECT id INTO default_role_id
-  FROM public.roles
-  WHERE code = 'user'
-  LIMIT 1;
-
-  -- Tạo profile mới
+  -- Tạo profile mới với role mặc định là 'user'
   INSERT INTO public.profiles (
     id,
     email,
     full_name,
-    role_id,
+    role,
     created_at,
     updated_at
   )
@@ -23,7 +15,7 @@ BEGIN
     NEW.id,
     NEW.email,
     COALESCE(NEW.raw_user_meta_data->>'full_name', SPLIT_PART(NEW.email, '@', 1)),
-    default_role_id,
+    'user',
     NOW(),
     NOW()
   );
