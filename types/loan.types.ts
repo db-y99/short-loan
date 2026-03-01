@@ -192,6 +192,7 @@ export type TCreateLoanPayload = {
   asset_type: string;
   asset_name: string;
   asset_identity: TAssetIdentity;
+  asset_condition?: string;
   loan_amount: string;
   loan_type: string;
   notes: string;
@@ -211,6 +212,7 @@ export type TCreateLoanInput = {
   asset_type: string;
   asset_name: string;
   asset_identity: TAssetIdentity;
+  asset_condition?: string | null;
   drive_folder_id: string;
   amount: number;
   loan_package: string | null;

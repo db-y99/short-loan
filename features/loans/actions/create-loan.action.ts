@@ -80,6 +80,7 @@ export const createLoanAction = async (
       asset_type: input.asset_type,
       asset_name: input.asset_name,
       asset_identity: input.asset_identity,
+      asset_condition: input.asset_condition || null,
       drive_folder_id: parentFolderId,
       amount,
       loan_package: loanPackage,

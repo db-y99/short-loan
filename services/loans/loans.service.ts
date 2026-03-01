@@ -118,6 +118,7 @@ export const createLoanService = async (
       asset_type: input.asset_type,
       asset_name: input.asset_name,
       asset_identity: assetIdentity, // ✅ jsonb đúng schema
+      asset_condition: input.asset_condition ?? null,
       amount: input.amount,
       loan_package: input.loan_package ?? null,
       loan_type: input.loan_type,
