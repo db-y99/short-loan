@@ -152,7 +152,7 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
           imei: form.imei,
           serial: form.serial,
         },
-        asset_condition: form.asset_condition || null,
+        asset_condition: form.asset_condition,
         loan_amount: form.loan_amount,
         loan_type: form.loan_type,
         notes: form.notes,
