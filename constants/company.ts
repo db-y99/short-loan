@@ -8,6 +8,6 @@ export const COMPANY_INFO = {
   ADDRESS: "99B Nguyễn Trãi, phường Ninh Kiều, thành phố Cần Thơ",
   REPRESENTATIVE: "Nguyễn Thị Thúy Quyên",
   POSITION: "Giám đốc",
-  TAX_CODE: "0317445678",
-  PHONE: "0292 3831 999",
+  TAX_CODE: "1801778932",
+  PHONE: "1900575792",
 } as const;
