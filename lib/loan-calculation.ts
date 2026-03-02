@@ -5,19 +5,11 @@
  */
 
 import { LOAN_TYPES, type TLoanType } from "@/constants/loan";
-
-/* =========================
-   CONSTANTS
-========================== */
-
-/** Lãi suất cơ bản: 0.033%/ngày */
-const DAILY_INTEREST_RATE = 0.00033;
-
-/** Ngưỡng áp dụng phí thẩm định */
-const APPRAISAL_FEE_THRESHOLD = 5_000_000;
-
-/** Tỷ lệ phí thẩm định */
-const APPRAISAL_FEE_RATE = 0.05; // 5%
+import {
+  DAILY_INTEREST_RATE,
+  APPRAISAL_FEE_THRESHOLD,
+  APPRAISAL_FEE_RATE,
+} from "@/lib/loan-constants";
 
 /* =========================
    TYPES
@@ -37,7 +29,9 @@ export type TBulletPayment = {
   milestone: number; // Mốc 1, 2, 3
   days: number; // 7, 18, 30 ngày
   rate: number; // Tỷ lệ % (5%, 8%, 12% hoặc 1.25%, 3.5%, 5%)
-  total: number; // Tổng chuộc = Vay × (1 + rate)
+  interest: number; // Tiền lãi (0.033%/ngày)
+  rentalFee: number; // Phí thuê tài sản
+  total: number; // Tổng chuộc = Vay + Lãi + Phí
 };
 
 export type TLoanCalculationResult = {
@@ -158,31 +152,56 @@ export function calculateInstallment3Periods(
  * Dành cho khách giữ lại tài sản để sử dụng (xe máy/ô tô)
  * Phí cao hơn vì khách được sử dụng tài sản
  * 
- * - Mốc 7 ngày: 5%
- * - Mốc 18 ngày: 8%
- * - Mốc 30 ngày: 12%
+ * Tách riêng:
+ * - Lãi suất: 0.033%/ngày (pháp lý)
+ * - Phí thuê: Để đạt tổng mục tiêu 5% - 8% - 12%
+ * 
+ * - Mốc 7 ngày: Tổng 5% (Lãi 0.231% + Phí 4.769%)
+ * - Mốc 18 ngày: Tổng 8% (Lãi 0.594% + Phí 7.406%)
+ * - Mốc 30 ngày: Tổng 12% (Lãi 0.99% + Phí 11.01%)
  */
 export function calculateBulletPaymentByMilestone(
   loanAmount: number,
 ): TBulletPayment[] {
+  // Mốc 1: 7 ngày
+  const interest1 = Math.round(loanAmount * DAILY_INTEREST_RATE * 7); // 0.231%
+  const targetTotal1 = Math.round(loanAmount * 1.05); // 5%
+  const rentalFee1 = targetTotal1 - loanAmount - interest1;
+
+  // Mốc 2: 18 ngày
+  const interest2 = Math.round(loanAmount * DAILY_INTEREST_RATE * 18); // 0.594%
+  const targetTotal2 = Math.round(loanAmount * 1.08); // 8%
+  const rentalFee2 = targetTotal2 - loanAmount - interest2;
+
+  // Mốc 3: 30 ngày
+  const interest3 = Math.round(loanAmount * DAILY_INTEREST_RATE * 30); // 0.99%
+  const targetTotal3 = Math.round(loanAmount * 1.12); // 12%
+  const rentalFee3 = targetTotal3 - loanAmount - interest3;
+
   return [
     {
       milestone: 1,
       days: 7,
       rate: 0.05, // 5%
-      total: Math.round(loanAmount * 1.05),
+      interest: interest1,
+      rentalFee: rentalFee1,
+      total: targetTotal1,
     },
     {
       milestone: 2,
       days: 18,
       rate: 0.08, // 8%
-      total: Math.round(loanAmount * 1.08),
+      interest: interest2,
+      rentalFee: rentalFee2,
+      total: targetTotal2,
     },
     {
       milestone: 3,
       days: 30,
       rate: 0.12, // 12%
-      total: Math.round(loanAmount * 1.12),
+      interest: interest3,
+      rentalFee: rentalFee3,
+      total: targetTotal3,
     },
   ];
 }
@@ -195,31 +214,56 @@ export function calculateBulletPaymentByMilestone(
  * Gói 3: Gốc cuối kỳ + Giữ tài sản
  * Tài sản được lưu kho tại cửa hàng → Phí thấp hơn Gói 2
  * 
- * - Mốc 7 ngày: 1.25%
- * - Mốc 18 ngày: 3.5%
- * - Mốc 30 ngày: 5%
+ * Tách riêng:
+ * - Lãi suất: 0.033%/ngày (pháp lý)
+ * - Phí thuê: Để đạt tổng mục tiêu 1.25% - 3.5% - 5%
+ * 
+ * - Mốc 7 ngày: Tổng 1.25% (Lãi 0.231% + Phí 1.019%)
+ * - Mốc 18 ngày: Tổng 3.5% (Lãi 0.594% + Phí 2.906%)
+ * - Mốc 30 ngày: Tổng 5% (Lãi 0.99% + Phí 4.01%)
  */
 export function calculateBulletPaymentWithCollateralHold(
   loanAmount: number,
 ): TBulletPayment[] {
+  // Mốc 1: 7 ngày
+  const interest1 = Math.round(loanAmount * DAILY_INTEREST_RATE * 7); // 0.231%
+  const targetTotal1 = Math.round(loanAmount * 1.0125); // 1.25%
+  const rentalFee1 = targetTotal1 - loanAmount - interest1;
+
+  // Mốc 2: 18 ngày
+  const interest2 = Math.round(loanAmount * DAILY_INTEREST_RATE * 18); // 0.594%
+  const targetTotal2 = Math.round(loanAmount * 1.035); // 3.5%
+  const rentalFee2 = targetTotal2 - loanAmount - interest2;
+
+  // Mốc 3: 30 ngày
+  const interest3 = Math.round(loanAmount * DAILY_INTEREST_RATE * 30); // 0.99%
+  const targetTotal3 = Math.round(loanAmount * 1.05); // 5%
+  const rentalFee3 = targetTotal3 - loanAmount - interest3;
+
   return [
     {
       milestone: 1,
       days: 7,
       rate: 0.0125, // 1.25%
-      total: Math.round(loanAmount * 1.0125),
+      interest: interest1,
+      rentalFee: rentalFee1,
+      total: targetTotal1,
     },
     {
       milestone: 2,
       days: 18,
       rate: 0.035, // 3.5%
-      total: Math.round(loanAmount * 1.035),
+      interest: interest2,
+      rentalFee: rentalFee2,
+      total: targetTotal2,
     },
     {
       milestone: 3,
       days: 30,
       rate: 0.05, // 5%
-      total: Math.round(loanAmount * 1.05),
+      interest: interest3,
+      rentalFee: rentalFee3,
+      total: targetTotal3,
     },
   ];
 }

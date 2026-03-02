@@ -1,7 +1,25 @@
-/** Mốc thanh toán chung */
+/** Mốc thanh toán cho Hợp đồng cầm cố (Gốc + Lãi) */
+export type TPledgeMilestone = {
+  moc: number;
+  ngay: number;
+  lai: string; // Tiền lãi
+  tongTien: string; // Tổng = Gốc + Lãi
+};
+
+/** Mốc thanh toán cho Hợp đồng thuê tài sản (Phí thuê) */
+export type TLeaseMilestone = {
+  moc: number;
+  ngay: number;
+  phiThue: string; // Phí thuê tài sản
+};
+
+/** Mốc thanh toán chung (deprecated - dùng TPledgeMilestone hoặc TLeaseMilestone) */
 export type TMilestone = {
   moc: number;
   ngay: number;
+  goc?: string;
+  lai: string;
+  phiThue: string;
   tongTien: string;
 };
 
@@ -28,7 +46,7 @@ export type TAssetPledgeContractData = {
   TINH_TRANG: string;
   SO_TIEN_VAY: string;
   LAI_SUAT: string;
-  MILESTONES: TMilestone[];
+  MILESTONES: TPledgeMilestone[]; // Chỉ ghi Gốc + Lãi
   drive_folder_id: string;
   DRAFT_SIGNATURE?: string;
   OFFICIAL_SIGNATURE?: string;
@@ -58,7 +76,7 @@ export type TAssetLeaseContractData = {
   CHI_TIET: string;
   IMEI: string;
   SERIAL: string;
-  MILESTONES: TMilestone[];
+  MILESTONES: TLeaseMilestone[]; // Chỉ ghi Phí thuê
   NGAY_BAT_DAU: string;
   drive_folder_id: string;
   DRAFT_SIGNATURE?: string;

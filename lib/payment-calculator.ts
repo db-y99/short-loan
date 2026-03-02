@@ -67,7 +67,7 @@ function convertBulletToMilestone(
   return {
     days: payment.days,
     date: dueDate,
-    interestAndFee: payment.total - loanAmount,
+    interestAndFee: payment.interest + payment.rentalFee,
     totalRedemption: payment.total,
   };
 }

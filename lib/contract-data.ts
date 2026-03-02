@@ -4,13 +4,80 @@ import type {
   TAssetLeaseContractData,
   TFullPaymentConfirmationData,
   TAssetDisposalAuthorizationData,
+  TPledgeMilestone,
+  TLeaseMilestone,
 } from "@/types/contract.types";
 import { formatDateShortVN } from "@/lib/format";
 import { COMPANY_INFO } from "@/constants/company";
+import { getLoanInterestRateDescription, DAILY_INTEREST_RATE } from "@/lib/loan-constants";
 
 /** Format số tiền VND */
 function formatVND(n: number): string {
   return new Intl.NumberFormat("vi-VN").format(n) + " VNĐ";
+}
+
+/**
+ * Tạo milestones cho Hợp đồng cầm cố (Gốc + Lãi)
+ * Chỉ hiển thị 3 cột: Mốc | Thời điểm | Tiền lãi | Tổng
+ */
+function buildPledgeMilestones(loan: TLoanDetails): TPledgeMilestone[] {
+  if (!loan.currentPeriod?.milestones) {
+    return [];
+  }
+
+  const isInstallment = loan.loanType.includes("trả góp") || loan.loanType.includes("3 kỳ");
+  
+  return loan.currentPeriod.milestones.map((m, index) => {
+    // Tính lãi từ số ngày
+    const interest = Math.round(loan.loanAmount * DAILY_INTEREST_RATE * m.days);
+    
+    if (isInstallment) {
+      // Gói 1: Có gốc từng kỳ
+      const principal = m.totalRedemption - m.interestAndFee;
+      const total = principal + interest;
+      
+      return {
+        moc: index + 1,
+        ngay: m.days,
+        lai: formatVND(interest),
+        tongTien: formatVND(total),
+      };
+    } else {
+      // Gói 2 & 3: Gốc cuối kỳ
+      const total = loan.loanAmount + interest;
+      
+      return {
+        moc: index + 1,
+        ngay: m.days,
+        lai: formatVND(interest),
+        tongTien: formatVND(total),
+      };
+    }
+  });
+}
+
+/**
+ * Tạo milestones cho Hợp đồng thuê tài sản (Phí thuê)
+ */
+function buildLeaseMilestones(loan: TLoanDetails): TLeaseMilestone[] {
+  if (!loan.currentPeriod?.milestones) {
+    return [];
+  }
+
+  return loan.currentPeriod.milestones.map((m, index) => {
+    // Tính lãi
+    const interest = Math.round(loan.loanAmount * DAILY_INTEREST_RATE * m.days);
+    
+    // Phí thuê = Tổng - Gốc - Lãi
+    const rentalFee = m.totalRedemption - loan.loanAmount - interest;
+    
+    return {
+      moc: index + 1,
+      ngay: m.days,
+      phiThue: formatVND(rentalFee),
+      tongTien: formatVND(rentalFee),
+    };
+  });
 }
 
 /**
@@ -24,16 +91,8 @@ export function buildAssetPledgeContractData(
   const signedDate = new Date(loan.signedAt ?? loan.id);
   const principal = loan.loanAmount;
 
-  /** Tính các mốc thanh toán từ currentPeriod nếu có, nếu không dùng công thức cũ */
-  const milestones = loan.currentPeriod?.milestones.map((m, index) => ({
-    moc: index + 1,
-    ngay: m.days,
-    tongTien: formatVND(m.totalRedemption),
-  })) ?? [
-    { moc: 1, ngay: 7, tongTien: formatVND(principal) },
-    { moc: 2, ngay: 18, tongTien: formatVND(principal) },
-    { moc: 3, ngay: 30, tongTien: formatVND(principal) },
-  ];
+  /** Tính các mốc thanh toán cho Hợp đồng cầm cố (Gốc + Lãi) */
+  const milestones = buildPledgeMilestones(loan);
 
   /** Chi tiết tài sản: tên + IMEI/Serial nếu có */
   const imeiStr = loan.asset.imei ? ` (IMEI: ${loan.asset.imei}` : "";
@@ -67,24 +126,10 @@ export function buildAssetPledgeContractData(
     SERIAL: loan.asset.serial ?? "—",
     TINH_TRANG: loan.assetCondition || "Đang cầm cố",
     SO_TIEN_VAY: formatVND(principal),
-    LAI_SUAT: getLoanInterestRateDescription(loan.loanType),
+    LAI_SUAT: getLoanInterestRateDescription(),
     MILESTONES: milestones,
     drive_folder_id: driveFolderId,
   };
-}
-
-/**
- * Lấy mô tả lãi suất/phí theo gói vay
- */
-function getLoanInterestRateDescription(loanType: string): string {
-  if (loanType.includes("trả góp") || loanType.includes("3 kỳ")) {
-    return "Lãi suất 0,033%/ngày + Phí thuê tài sản";
-  } else if (loanType.includes("Theo mốc")) {
-    return "Phí theo mốc: 5% (7 ngày), 8% (18 ngày), 12% (30 ngày)";
-  } else if (loanType.includes("Giữ TS")) {
-    return "Phí theo mốc: 1,25% (7 ngày), 3,5% (18 ngày), 5% (30 ngày)";
-  }
-  return "0,99%/30 ngày";
 }
 
 /** Build dữ liệu Hợp đồng thuê tài sản */
@@ -93,18 +138,9 @@ export function buildAssetLeaseContractData(
   driveFolderId = "",
 ): TAssetLeaseContractData {
   const signedDate = new Date(loan.signedAt ?? loan.id);
-  const principal = loan.loanAmount;
   
-  /** Tính các mốc thanh toán từ currentPeriod nếu có */
-  const milestones = loan.currentPeriod?.milestones.map((m, index) => ({
-    moc: index + 1,
-    ngay: m.days,
-    tongTien: formatVND(m.totalRedemption),
-  })) ?? [
-    { moc: 1, ngay: 7, tongTien: formatVND(principal) },
-    { moc: 2, ngay: 18, tongTien: formatVND(principal) },
-    { moc: 3, ngay: 30, tongTien: formatVND(principal) },
-  ];
+  /** Tính các mốc thanh toán cho Hợp đồng thuê (Phí thuê) */
+  const milestones = buildLeaseMilestones(loan);
   
   const imeiStr = loan.asset.imei ? ` (IMEI: ${loan.asset.imei}` : "";
   const serialStr = loan.asset.serial

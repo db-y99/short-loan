@@ -11,11 +11,21 @@ export function generateAssetPledgeHTML(data: TAssetPledgeContractData): string 
       <tr>
         <td style="padding: 8px; border: 1px solid #000;">Mốc ${m.moc}</td>
         <td style="padding: 8px; border: 1px solid #000;">Ngày ${m.ngay}</td>
-        <td style="padding: 8px; border: 1px solid #000;">${m.tongTien}</td>
+        <td style="padding: 8px; border: 1px solid #000;">${m.lai}</td>
       </tr>
     `,
     )
     .join("");
+
+  const tableHeader = `
+    <thead>
+      <tr>
+        <th>Mốc thanh toán</th>
+        <th>Thời điểm tất toán</th>
+        <th>Tổng tiền phải thanh toán ${draftSignatureHTML}</th>
+      </tr>
+    </thead>
+  `;
 
   return `
 <!DOCTYPE html>
@@ -120,13 +130,7 @@ export function generateAssetPledgeHTML(data: TAssetPledgeContractData): string 
       <h3 style="font-size: 14pt; font-weight: bold; margin-bottom: 10px;">ĐIỀU 3: QUY ĐỊNH VỀ MỐC TẤT TOÁN</h3>
       <p style="margin-bottom: 10px;">Bên B có quyền tất toán khoản vay trước hạn bất cứ lúc nào. Tổng số tiền phải thanh toán sẽ được xác định theo bảng dưới đây:</p>
       <table>
-        <thead>
-          <tr>
-            <th>Mốc thanh toán</th>
-            <th>Thời điểm tất toán</th>
-            <th>Tổng tiền phải thanh toán ${draftSignatureHTML}</th>
-          </tr>
-        </thead>
+        ${tableHeader}
         <tbody>${milestonesHTML}</tbody>
       </table>
     </div>

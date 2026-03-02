@@ -11,7 +11,7 @@ export function generateAssetLeaseHTML(data: TAssetLeaseContractData): string {
       <tr>
         <td style="padding: 8px; border: 1px solid #000;">Mốc ${m.moc}</td>
         <td style="padding: 8px; border: 1px solid #000;">Ngày ${m.ngay}</td>
-        <td style="padding: 8px; border: 1px solid #000;">${m.tongTien}</td>
+        <td style="padding: 8px; border: 1px solid #000;">${m.phiThue}</td>
       </tr>
     `,
     )
