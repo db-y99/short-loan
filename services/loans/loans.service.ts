@@ -21,11 +21,20 @@ import { formatDateShortVN } from "@/lib/format";
 import { calculatePaymentPeriods } from "@/lib/payment-calculator";
 import { getPaymentPeriodsService } from "@/services/payments/payment-periods.service";
 
+export type TLoanFilters = {
+  search?: string;
+  status?: string;
+  loanType?: string;
+  creator?: string;
+};
+
 /** Lấy danh sách loans với thông tin customer (full_name) */
-export const getLoansService = async (): Promise<TLoan[]> => {
+export const getLoansService = async (
+  filters?: TLoanFilters,
+): Promise<TLoan[]> => {
   const supabase = await createSupabaseServerClient();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("loans")
     .select(
       `
@@ -49,9 +58,32 @@ export const getLoansService = async (): Promise<TLoan[]> => {
     )
     .order("created_at", { ascending: false });
 
+  // Apply filters
+  if (filters?.status && filters.status !== "all") {
+    query = query.eq("status", filters.status);
+  }
+
+  if (filters?.loanType && filters.loanType !== "all") {
+    query = query.eq("loan_type", filters.loanType);
+  }
+
+  const { data, error } = await query;
+
   if (error) throw new Error(error.message);
 
-  return (data ?? []).map((row) => {
+  let results = data ?? [];
+
+  // Client-side filters (search, creator)
+  if (filters?.search) {
+    const keyword = filters.search.toLowerCase();
+    results = results.filter(
+      (row) =>
+        row.code.toLowerCase().includes(keyword) ||
+        row.asset_name?.toLowerCase().includes(keyword),
+    );
+  }
+
+  return results.map((row) => {
     const cust = row.customers as
       | { full_name: string }
       | { full_name: string }[]
@@ -65,10 +97,17 @@ export const getLoansService = async (): Promise<TLoan[]> => {
     const profile = Array.isArray(prof) ? prof[0] : prof;
     
     const loanTypeKey = row.loan_type as TLoanType;
+    const creator = profile?.full_name ?? profile?.email ?? "—";
+
+    // Filter by creator (client-side vì cần join data)
+    if (filters?.creator && filters.creator !== "all" && creator !== filters.creator) {
+      return null;
+    }
+
     return {
       id: row.id,
       code: row.code,
-      creator: profile?.full_name ?? profile?.email ?? "—",
+      creator,
       customer: (customer?.full_name as string | undefined) ?? "—",
       asset: row.asset_name ?? "—",
       amount: Number(row.amount),
@@ -78,7 +117,7 @@ export const getLoansService = async (): Promise<TLoan[]> => {
       approved_at: row.approved_at,
       status: row.status as TLoanStatus,
     } satisfies TLoan;
-  });
+  }).filter((loan): loan is TLoan => loan !== null);
 };
 
 /**

@@ -2,8 +2,24 @@ import LoansPageClient from "@/components/loan-page.client";
 import AppLayout from "@/components/layouts/app-layout";
 import { getLoansService } from "@/services/loans/loans.service";
 
-export default async function Home() {
-  const loans = await getLoansService();
+type TPageProps = {
+  searchParams: Promise<{
+    search?: string;
+    status?: string;
+    loanType?: string;
+    creator?: string;
+  }>;
+};
+
+export default async function Home({ searchParams }: TPageProps) {
+  const params = await searchParams;
+  
+  const loans = await getLoansService({
+    search: params.search,
+    status: params.status,
+    loanType: params.loanType,
+    creator: params.creator,
+  });
 
   return (
     <AppLayout>

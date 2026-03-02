@@ -12,10 +12,11 @@ import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Chip } from "@heroui/chip";
 import { Skeleton } from "@heroui/skeleton";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
 import { Search, RefreshCw } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import type { TLoan, TLoanStatus } from "@/types/loan.types";
 import {
@@ -23,6 +24,8 @@ import {
   LOAN_STATUS_LABEL,
   LOAN_STATUS_COLOR,
   LOAN_STATUS,
+  LOAN_TYPES,
+  LOAN_TYPE_LABEL,
 } from "@/constants/loan";
 import { formatCurrencyVND, formatDateTimeVN } from "@/lib/format";
 import CreateLoanButton from "@/components/create-loan/create-loan-button.client";
@@ -43,30 +46,57 @@ const STATUS_OPTIONS = [
   })),
 ];
 
+const LOAN_TYPE_OPTIONS = [
+  { key: ALL_FILTER_VALUE, label: "Tất cả" },
+  ...Object.values(LOAN_TYPES).map((type) => ({
+    key: type,
+    label: LOAN_TYPE_LABEL[type],
+  })),
+];
+
 
 const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
+  
   const [isMounted, setIsMounted] = useState(false);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState(ALL_FILTER_VALUE);
-  const [loanPackageFilter, setLoanPackageFilter] = useState(ALL_FILTER_VALUE);
-  const [creatorFilter, setCreatorFilter] = useState(ALL_FILTER_VALUE);
+  const [search, setSearch] = useState(searchParams.get("search") ?? "");
+  const [statusFilter, setStatusFilter] = useState(
+    searchParams.get("status") ?? ALL_FILTER_VALUE,
+  );
+  const [loanTypeFilter, setLoanTypeFilter] = useState(
+    searchParams.get("loanType") ?? ALL_FILTER_VALUE,
+  );
+  const [creatorFilter, setCreatorFilter] = useState(
+    searchParams.get("creator") ?? ALL_FILTER_VALUE,
+  );
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
+  // Update URL when filters change
+  const updateFilters = useCallback(
+    (updates: Record<string, string>) => {
+      const params = new URLSearchParams(searchParams.toString());
+
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value && value !== ALL_FILTER_VALUE) {
+          params.set(key, value);
+        } else {
+          params.delete(key);
+        }
+      });
+
+      startTransition(() => {
+        router.push(`?${params.toString()}`, { scroll: false });
+      });
+    },
+    [router, searchParams],
+  );
+
   // Derive unique values from data for dynamic filters
-  const loanPackageOptions = useMemo(() => {
-    const unique = Array.from(
-      new Set(loans.map((c) => c.loan_package).filter((p): p is string => !!p))
-    );
-
-    return [
-      { key: ALL_FILTER_VALUE, label: "Tất cả" },
-      ...unique.map((pkg) => ({ key: pkg, label: pkg })),
-    ];
-  }, [loans]);
-
   const creatorOptions = useMemo(() => {
     const unique = Array.from(new Set(loans.map((c) => c.creator)));
 
@@ -76,39 +106,40 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
     ];
   }, [loans]);
 
-  // Filter loans
-  const filteredLoans = useMemo(() => {
-    let result = loans;
+  const handleSearchChange = useCallback(
+    (value: string) => {
+      setSearch(value);
+      updateFilters({ search: value });
+    },
+    [updateFilters],
+  );
 
-    // Search by code, customer, asset
-    if (search.trim()) {
-      const keyword = search.trim().toLowerCase();
+  const handleStatusChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const value = e.target.value || ALL_FILTER_VALUE;
+      setStatusFilter(value);
+      updateFilters({ status: value });
+    },
+    [updateFilters],
+  );
 
-      result = result.filter(
-        (c) =>
-          c.code.toLowerCase().includes(keyword) ||
-          c.customer.toLowerCase().includes(keyword) ||
-          c.asset.toLowerCase().includes(keyword),
-      );
-    }
+  const handleLoanTypeChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const value = e.target.value || ALL_FILTER_VALUE;
+      setLoanTypeFilter(value);
+      updateFilters({ loanType: value });
+    },
+    [updateFilters],
+  );
 
-    // Filter by status
-    if (statusFilter !== ALL_FILTER_VALUE) {
-      result = result.filter((c) => c.status === statusFilter);
-    }
-
-    // Filter by loan package
-    if (loanPackageFilter !== ALL_FILTER_VALUE) {
-      result = result.filter((c) => c.loan_package === loanPackageFilter);
-    }
-
-    // Filter by creator
-    if (creatorFilter !== ALL_FILTER_VALUE) {
-      result = result.filter((c) => c.creator === creatorFilter);
-    }
-
-    return result;
-  }, [loans, search, statusFilter, loanPackageFilter, creatorFilter]);
+  const handleCreatorChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const value = e.target.value || ALL_FILTER_VALUE;
+      setCreatorFilter(value);
+      updateFilters({ creator: value });
+    },
+    [updateFilters],
+  );
 
   const renderCell = useCallback(
     (loan: TLoan, columnKey: string): React.ReactNode => {
@@ -139,26 +170,13 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
     [],
   );
 
-  const handleStatusChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setStatusFilter(e.target.value || ALL_FILTER_VALUE);
-    },
-    [],
-  );
-
-  const handleLoanPackageChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setLoanPackageFilter(e.target.value || ALL_FILTER_VALUE);
-    },
-    [],
-  );
-
-  const handleCreatorChange = useCallback(
-    (e: React.ChangeEvent<HTMLSelectElement>) => {
-      setCreatorFilter(e.target.value || ALL_FILTER_VALUE);
-    },
-    [],
-  );
+  const handleRefresh = useCallback(() => {
+    if (onRefresh) {
+      onRefresh();
+    } else {
+      router.refresh();
+    }
+  }, [onRefresh, router]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -173,17 +191,19 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
             <Search className="text-default-400 flex-shrink-0" size={16} />
           }
           value={search}
-          onValueChange={setSearch}
+          onValueChange={handleSearchChange}
+          isDisabled={isPending}
         />
 
         {isMounted ? (
           <>
             <Select
               className="w-full sm:max-w-[180px]"
-              defaultSelectedKeys={[ALL_FILTER_VALUE]}
+              selectedKeys={[statusFilter]}
               label="Trạng thái"
               labelPlacement="outside"
               onChange={handleStatusChange}
+              isDisabled={isPending}
             >
               {STATUS_OPTIONS.map((option) => (
                 <SelectItem key={option.key}>{option.label}</SelectItem>
@@ -192,22 +212,24 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
 
             <Select
               className="w-full sm:max-w-[180px]"
-              defaultSelectedKeys={[ALL_FILTER_VALUE]}
+              selectedKeys={[loanTypeFilter]}
               label="Gói vay"
               labelPlacement="outside"
-              onChange={handleLoanPackageChange}
+              onChange={handleLoanTypeChange}
+              isDisabled={isPending}
             >
-              {loanPackageOptions.map((option) => (
+              {LOAN_TYPE_OPTIONS.map((option) => (
                 <SelectItem key={option.key}>{option.label}</SelectItem>
               ))}
             </Select>
 
             <Select
               className="w-full sm:max-w-[180px]"
-              defaultSelectedKeys={[ALL_FILTER_VALUE]}
+              selectedKeys={[creatorFilter]}
               label="Người tạo"
               labelPlacement="outside"
               onChange={handleCreatorChange}
+              isDisabled={isPending}
             >
               {creatorOptions.map((option) => (
                 <SelectItem key={option.key}>{option.label}</SelectItem>
@@ -237,7 +259,8 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
             isIconOnly
             aria-label="Làm mới"
             variant="flat"
-            onPress={onRefresh}
+            onPress={handleRefresh}
+            isLoading={isPending}
           >
             <RefreshCw size={16} />
           </Button>
@@ -249,7 +272,7 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
 
       {/* Result count */}
       <div className="text-sm text-default-500">
-        Tìm thấy {filteredLoans.length} khoản vay
+        {isPending ? "Đang tải..." : `Tìm thấy ${loans.length} khoản vay`}
       </div>
 
       {/* Table */}
@@ -266,7 +289,8 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
         </TableHeader>
         <TableBody
           emptyContent="Không có khoản vay nào"
-          items={filteredLoans}
+          items={loans}
+          isLoading={isPending}
         >
           {(loan) => (
             <TableRow
