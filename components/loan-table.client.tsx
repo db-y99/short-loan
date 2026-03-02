@@ -17,6 +17,7 @@ import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
 import { Search, RefreshCw } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useDebounceValue } from "usehooks-ts";
 
 import type { TLoan, TLoanStatus } from "@/types/loan.types";
 import {
@@ -62,6 +63,7 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
   
   const [isMounted, setIsMounted] = useState(false);
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
+  const [debouncedSearch] = useDebounceValue(search, 500);
   const [statusFilter, setStatusFilter] = useState(
     searchParams.get("status") ?? ALL_FILTER_VALUE,
   );
@@ -75,6 +77,23 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Update URL when debounced search changes
+  useEffect(() => {
+    if (isMounted) {
+      const params = new URLSearchParams(searchParams.toString());
+      
+      if (debouncedSearch && debouncedSearch !== "") {
+        params.set("search", debouncedSearch);
+      } else {
+        params.delete("search");
+      }
+
+      startTransition(() => {
+        router.push(`?${params.toString()}`, { scroll: false });
+      });
+    }
+  }, [debouncedSearch, isMounted, router, searchParams]);
 
   // Update URL when filters change
   const updateFilters = useCallback(
@@ -105,14 +124,6 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
       ...unique.map((creator) => ({ key: creator, label: creator })),
     ];
   }, [loans]);
-
-  const handleSearchChange = useCallback(
-    (value: string) => {
-      setSearch(value);
-      updateFilters({ search: value });
-    },
-    [updateFilters],
-  );
 
   const handleStatusChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -191,8 +202,7 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
             <Search className="text-default-400 flex-shrink-0" size={16} />
           }
           value={search}
-          onValueChange={handleSearchChange}
-          isDisabled={isPending}
+          onValueChange={setSearch}
         />
 
         {isMounted ? (

@@ -76,11 +76,20 @@ export const getLoansService = async (
   // Client-side filters (search, creator)
   if (filters?.search) {
     const keyword = filters.search.toLowerCase();
-    results = results.filter(
-      (row) =>
+    results = results.filter((row) => {
+      const cust = row.customers as
+        | { full_name: string }
+        | { full_name: string }[]
+        | null;
+      const customer = Array.isArray(cust) ? cust[0] : cust;
+      const customerName = customer?.full_name?.toLowerCase() ?? "";
+
+      return (
         row.code.toLowerCase().includes(keyword) ||
-        row.asset_name?.toLowerCase().includes(keyword),
-    );
+        row.asset_name?.toLowerCase().includes(keyword) ||
+        customerName.includes(keyword)
+      );
+    });
   }
 
   return results.map((row) => {
