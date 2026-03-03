@@ -173,14 +173,14 @@ export function calculatePaymentPeriods(
   loanType: string,
   signedAt: string,
 ): { currentPeriod: TPaymentPeriod; nextPeriod: TPaymentPeriod } {
-  // Map loan type string to constant
+  // Map loan type string to constant - handle both enum values and display labels
   let mappedLoanType: TLoanType;
 
-  if (loanType.includes("trả góp") || loanType.includes("3 kỳ")) {
+  if (loanType === LOAN_TYPES.INSTALLMENT_3_PERIODS || loanType.includes("trả góp") || loanType.includes("3 kỳ")) {
     mappedLoanType = LOAN_TYPES.INSTALLMENT_3_PERIODS;
-  } else if (loanType.includes("Theo mốc")) {
+  } else if (loanType === LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE || loanType.includes("Theo mốc")) {
     mappedLoanType = LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE;
-  } else if (loanType.includes("Giữ TS")) {
+  } else if (loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD || loanType.includes("Giữ TS")) {
     mappedLoanType = LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD;
   } else {
     // Default to installment

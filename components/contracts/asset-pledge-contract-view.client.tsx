@@ -2,8 +2,7 @@
 "use client";
 
 import type { TAssetPledgeContractData } from "@/types/contract.types";
-import { calculateLoan, unformatMoney, formatMoney } from "@/lib/loan-calculation";
-import { LOAN_TYPES, type TLoanType } from "@/constants/loan";
+import { unformatMoney, formatMoney } from "@/lib/loan-calculation";
 
 const S = {
   container: {
@@ -37,7 +36,6 @@ const S = {
 type TProps = {
   data: TAssetPledgeContractData;
   id?: string;
-  loanType?: TLoanType; // Làm optional, sẽ tự động detect từ data
 };
 
 
@@ -45,18 +43,18 @@ export function AssetPledgeContractView({
   data,
   id = "contract-content",
 }: TProps) {
-  // Auto-detect loan type from data if not provided - cast trực tiếp vì giờ đã là enum
-  const detectedLoanType = (data.loan_type as TLoanType) || LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE;
-
-  
-  // Calculate milestones from loan amount if not provided or empty
-  const loanResult = calculateLoan(unformatMoney(data.SO_TIEN_VAY), detectedLoanType);
-  const milestones = loanResult.bulletPayments?.map((payment) => ({
-    moc: payment.milestone,
-    ngay: payment.days,
-    lai: formatMoney(payment.interest),
-    tongTien: formatMoney(payment.total),
-  })) || data.MILESTONES || [];
+  // Use the milestone data as provided, with fallback calculation if needed
+  const milestones = data.MILESTONES && data.MILESTONES.length > 0 
+    ? data.MILESTONES 
+    : (() => {
+        // Fallback: calculate basic interest-only milestones
+        const loanAmount = unformatMoney(data.SO_TIEN_VAY);
+        return [
+          { moc: 1, ngay: 7, lai: formatMoney(Math.round(loanAmount * 0.00033 * 7)), tongTien: formatMoney(Math.round(loanAmount * 0.00033 * 7)) },
+          { moc: 2, ngay: 18, lai: formatMoney(Math.round(loanAmount * 0.00033 * 18)), tongTien: formatMoney(Math.round(loanAmount * 0.00033 * 18)) },
+          { moc: 3, ngay: 30, lai: formatMoney(Math.round(loanAmount * 0.00033 * 30)), tongTien: formatMoney(Math.round(loanAmount * 0.00033 * 30)) },
+        ];
+      })();
   return (
     <div id={id} style={S.container}>
       {/* Header */}
@@ -248,7 +246,7 @@ export function AssetPledgeContractView({
 
   <li>
     <span style={{ fontWeight: "bold" }}>Phương thức trả nợ:</span>{" "}
-    Gốc trả cuối kỳ; Lãi và phí được tính dựa trên thời điểm tất toán thực tế
+ Gốc trả cuối kỳ; Lãi và phí được tính dựa trên thời điểm tất toán thực tế
     theo các mốc thời gian quy định tại Điều 3.
   </li>
 </ol>
@@ -258,8 +256,7 @@ export function AssetPledgeContractView({
       <div style={S.section}>
         <h3 style={S.heading}>ĐIỀU 3: QUY ĐỊNH VỀ MỐC TẤT TOÁN</h3>
         <p style={{ marginBottom: "10px" }}>
-          Bên B có quyền tất toán khoản vay trước hạn bất cứ lúc nào. Tổng số
-          tiền phải thanh toán sẽ được xác định theo bảng dưới đây:
+          Bên B có quyền tất toán khoản vay trước hạn bất cứ lúc nào. Lãi suất được tính theo quy định pháp luật như sau:
         </p>
         <table
           style={{
@@ -272,7 +269,7 @@ export function AssetPledgeContractView({
             <tr>
               <th style={S.tdBorder}>Mốc thanh toán</th>
               <th style={S.tdBorder}>Thời điểm tất toán</th>
-              <th style={S.tdBorder}>Tổng tiền phải thanh toán</th>
+              <th style={S.tdBorder}>Lãi suất pháp lý (0.033%/ngày)</th>
             </tr>
           </thead>
           <tbody>

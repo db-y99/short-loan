@@ -55,24 +55,51 @@ export async function GET(
     const nam = signedDate.getFullYear();
     const signedDateStr = `${String(ngay).padStart(2, '0')}/${String(thang).padStart(2, '0')}/${nam}`;
 
-    // Merge all contract data
+    // Return separate contract data objects with proper typing
     const contractData = {
-      ...pledgeData,
-      ...leaseData,
-      ...paymentData,
-      ...disposalData,
+      // Asset Pledge Contract Data
+      pledgeContract: {
+        ...pledgeData,
+        NGAY: ngay,
+        THANG: thang,
+        NAM: nam,
+        SIGNED_DATE: signedDateStr,
+        DRAFT_SIGNATURE: null,
+        OFFICIAL_SIGNATURE: null,
+      },
       
-      // Override with common fields
-      NGAY: ngay,
-      THANG: thang,
-      NAM: nam,
-      SIGNED_DATE: signedDateStr,
+      // Asset Lease Contract Data  
+      leaseContract: {
+        ...leaseData,
+        NGAY: ngay,
+        THANG: thang,
+        NAM: nam,
+        SIGNED_DATE: signedDateStr,
+        DRAFT_SIGNATURE: null,
+        OFFICIAL_SIGNATURE: null,
+      },
       
-      // Signatures - will be added when signing
-      DRAFT_SIGNATURE: null,
-      OFFICIAL_SIGNATURE: null,
+      // Payment Confirmation Data
+      paymentConfirmation: {
+        ...paymentData,
+        NGAY: ngay,
+        THANG: thang,
+        NAM: nam,
+        SIGNED_DATE: signedDateStr,
+        DRAFT_SIGNATURE: null,
+        OFFICIAL_SIGNATURE: null,
+      },
       
-      drive_folder_id: "",
+      // Asset Disposal Authorization Data
+      disposalAuthorization: {
+        ...disposalData,
+        NGAY: ngay,
+        THANG: thang,
+        NAM: nam,
+        SIGNED_DATE: signedDateStr,
+        DRAFT_SIGNATURE: null,
+        OFFICIAL_SIGNATURE: null,
+      },
     };
 
     return NextResponse.json({

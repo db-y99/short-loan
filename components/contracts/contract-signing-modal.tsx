@@ -211,17 +211,17 @@ const ContractSigningModal = ({
                   <div className="max-w-4xl mx-auto">
                     <Card shadow="sm">
                       <CardBody className="p-8">
-                        {selectedContractType === CONTRACT_TYPE.ASSET_PLEDGE && (
-                          <AssetPledgeContractView data={contractData} />
+                        {selectedContractType === CONTRACT_TYPE.ASSET_PLEDGE && contractData?.pledgeContract && (
+                          <AssetPledgeContractView data={contractData.pledgeContract} />
                         )}
-                        {selectedContractType === CONTRACT_TYPE.ASSET_LEASE && (
-                          <AssetLeaseContractView data={contractData} />
+                        {selectedContractType === CONTRACT_TYPE.ASSET_LEASE && contractData?.leaseContract && (
+                          <AssetLeaseContractView data={contractData.leaseContract} />
                         )}
-                        {selectedContractType === CONTRACT_TYPE.FULL_PAYMENT && (
-                          <FullPaymentConfirmationView data={contractData} />
+                        {selectedContractType === CONTRACT_TYPE.FULL_PAYMENT && contractData?.paymentConfirmation && (
+                          <FullPaymentConfirmationView data={contractData.paymentConfirmation} />
                         )}
-                        {selectedContractType === CONTRACT_TYPE.ASSET_DISPOSAL && (
-                          <AssetDisposalAuthorizationView data={contractData} />
+                        {selectedContractType === CONTRACT_TYPE.ASSET_DISPOSAL && contractData?.disposalAuthorization && (
+                          <AssetDisposalAuthorizationView data={contractData.disposalAuthorization} />
                         )}
                       </CardBody>
                     </Card>

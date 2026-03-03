@@ -237,7 +237,7 @@ export function AssetLeaseContractView({
       {/* Điều 2 */}
       <div style={S.section}>
         <h3 style={S.heading}>ĐIỀU 2. CAM KẾT VỀ SỰ TỰ NGUYỆN</h3>
-        <p style={{ fontSize: "12pt" }}>
+        <p style={{ fontSize: "12pt", marginBottom: "8px" }}>
           Bên B hoàn toàn tự nguyện lựa chọn phương án thuê tài sản để phục vụ
           sinh hoạt của mình, không bị ép buộc hay ràng buộc bởi bất kỳ điều
           kiện nào của khoản vay cầm cố.
@@ -294,7 +294,7 @@ export function AssetLeaseContractView({
 
     {/* 1 */}
     <li style={{ marginBottom: "10px" }}>
-      Thời hạn thuê bắt đầu từ ngày {data.NGAY_BAT_DAU}
+      Thời hạn thuê bắt đầu từ ngày {data.NGAY_BAT_DAU}{" "}
       đến khi xảy ra một trong các sự kiện sau
       (tùy điều kiện nào đến trước):
 
@@ -346,7 +346,7 @@ export function AssetLeaseContractView({
         <tr>
               <th style={S.tdBorder}>Mốc thanh toán</th>
               <th style={S.tdBorder}>Thời điểm tất toán</th>
-              <th style={S.tdBorder}>Tổng tiền phải thanh toán</th>
+              <th style={S.tdBorder}>Phí thuê phải trả</th>
             </tr>
         </thead>
 

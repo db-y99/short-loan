@@ -10,6 +10,7 @@ import type {
 import { formatDateShortVN } from "@/lib/format";
 import { COMPANY_INFO } from "@/constants/company";
 import { getLoanInterestRateDescription, DAILY_INTEREST_RATE } from "@/lib/loan-constants";
+import { LOAN_TYPES } from "@/constants/loan";
 
 /** Format số tiền VND */
 function formatVND(n: number): string {
@@ -17,67 +18,113 @@ function formatVND(n: number): string {
 }
 
 /**
- * Tạo milestones cho Hợp đồng cầm cố (Gốc + Lãi)
- * Chỉ hiển thị 3 cột: Mốc | Thời điểm | Tiền lãi | Tổng
+ * Tạo milestones cho Hợp đồng cầm cố (Chỉ hiển thị lãi suất pháp lý)
+ * Dựa vào loanAmount và loanType để tính trực tiếp
  */
 function buildPledgeMilestones(loan: TLoanDetails): TPledgeMilestone[] {
-  if (!loan.currentPeriod?.milestones) {
-    return [];
-  }
-
-  const isInstallment = loan.loanType.includes("trả góp") || loan.loanType.includes("3 kỳ");
+  const loanAmount = loan.loanAmount;
   
-  return loan.currentPeriod.milestones.map((m, index) => {
-    // Tính lãi từ số ngày
-    const interest = Math.round(loan.loanAmount * DAILY_INTEREST_RATE * m.days);
-    
-    if (isInstallment) {
-      // Gói 1: Có gốc từng kỳ
-      const principal = m.totalRedemption - m.interestAndFee;
-      const total = principal + interest;
-      
-      return {
-        moc: index + 1,
-        ngay: m.days,
-        lai: formatVND(interest),
-        tongTien: formatVND(total),
-      };
-    } else {
-      // Gói 2 & 3: Gốc cuối kỳ
-      const total = loan.loanAmount + interest;
-      
-      return {
-        moc: index + 1,
-        ngay: m.days,
-        lai: formatVND(interest),
-        tongTien: formatVND(total),
-      };
-    }
-  });
+  // Tính lãi suất pháp lý cho 3 mốc (chỉ hiển thị lãi, không hiển thị phí thuê)
+  const milestones = [
+    {
+      moc: 1,
+      ngay: 7,
+      lai: formatVND(Math.round(loanAmount * DAILY_INTEREST_RATE * 7)), // 0.033% x 7 ngày
+      tongTien: formatVND(Math.round(loanAmount * DAILY_INTEREST_RATE * 7)),
+    },
+    {
+      moc: 2,
+      ngay: 18,
+      lai: formatVND(Math.round(loanAmount * DAILY_INTEREST_RATE * 18)), // 0.033% x 18 ngày
+      tongTien: formatVND(Math.round(loanAmount * DAILY_INTEREST_RATE * 18)),
+    },
+    {
+      moc: 3,
+      ngay: 30,
+      lai: formatVND(Math.round(loanAmount * DAILY_INTEREST_RATE * 30)), // 0.033% x 30 ngày
+      tongTien: formatVND(Math.round(loanAmount * DAILY_INTEREST_RATE * 30)),
+    },
+  ];
+
+  return milestones;
 }
 
 /**
- * Tạo milestones cho Hợp đồng thuê tài sản (Phí thuê)
+ * Tạo milestones cho Hợp đồng thuê tài sản (Chỉ hiển thị phí thuê)
+ * Dựa vào loanAmount và loanType để tính trực tiếp
  */
 function buildLeaseMilestones(loan: TLoanDetails): TLeaseMilestone[] {
-  if (!loan.currentPeriod?.milestones) {
-    return [];
-  }
+  const loanAmount = loan.loanAmount;
+  
+  // Xác định loan type để tính phí thuê
+  let isPackage1 = loan.loanType === LOAN_TYPES.INSTALLMENT_3_PERIODS || 
+                   loan.loanType.includes("trả góp") || 
+                   loan.loanType.includes("3 kỳ");
+  
+  let isPackage2 = loan.loanType === LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE || 
+                   loan.loanType.includes("Theo mốc");
+  
+  let isPackage3 = loan.loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD || 
+                   loan.loanType.includes("Giữ TS");
 
-  return loan.currentPeriod.milestones.map((m, index) => {
-    // Tính lãi
-    const interest = Math.round(loan.loanAmount * DAILY_INTEREST_RATE * m.days);
-    
-    // Phí thuê = Tổng - Gốc - Lãi
-    const rentalFee = m.totalRedemption - loan.loanAmount - interest;
-    
-    return {
-      moc: index + 1,
-      ngay: m.days,
-      phiThue: formatVND(rentalFee),
-      tongTien: formatVND(rentalFee),
-    };
-  });
+  if (isPackage1) {
+    // Package 1: Phí thuê = Target profit - Interest
+    return [
+      {
+        moc: 1,
+        ngay: 7,
+        phiThue: formatVND(Math.max(0, Math.round(loanAmount * 0.03) - Math.round(loanAmount * DAILY_INTEREST_RATE * 7))),
+      },
+      {
+        moc: 2,
+        ngay: 18,
+        phiThue: formatVND(Math.max(0, Math.round(loanAmount * 0.05) - Math.round((loanAmount * 0.8) * DAILY_INTEREST_RATE * 11))),
+      },
+      {
+        moc: 3,
+        ngay: 30,
+        phiThue: formatVND(Math.max(0, Math.round(loanAmount * 0.07) - Math.round((loanAmount * 0.5) * DAILY_INTEREST_RATE * 12))),
+      },
+    ];
+  } else if (isPackage2) {
+    // Package 2: Phí thuê = Total target - Principal - Interest
+    return [
+      {
+        moc: 1,
+        ngay: 7,
+        phiThue: formatVND(Math.round(loanAmount * 1.05) - loanAmount - Math.round(loanAmount * DAILY_INTEREST_RATE * 7)),
+      },
+      {
+        moc: 2,
+        ngay: 18,
+        phiThue: formatVND(Math.round(loanAmount * 1.08) - loanAmount - Math.round(loanAmount * DAILY_INTEREST_RATE * 18)),
+      },
+      {
+        moc: 3,
+        ngay: 30,
+        phiThue: formatVND(Math.round(loanAmount * 1.12) - loanAmount - Math.round(loanAmount * DAILY_INTEREST_RATE * 30)),
+      },
+    ];
+  } else {
+    // Package 3: Phí thuê = Total target - Principal - Interest
+    return [
+      {
+        moc: 1,
+        ngay: 7,
+        phiThue: formatVND(Math.round(loanAmount * 1.0125) - loanAmount - Math.round(loanAmount * DAILY_INTEREST_RATE * 7)),
+      },
+      {
+        moc: 2,
+        ngay: 18,
+        phiThue: formatVND(Math.round(loanAmount * 1.035) - loanAmount - Math.round(loanAmount * DAILY_INTEREST_RATE * 18)),
+      },
+      {
+        moc: 3,
+        ngay: 30,
+        phiThue: formatVND(Math.round(loanAmount * 1.05) - loanAmount - Math.round(loanAmount * DAILY_INTEREST_RATE * 30)),
+      },
+    ];
+  }
 }
 
 /**
