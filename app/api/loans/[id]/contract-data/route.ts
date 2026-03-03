@@ -9,15 +9,19 @@ import {
 
 /**
  * GET /api/loans/[id]/contract-data
- * Lấy dữ liệu hợp đồng để hiển thị trong modal ký
+ * Lấy dữ liệu hợp đồng để hiển thị trong modal ký hoặc contract page
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createSupabaseServerClient();
     const { id: loanId } = await params;
+    
+    // Get query parameters
+    const { searchParams } = new URL(request.url);
+    const contractType = searchParams.get('type');
 
     // Check authentication
     const {
@@ -102,6 +106,36 @@ export async function GET(
       },
     };
 
+    // If specific contract type is requested (for contract page), return only that contract
+    if (contractType) {
+      let specificContract;
+      switch (contractType) {
+        case 'asset_pledge_contract':
+          specificContract = contractData.pledgeContract;
+          break;
+        case 'asset_lease_contract':
+          specificContract = contractData.leaseContract;
+          break;
+        case 'full_payment_confirmation':
+          specificContract = contractData.paymentConfirmation;
+          break;
+        case 'asset_disposal_authorization':
+          specificContract = contractData.disposalAuthorization;
+          break;
+        default:
+          return NextResponse.json(
+            { success: false, error: "Invalid contract type" },
+            { status: 400 }
+          );
+      }
+      
+      return NextResponse.json({
+        success: true,
+        data: specificContract,
+      });
+    }
+
+    // Return all contracts (for signing modal)
     return NextResponse.json({
       success: true,
       data: contractData,

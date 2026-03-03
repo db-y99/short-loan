@@ -62,8 +62,12 @@ export default function ContractPage() {
         if (!res.ok) throw new Error("Không tải được dữ liệu hợp đồng");
         return res.json();
       })
-      .then((data: TContractData) => {
-        setContractData(data);
+      .then((result) => {
+        if (result.success) {
+          setContractData(result.data);
+        } else {
+          throw new Error(result.error || "Không tải được dữ liệu hợp đồng");
+        }
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : "Đã xảy ra lỗi");
