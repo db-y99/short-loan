@@ -126,7 +126,7 @@ const LoanProfileSection = ({ loanDetails }: TProps) => {
         </div>
       )}
 
-      {/* Tạo/Xem hợp đồng cầm cố PDF */}
+      {/* Tạo/Xem hợp đồng cầm cố PDF
       <div className="mt-3">
         <Link
           href={`/loans/${loanDetails.id}/contract`}
@@ -135,7 +135,7 @@ const LoanProfileSection = ({ loanDetails }: TProps) => {
           <FileSignature className="w-4 h-4" />
           Tạo hợp đồng PDF
         </Link>
-      </div>
+      </div> */}
 
       {/* Fallback: Single originalFileUrl */}
       {(!loanDetails.originalFiles || loanDetails.originalFiles.length === 0) &&
@@ -159,12 +159,16 @@ const LoanProfileSection = ({ loanDetails }: TProps) => {
     </div>
 
     {/* Contract Signing Modal */}
-    <ContractSigningModal
+   {
+    showSigningModal && (
+       <ContractSigningModal
       isOpen={showSigningModal}
       onClose={() => setShowSigningModal(false)}
       loanId={loanDetails.id}
       onSign={handleSign}
     />
+    )
+   }
   </>
   );
 };
