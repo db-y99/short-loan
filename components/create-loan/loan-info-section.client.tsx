@@ -13,6 +13,7 @@ import {
   LOAN_TYPES,
   LOAN_TYPE_LABEL,
 } from "@/constants/loan";
+import LoanPreviewSection from "./loan-preview-section.client";
 
 type TProps = {
   form: TCreateLoanForm;
@@ -119,6 +120,7 @@ const LoanInfoSection = ({ form, onChange }: TProps) => {
         </Select>
       </div>
 
+      <LoanPreviewSection form={form} />
       <Textarea
         label="Tình trạng tài sản"
         placeholder="Ví dụ: Còn mới, hoạt động tốt, có vài vết xước nhỏ..."

@@ -4,36 +4,15 @@ import type { TLoanDetails } from "@/types/loan.types";
 import { formatCurrencyVND } from "@/lib/format";
 import SectionHeader from "@/components/section-header";
 import { calculateAppraisalFee } from "@/lib/loan-calculation";
-import { LOAN_TYPES, type TLoanType } from "@/constants/loan";
+import { type TLoanType } from "@/constants/loan";
 
 type TProps = {
   loanDetails: TLoanDetails;
 };
 
 const LoanAmountSummary = ({ loanDetails }: TProps) => {
-  // Xác định loan type để tính phí thẩm định
-  // Check tất cả các pattern có thể của loanType string
-  let loanType: TLoanType = LOAN_TYPES.INSTALLMENT_3_PERIODS;
-  
-  const loanTypeStr = loanDetails.loanType.toLowerCase();
-  
-  // Gói 2: Gốc cuối kỳ / Trả lãi định kỳ / Theo mốc
-  if (
-    loanTypeStr.includes("gói 2") || 
-    loanTypeStr.includes("theo mốc") ||
-    loanTypeStr.includes("trả lãi định kỳ") ||
-    loanTypeStr.includes("gốc cuối kỳ") && !loanTypeStr.includes("giữ")
-  ) {
-    loanType = LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE;
-  } 
-  // Gói 3: Giữ TS / Giữ tài sản
-  else if (
-    loanTypeStr.includes("gói 3") || 
-    loanTypeStr.includes("giữ ts") ||
-    loanTypeStr.includes("giữ tài sản")
-  ) {
-    loanType = LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD;
-  }
+  // Xác định loan type từ enum - cast trực tiếp vì giờ đã là enum
+  const loanType = (loanDetails.loanType as TLoanType)
 
   // Tính phí thẩm định theo công thức mới
   const appraisalFee =

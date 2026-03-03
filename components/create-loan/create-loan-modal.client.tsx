@@ -20,6 +20,7 @@ import { saveLoanAttachmentsAction } from "@/features/loans/actions/save-loan-at
 import type { TCreateLoanForm, TReference, TUploadFiles } from "@/types/loan.types";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { PROVIDER_TYPES } from "@/constants/google-drive";
+import { LOAN_TYPES } from "@/constants/loan";
 
 type TProps = {
   isOpen: boolean;
@@ -48,7 +49,7 @@ const INITIAL_FORM: TCreateLoanForm = {
   serial: "",
   asset_condition: "",
   loan_amount: "",
-  loan_type: "",
+  loan_type: LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE,
   notes: "",
   references: [],
   attachments: [],

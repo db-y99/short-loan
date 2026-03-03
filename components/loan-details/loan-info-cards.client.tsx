@@ -21,6 +21,7 @@ import { formatCurrencyVND } from "@/lib/format";
 import AssetGallery from "@/components/loan-details/asset-gallery.client";
 import SectionHeader from "@/components/section-header";
 import InfoRow from "@/components/info-row";
+import { LOAN_TYPE_LABEL, type TLoanType } from "@/constants/loan";
 
 
 type TProps = {
@@ -239,7 +240,7 @@ const LoanInfoCards = ({
             )}
             <Divider className="my-2" />
             <div className="flex items-center gap-2 justify-between">
-              <div>Hình thức: {loanDetails.loanType}</div>
+              <div>Hình thức: {LOAN_TYPE_LABEL[loanDetails.loanType as TLoanType] || loanDetails.loanType}</div>
               <div className="text-sm text-success-500">
                 (Kỳ đầu tiên)
               </div>
