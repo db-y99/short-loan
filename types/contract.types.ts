@@ -46,6 +46,7 @@ export type TAssetPledgeContractData = {
   TINH_TRANG: string;
   SO_TIEN_VAY: string;
   LAI_SUAT: string;
+  loan_type: string; // Sử dụng snake_case như trong database
   MILESTONES: TPledgeMilestone[]; // Chỉ ghi Gốc + Lãi
   drive_folder_id: string;
   DRAFT_SIGNATURE?: string;

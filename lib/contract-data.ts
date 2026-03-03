@@ -127,6 +127,7 @@ export function buildAssetPledgeContractData(
     TINH_TRANG: loan.assetCondition || "Đang cầm cố",
     SO_TIEN_VAY: formatVND(principal),
     LAI_SUAT: getLoanInterestRateDescription(),
+    loan_type: loan.loanType, // Sử dụng snake_case
     MILESTONES: milestones,
     drive_folder_id: driveFolderId,
   };

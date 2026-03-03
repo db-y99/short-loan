@@ -355,7 +355,7 @@ export function AssetLeaseContractView({
             <tr key={m.moc}>
           <td style={S.tdBorder}>Mốc {m.moc}</td>
                 <td style={S.tdBorder}>Ngày {m.ngay}</td>
-                <td style={S.tdBorder}>{m.tongTien}</td>
+                <td style={S.tdBorder}>{m.phiThue}</td>
             </tr>
           ))}
         </tbody>

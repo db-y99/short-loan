@@ -435,10 +435,8 @@ export const getLoanDetailsService = async (
      PAYMENT PERIODS (Lấy từ DB hoặc tính động)
   ========================== */
 
-  const loanTypeStr =
-    loan.loan_package ??
-    LOAN_TYPE_LABEL[loan.loan_type as TLoanType] ??
-    loan.loan_type;
+  // Ưu tiên loan_type (enum) thay vì loan_package (description)
+  const loanTypeStr = loan.loan_type;
 
   let currentPeriod: TPaymentPeriod | undefined;
   let nextPeriod: TPaymentPeriod | undefined;

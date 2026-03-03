@@ -2,6 +2,8 @@
 "use client";
 
 import type { TAssetPledgeContractData } from "@/types/contract.types";
+import { calculateLoan, unformatMoney, formatMoney } from "@/lib/loan-calculation";
+import { LOAN_TYPES, type TLoanType } from "@/constants/loan";
 
 const S = {
   container: {
@@ -35,12 +37,26 @@ const S = {
 type TProps = {
   data: TAssetPledgeContractData;
   id?: string;
+  loanType?: TLoanType; // Làm optional, sẽ tự động detect từ data
 };
+
 
 export function AssetPledgeContractView({
   data,
   id = "contract-content",
 }: TProps) {
+  // Auto-detect loan type from data if not provided - cast trực tiếp vì giờ đã là enum
+  const detectedLoanType = (data.loan_type as TLoanType) || LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE;
+
+  
+  // Calculate milestones from loan amount if not provided or empty
+  const loanResult = calculateLoan(unformatMoney(data.SO_TIEN_VAY), detectedLoanType);
+  const milestones = loanResult.bulletPayments?.map((payment) => ({
+    moc: payment.milestone,
+    ngay: payment.days,
+    lai: formatMoney(payment.interest),
+    tongTien: formatMoney(payment.total),
+  })) || data.MILESTONES || [];
   return (
     <div id={id} style={S.container}>
       {/* Header */}
@@ -260,11 +276,11 @@ export function AssetPledgeContractView({
             </tr>
           </thead>
           <tbody>
-            {(data.MILESTONES ?? []).map((m) => (
+            {milestones.map((m) => (
               <tr key={m.moc}>
                 <td style={S.tdBorder}>Mốc {m.moc}</td>
                 <td style={S.tdBorder}>Ngày {m.ngay}</td>
-                <td style={S.tdBorder}>{m.tongTien}</td>
+                <td style={S.tdBorder}>{m.lai}</td>
               </tr>
             ))}
           </tbody>

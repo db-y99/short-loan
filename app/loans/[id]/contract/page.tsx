@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Progress } from "@heroui/progress";
 import { Tabs, Tab } from "@heroui/tabs";
-import { ArrowLeft, Download, CloudUpload } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { AssetPledgeContractView } from "@/components/contracts/asset-pledge-contract-view.client";
 import { AssetLeaseContractView } from "@/components/contracts/asset-lease-contract-view.client";
 import { FullPaymentConfirmationView } from "@/components/contracts/full-payment-confirmation-view.client";
@@ -122,6 +122,8 @@ export default function ContractPage() {
       </div>
     );
   }
+
+  console.log({contractData})
 
   return (
     <div className="mx-auto">
