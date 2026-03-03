@@ -122,7 +122,7 @@ const LoanPreviewSection = ({ form }: TProps) => {
           </CardBody>
         </Card>
 
-        {/* Current Period - giữ format cũ */}
+        {/* Current Period */}
         <Card shadow="sm">
           <CardHeader className="pb-2">
             <SectionHeader icon={Clock} title="Lịch thanh toán dự kiến" />
@@ -136,10 +136,10 @@ const LoanPreviewSection = ({ form }: TProps) => {
                 >
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold">
-                      {isInstallment ? `Kỳ ${index + 1}` : `Mốc ${index + 1}`}
+                      {isInstallment ? `Kỳ ${index + 1}` : `Mốc ${milestone.days}`}
                     </span>
                     <span className="text-xs text-default-500">
-                      Ngày {milestone.days}
+                      {new Date(milestone.date).toLocaleDateString('vi-VN')} (Ngày {milestone.days})
                     </span>
                   </div>
                   <div className="text-right">
