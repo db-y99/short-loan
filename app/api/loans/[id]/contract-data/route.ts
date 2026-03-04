@@ -106,6 +106,8 @@ export async function GET(
       },
     };
 
+    console.log({contractData})
+
     // If specific contract type is requested (for contract page), return only that contract
     if (contractType) {
       let specificContract;

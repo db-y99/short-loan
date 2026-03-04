@@ -21,7 +21,7 @@ import { formatCurrencyVND } from "@/lib/format";
 import AssetGallery from "@/components/loan-details/asset-gallery.client";
 import SectionHeader from "@/components/section-header";
 import InfoRow from "@/components/info-row";
-import { LOAN_TYPE_LABEL, type TLoanType } from "@/constants/loan";
+import { LOAN_TYPE_LABEL, type TLoanType, ASSET_TYPES } from "@/constants/loan";
 
 
 type TProps = {
@@ -37,6 +37,14 @@ const LoanInfoCards = ({
   onAddReference,
   onUpdateAssetCondition,
 }: TProps) => {
+  // Xác định loại tài sản để hiển thị đúng thông tin định danh
+  // So sánh với cả label tiếng Việt và key tiếng Anh
+  const assetType = loanDetails.asset.type;
+  const isVehicle = assetType === 'Xe máy' || assetType === 'Ô tô' ||
+                    assetType === ASSET_TYPES.MOTORBIKE || assetType === ASSET_TYPES.CAR;
+  const isDevice = assetType === 'Điện thoại' || assetType === 'Laptop' ||
+                   assetType === ASSET_TYPES.PHONE || assetType === ASSET_TYPES.LAPTOP;
+
   return (
     <div className="gap-4 flex flex-col">
       <Card shadow="sm">
@@ -201,30 +209,55 @@ const LoanInfoCards = ({
         <CardBody className="pt-0">
           <div className="bg-default-50 rounded-lg p-2 mb-3 flex flex-col gap-1">
             <p className="font-semibold">{loanDetails.asset.name}</p>
-            {loanDetails.asset.imei && (
-              <p className="text-sm text-default-500">
-                IMEI: {loanDetails.asset.imei}
-              </p>
+            
+            {/* Hiển thị IMEI và Serial cho điện thoại/laptop */}
+            {isDevice && (
+              <>
+                {loanDetails.asset.imei && (
+                  <p className="text-sm text-default-500">
+                    IMEI: {loanDetails.asset.imei}
+                  </p>
+                )}
+                {loanDetails.asset.serial && (
+                  <p className="text-sm text-default-500">
+                    Serial: {loanDetails.asset.serial}
+                  </p>
+                )}
+              </>
             )}
-            {loanDetails.asset.serial && (
-              <p className="text-sm text-default-500">
-                Serial: {loanDetails.asset.serial}
-              </p>
+            
+            {/* Hiển thị số khung và số máy cho xe máy/ô tô */}
+            {isVehicle && (
+              <>
+                {loanDetails.asset.chassisNumber && (
+                  <p className="text-sm text-default-500">
+                    Số khung: {loanDetails.asset.chassisNumber}
+                  </p>
+                )}
+                {loanDetails.asset.engineNumber && (
+                  <p className="text-sm text-default-500">
+                    Số máy: {loanDetails.asset.engineNumber}
+                  </p>
+                )}
+              </>
             )}
-            {
-              loanDetails.asset.chassisNumber && (
-                <p className="text-sm text-default-500">
-                  Chassis Number: {loanDetails.asset.chassisNumber}
-                </p>
-              )
-            }
-            {
-              loanDetails.asset.engineNumber && (
-                <p className="text-sm text-default-500">
-                  Engine Number: {loanDetails.asset.engineNumber}
-                </p>
-              )
-            }
+            
+            {/* Hiển thị IMEI/Serial cho các loại khác (mặc định) */}
+            {!isDevice && !isVehicle && (
+              <>
+                {loanDetails.asset.imei && (
+                  <p className="text-sm text-default-500">
+                    IMEI: {loanDetails.asset.imei}
+                  </p>
+                )}
+                {loanDetails.asset.serial && (
+                  <p className="text-sm text-default-500">
+                    Serial: {loanDetails.asset.serial}
+                  </p>
+                )}
+              </>
+            )}
+            
             {loanDetails.assetCondition && (
               <>
                 <Divider className="my-2" />

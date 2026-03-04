@@ -95,6 +95,8 @@ export async function generateContractsService(
       },
     ];
 
+    console.log(buildAssetDisposalAuthorizationData(loan, folderId))
+
     // BƯỚC 1: Generate tất cả PDF song song
     console.time("Generate PDFs");
     const pdfPromises = contractsData.map((contract) =>

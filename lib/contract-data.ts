@@ -10,11 +10,88 @@ import type {
 import { formatDateShortVN } from "@/lib/format";
 import { COMPANY_INFO } from "@/constants/company";
 import { getLoanInterestRateDescription, DAILY_INTEREST_RATE } from "@/lib/loan-constants";
-import { LOAN_TYPES } from "@/constants/loan";
+import { LOAN_TYPES, ASSET_TYPES } from "@/constants/loan";
 
 /** Format số tiền VND */
 function formatVND(n: number): string {
   return new Intl.NumberFormat("vi-VN").format(n) + " VNĐ";
+}
+
+/**
+ * Helper function để build thông tin định danh tài sản theo loại
+ * - Điện thoại, Laptop: IMEI và Serial
+ * - Xe máy, Ô tô: Số khung và Số máy
+ */
+function buildAssetIdentityInfo(loan: TLoanDetails): {
+  chiTiet: string;
+  field1Label: string;
+  field1Value: string;
+  field2Label: string;
+  field2Value: string;
+} {
+  const assetType = loan.asset.type;
+  
+  // So sánh với label tiếng Việt vì loan.asset.type đã được convert sang label
+  const isVehicle = assetType === 'Xe máy' || assetType === 'Ô tô' || 
+                    assetType === ASSET_TYPES.MOTORBIKE || assetType === ASSET_TYPES.CAR;
+  const isDevice = assetType === 'Điện thoại' || assetType === 'Laptop' ||
+                   assetType === ASSET_TYPES.PHONE || assetType === ASSET_TYPES.LAPTOP;
+
+  if (isVehicle) {
+    // Xe máy, Ô tô: hiển thị số khung và số máy
+    const chassisStr = loan.asset.chassisNumber ? ` (Số khung: ${loan.asset.chassisNumber}` : "";
+    const engineStr = loan.asset.engineNumber
+      ? chassisStr
+        ? ` - Số máy: ${loan.asset.engineNumber})`
+        : ` (Số máy: ${loan.asset.engineNumber})`
+      : chassisStr
+        ? ")"
+        : "";
+    
+    return {
+      chiTiet: `${loan.asset.name || ""}${chassisStr}${engineStr}`.trim(),
+      field1Label: "Số khung",
+      field1Value: loan.asset.chassisNumber ?? "—",
+      field2Label: "Số máy",
+      field2Value: loan.asset.engineNumber ?? "—",
+    };
+  } else if (isDevice) {
+    // Điện thoại, Laptop: hiển thị IMEI và Serial
+    const imeiStr = loan.asset.imei ? ` (IMEI: ${loan.asset.imei}` : "";
+    const serialStr = loan.asset.serial
+      ? imeiStr
+        ? ` - Serial: ${loan.asset.serial})`
+        : ` (Serial: ${loan.asset.serial})`
+      : imeiStr
+        ? ")"
+        : "";
+    
+    return {
+      chiTiet: `${loan.asset.name || ""}${imeiStr}${serialStr}`.trim(),
+      field1Label: "IMEI",
+      field1Value: loan.asset.imei ?? "—",
+      field2Label: "Serial",
+      field2Value: loan.asset.serial ?? "—",
+    };
+  } else {
+    // Các loại khác: hiển thị IMEI và Serial (mặc định)
+    const imeiStr = loan.asset.imei ? ` (IMEI: ${loan.asset.imei}` : "";
+    const serialStr = loan.asset.serial
+      ? imeiStr
+        ? ` - Serial: ${loan.asset.serial})`
+        : ` (Serial: ${loan.asset.serial})`
+      : imeiStr
+        ? ")"
+        : "";
+    
+    return {
+      chiTiet: `${loan.asset.name || ""}${imeiStr}${serialStr}`.trim(),
+      field1Label: "IMEI",
+      field1Value: loan.asset.imei ?? "—",
+      field2Label: "Serial",
+      field2Value: loan.asset.serial ?? "—",
+    };
+  }
 }
 
 /**
@@ -141,16 +218,8 @@ export function buildAssetPledgeContractData(
   /** Tính các mốc thanh toán cho Hợp đồng cầm cố (Gốc + Lãi) */
   const milestones = buildPledgeMilestones(loan);
 
-  /** Chi tiết tài sản: tên + IMEI/Serial nếu có */
-  const imeiStr = loan.asset.imei ? ` (IMEI: ${loan.asset.imei}` : "";
-  const serialStr = loan.asset.serial
-    ? imeiStr
-      ? ` - Serial: ${loan.asset.serial})`
-      : ` (Serial: ${loan.asset.serial})`
-    : imeiStr
-      ? ")"
-      : "";
-  const chiTiet = `${loan.asset.name || ""}${imeiStr}${serialStr}`.trim();
+  /** Chi tiết tài sản: tên + thông tin định danh theo loại */
+  const assetInfo = buildAssetIdentityInfo(loan);
 
   return {
     MA_HD: loan.code,
@@ -168,9 +237,9 @@ export function buildAssetPledgeContractData(
     DIA_CHI: loan.customer.address,
     SDT: loan.customer.phone,
     LOAI_TS: loan.asset.type,
-    CHI_TIET: chiTiet || "—",
-    IMEI: loan.asset.imei ?? "—",
-    SERIAL: loan.asset.serial ?? "—",
+    CHI_TIET: assetInfo.chiTiet || "—",
+    IMEI: assetInfo.field1Value,
+    SERIAL: assetInfo.field2Value,
     TINH_TRANG: loan.assetCondition || "Đang cầm cố",
     SO_TIEN_VAY: formatVND(principal),
     LAI_SUAT: getLoanInterestRateDescription(),
@@ -190,15 +259,8 @@ export function buildAssetLeaseContractData(
   /** Tính các mốc thanh toán cho Hợp đồng thuê (Phí thuê) */
   const milestones = buildLeaseMilestones(loan);
   
-  const imeiStr = loan.asset.imei ? ` (IMEI: ${loan.asset.imei}` : "";
-  const serialStr = loan.asset.serial
-    ? imeiStr
-      ? ` - Serial: ${loan.asset.serial})`
-      : ` (Serial: ${loan.asset.serial})`
-    : imeiStr
-      ? ")"
-      : "";
-  const chiTiet = `${loan.asset.name || ""}${imeiStr}${serialStr}`.trim();
+  /** Chi tiết tài sản: tên + thông tin định danh theo loại */
+  const assetInfo = buildAssetIdentityInfo(loan);
 
   return {
     MA_HD_CAM_CO: loan.code,
@@ -219,9 +281,9 @@ export function buildAssetLeaseContractData(
     DIA_CHI: loan.customer.address,
     SDT: loan.customer.phone,
     LOAI_TS: loan.asset.type,
-    CHI_TIET: chiTiet || "—",
-    IMEI: loan.asset.imei ?? "—",
-    SERIAL: loan.asset.serial ?? "—",
+    CHI_TIET: assetInfo.chiTiet || "—",
+    IMEI: assetInfo.field1Value,
+    SERIAL: assetInfo.field2Value,
     MILESTONES: milestones,
     NGAY_BAT_DAU: formatDateShortVN(loan.signedAt ?? new Date().toISOString()),
     drive_folder_id: driveFolderId,
@@ -268,15 +330,9 @@ export function buildAssetDisposalAuthorizationData(
   driveFolderId = "",
 ): TAssetDisposalAuthorizationData {
   const signedDate = new Date(loan.signedAt ?? loan.id);
-  const imeiStr = loan.asset.imei ? ` (IMEI: ${loan.asset.imei}` : "";
-  const serialStr = loan.asset.serial
-    ? imeiStr
-      ? ` - Serial: ${loan.asset.serial})`
-      : ` (Serial: ${loan.asset.serial})`
-    : imeiStr
-      ? ")"
-      : "";
-  const chiTiet = `${loan.asset.name || ""}${imeiStr}${serialStr}`.trim();
+  
+  /** Chi tiết tài sản: tên + thông tin định danh theo loại */
+  const assetInfo = buildAssetIdentityInfo(loan);
 
   return {
     MA_HD: loan.code,
@@ -295,9 +351,9 @@ export function buildAssetDisposalAuthorizationData(
     BEN_UU_QUYEN_MST: COMPANY_INFO.TAX_CODE,
     BEN_UU_QUYEN_SDT: COMPANY_INFO.PHONE,
     LOAI_TS: loan.asset.type,
-    CHI_TIET: chiTiet || "—",
-    IMEI: loan.asset.imei ?? "—",
-    SERIAL: loan.asset.serial ?? "—",
+    CHI_TIET: assetInfo.chiTiet || "—",
+    IMEI: assetInfo.field1Value,
+    SERIAL: assetInfo.field2Value,
     TINH_TRANG: loan.assetCondition || "Đang cầm cố",
     drive_folder_id: driveFolderId,
   };
