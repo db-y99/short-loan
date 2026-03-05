@@ -66,13 +66,31 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, onSuccess }: TProps)
       if (result.success && result.data) {
         const paid = Number(result.data.cycle?.totalInterestPaid || 0);
         const periods = result.data.periods || [];
-        const due = periods.reduce((sum: number, p: any) => sum + Number(p.fee_amount), 0);
+        
+        // Tính phí theo mốc hiện tại (không cộng dồn)
+        // Tìm mốc hiện tại dựa vào ngày hôm nay
+        const today = new Date();
+        let currentMilestoneFee = 0;
+        
+        // Sắp xếp periods theo due_date
+        const sortedPeriods = [...periods].sort((a: any, b: any) => 
+          new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+        );
+        
+        // Tìm mốc hiện tại: mốc đầu tiên có due_date >= hôm nay
+        // Nếu không tìm thấy (đã quá tất cả mốc), lấy mốc cuối cùng
+        const currentPeriod = sortedPeriods.find((p: any) => new Date(p.due_date) >= today) 
+          || sortedPeriods[sortedPeriods.length - 1];
+        
+        if (currentPeriod) {
+          currentMilestoneFee = Number(currentPeriod.fee_amount);
+        }
         
         setTotalInterestPaid(paid);
-        setTotalInterestDue(due);
+        setTotalInterestDue(currentMilestoneFee);
         
         // Auto-fill remaining interest
-        const remaining = Math.max(0, due - paid);
+        const remaining = Math.max(0, currentMilestoneFee - paid);
         if (remaining > 0) {
           setInterestAmount(remaining.toLocaleString("vi-VN"));
         }

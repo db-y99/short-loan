@@ -179,10 +179,10 @@ export async function GET(
       .from("loan_payment_transactions")
       .select(`
         *,
-        created_by_user:created_by(
+        created_by_user:profiles!created_by(
           id,
           email,
-          raw_user_meta_data
+          full_name
         )
       `)
       .eq("loan_id", loanId)

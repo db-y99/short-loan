@@ -106,7 +106,7 @@ export async function GET(
       },
     };
 
-    console.log({contractData})
+    console.log(contractData.pledgeContract.MILESTONES)
 
     // If specific contract type is requested (for contract page), return only that contract
     if (contractType) {
