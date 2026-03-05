@@ -88,34 +88,40 @@ export async function POST(
       );
     }
 
-    // Upload signatures to Google Drive
+    // Upload signatures to Google Drive in parallel
     let draftSignatureFileId: string | null = null;
     let officialSignatureFileId: string | null = null;
 
     try {
-      // Upload draft signature
+      const uploadPromises = [];
+      
       if (draftSignature) {
         const draftBuffer = base64ToBuffer(draftSignature);
-        const draftResult = await uploadToDrive(
-          draftBuffer,
-          `chu-ky-nhay-${loan.code}.png`,
-          "image/png",
-          loanFolderId
+        uploadPromises.push(
+          uploadToDrive(
+            draftBuffer,
+            `chu-ky-nhay-${loan.code}.png`,
+            "image/png",
+            loanFolderId
+          )
         );
-        draftSignatureFileId = draftResult.fileId;
       }
 
-      // Upload official signature
       if (officialSignature) {
         const officialBuffer = base64ToBuffer(officialSignature);
-        const officialResult = await uploadToDrive(
-          officialBuffer,
-          `chu-ky-chinh-thuc-${loan.code}.png`,
-          "image/png",
-          loanFolderId
+        uploadPromises.push(
+          uploadToDrive(
+            officialBuffer,
+            `chu-ky-chinh-thuc-${loan.code}.png`,
+            "image/png",
+            loanFolderId
+          )
         );
-        officialSignatureFileId = officialResult.fileId;
       }
+
+      const [draftResult, officialResult] = await Promise.all(uploadPromises);
+      draftSignatureFileId = draftResult?.fileId || null;
+      officialSignatureFileId = officialResult?.fileId || null;
     } catch (uploadError) {
       console.error("Error uploading signatures:", uploadError);
       return NextResponse.json(
@@ -124,54 +130,51 @@ export async function POST(
       );
     }
 
-    // Cập nhật trạng thái sang signed và lưu thời gian ký + file IDs
-    const { error: updateError } = await supabase
-      .from("loans")
-      .update({
-        status: LOAN_STATUS.SIGNED,
-        signed_at: signedAt,
-        draft_signature_file_id: draftSignatureFileId,
-        official_signature_file_id: officialSignatureFileId,
-      })
-      .eq("id", loanId);
+    // Cập nhật trạng thái và log activity song song
+    const [updateResult] = await Promise.all([
+      supabase
+        .from("loans")
+        .update({
+          status: LOAN_STATUS.SIGNED,
+          signed_at: signedAt,
+          draft_signature_file_id: draftSignatureFileId,
+          official_signature_file_id: officialSignatureFileId,
+        })
+        .eq("id", loanId),
+      supabase.from("loan_activity_logs").insert({
+        loan_id: loanId,
+        type: "contract_signed",
+        user_id: user.id,
+        user_name: user.email || "System",
+        system_message: `Hợp đồng đã được ký kết`,
+      }),
+    ]);
 
-    if (updateError) {
-      console.error("Error updating loan status:", updateError);
+    if (updateResult.error) {
+      console.error("Error updating loan status:", updateResult.error);
       return NextResponse.json(
         { success: false, error: "Lỗi khi cập nhật trạng thái" },
         { status: 500 }
       );
     }
 
-    // Log activity
-    await supabase.from("loan_activity_logs").insert({
-      loan_id: loanId,
-      type: "contract_signed",
-      user_id: user.id,
-      user_name: user.email || "System",
-      system_message: `Hợp đồng đã được ký kết`,
-    });
+    // Generate 4 signed contract PDFs in background (don't wait)
+    console.log("[SIGN_CONTRACT] Triggering PDF generation in background...");
+    // Fire and forget - don't await
+    import("@/services/contracts/contracts.service")
+      .then(({ generateSignedContractsService }) => generateSignedContractsService(loanId))
+      .then((result) => {
+        if (!result.success) {
+          console.error("[SIGN_CONTRACT] Failed to generate PDFs:", result.error);
+        } else {
+          console.log("[SIGN_CONTRACT] Successfully generated", result.contracts?.length, "PDFs");
+        }
+      })
+      .catch((pdfError) => {
+        console.error("[SIGN_CONTRACT] Error generating PDFs:", pdfError);
+      });
 
-    // Generate 4 signed contract PDFs
-    console.log("[SIGN_CONTRACT] Generating signed PDFs...");
-    try {
-      const { generateSignedContractsService } = await import(
-        "@/services/contracts/contracts.service"
-      );
-      
-      const result = await generateSignedContractsService(loanId);
-      
-      if (!result.success) {
-        console.error("[SIGN_CONTRACT] Failed to generate PDFs:", result.error);
-        // Don't fail the signing process, just log the error
-      } else {
-        console.log("[SIGN_CONTRACT] Successfully generated", result.contracts?.length, "PDFs");
-      }
-    } catch (pdfError) {
-      console.error("[SIGN_CONTRACT] Error generating PDFs:", pdfError);
-      // Don't fail the signing process
-    }
-
+    // Return immediately without waiting for PDF generation
     return NextResponse.json({
       success: true,
       message: "Ký hợp đồng thành công",

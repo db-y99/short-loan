@@ -351,21 +351,26 @@ export async function generateSignedContractsService(
 
     // XÓA TẤT CẢ HỢP ĐỒNG CŨ TRƯỚC KHI TẠO MỚI
     console.log(`[GENERATE_SIGNED_CONTRACTS] Deleting old contracts...`);
-    const { error: deleteError } = await supabase
-      .from("loan_files")
-      .delete()
-      .eq("loan_id", loanId);
-
-    if (deleteError) {
-      console.error(`[GENERATE_SIGNED_CONTRACTS] Error deleting old contracts:`, deleteError);
-      // Continue anyway, don't fail the process
-    }
-
-    // Lấy loan details
+    
+    // Lấy loan details và xóa contracts song song
     const { getLoanDetailsService } = await import(
       "@/services/loans/loans.service"
     );
-    const loan = await getLoanDetailsService(loanId);
+    
+    const [loan, deleteResult, loanData] = await Promise.all([
+      getLoanDetailsService(loanId),
+      supabase.from("loan_files").delete().eq("loan_id", loanId),
+      supabase
+        .from("loans")
+        .select("draft_signature_file_id, official_signature_file_id, metadata")
+        .eq("id", loanId)
+        .single(),
+    ]);
+
+    if (deleteResult.error) {
+      console.error(`[GENERATE_SIGNED_CONTRACTS] Error deleting old contracts:`, deleteResult.error);
+      // Continue anyway, don't fail the process
+    }
 
     if (!loan) {
       console.error(`[GENERATE_SIGNED_CONTRACTS] Loan not found: ${loanId}`);
@@ -382,14 +387,7 @@ export async function generateSignedContractsService(
       };
     }
 
-    // Lấy signature URLs từ loan
-    const { data: loanData } = await supabase
-      .from("loans")
-      .select("draft_signature_file_id, official_signature_file_id, metadata")
-      .eq("id", loanId)
-      .single();
-
-    if (!loanData?.draft_signature_file_id || !loanData?.official_signature_file_id) {
+    if (!loanData.data?.draft_signature_file_id || !loanData.data?.official_signature_file_id) {
       return {
         success: false,
         error: "Chưa có chữ ký",
@@ -401,15 +399,15 @@ export async function generateSignedContractsService(
     let officialSignatureBase64: string | null = null;
     
     try {
-      // Fetch signatures from Drive
+      // Fetch signatures from Drive in parallel
       const { getFileFromDrive } = await import("@/lib/google-drive");
       
-      // Fetch draft signature (Chữ ký nháy - Bên A)
-      const draftSigBuffer = await getFileFromDrive(loanData.draft_signature_file_id);
-      draftSignatureBase64 = `data:image/png;base64,${draftSigBuffer.toString('base64')}`;
+      const [draftSigBuffer, officialSigBuffer] = await Promise.all([
+        getFileFromDrive(loanData.data.draft_signature_file_id),
+        getFileFromDrive(loanData.data.official_signature_file_id),
+      ]);
       
-      // Fetch official signature (Chữ ký chính thức - Bên B)
-      const officialSigBuffer = await getFileFromDrive(loanData.official_signature_file_id);
+      draftSignatureBase64 = `data:image/png;base64,${draftSigBuffer.toString('base64')}`;
       officialSignatureBase64 = `data:image/png;base64,${officialSigBuffer.toString('base64')}`;
     } catch (fetchError) {
       console.error("Error fetching signatures:", fetchError);
@@ -568,7 +566,7 @@ export async function generateSignedContractsService(
 
     // Update signed_contract_version in metadata (always 1 since we delete old ones)
     const updatedMetadata = {
-      ...(loanData?.metadata || {}),
+      ...(loanData.data?.metadata || {}),
       signed_contract_version: newVersion,
     };
 
