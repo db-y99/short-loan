@@ -122,6 +122,8 @@ const ContractSigningModal = ({
     }
   };
 
+  console.log({draftSignature, officialSignature})
+
   const clearDraftSignature = () => {
     draftSigRef.current?.clear();
     setDraftSignature(null);
@@ -132,7 +134,8 @@ const ContractSigningModal = ({
       alert("Vui lòng ký trước khi lưu");
       return;
     }
-    const dataURL = draftSigRef.current?.toDataURL();
+     const canvas = draftSigRef.current?.getTrimmedCanvas()
+    const dataURL = canvas?.toDataURL("image/png");
     setDraftSignature(dataURL || null);
   };
 
@@ -146,7 +149,8 @@ const ContractSigningModal = ({
       alert("Vui lòng ký trước khi lưu");
       return;
     }
-    const dataURL = officialSigRef.current?.toDataURL();
+    const canvas = officialSigRef.current?.getTrimmedCanvas()
+    const dataURL = canvas?.toDataURL("image/png");
     setOfficialSignature(dataURL || null);
   };
 
