@@ -11,6 +11,7 @@ import { Button } from "@heroui/button";
 import { Tabs, Tab } from "@heroui/react";
 import { Card, CardBody } from "@heroui/card";
 import { Checkbox } from "@heroui/checkbox";
+import { addToast } from "@heroui/toast";
 import { X, FileText, CheckCircle, Loader2, Pen, Trash2 } from "lucide-react";
 import SignatureCanvas from "react-signature-canvas";
 import { AssetPledgeContractView } from "@/components/contracts/asset-pledge-contract-view.client";
@@ -84,12 +85,20 @@ const ContractSigningModal = ({
 
   const handleSign = async () => {
     if (!isAgreed) {
-      alert("Vui lòng đồng ý với điều khoản hợp đồng");
+      addToast({
+        title: "Vui lòng đồng ý với điều khoản",
+        description: "Bạn cần đồng ý với các điều khoản hợp đồng để tiếp tục",
+        color: "danger",
+      });
       return;
     }
 
     if (!draftSignature || !officialSignature) {
-      alert("Vui lòng ký cả chữ ký nháy và chữ ký chính thức");
+      addToast({
+        title: "Thiếu chữ ký",
+        description: "Vui lòng ký cả chữ ký nháy và chữ ký chính thức",
+        color: "danger",
+      });
       return;
     }
 
@@ -112,11 +121,19 @@ const ContractSigningModal = ({
       if (result.success) {
         onSign(); // Just call callback to close modal and show success
       } else {
-        alert(result.error || "Có lỗi xảy ra khi ký hợp đồng");
+        addToast({
+          title: "Lỗi khi ký hợp đồng",
+          description: result.error || "Có lỗi xảy ra khi ký hợp đồng",
+          color: "danger",
+        });
       }
     } catch (error) {
       console.error("Error signing contract:", error);
-      alert("Có lỗi xảy ra khi ký hợp đồng");
+      addToast({
+        title: "Lỗi khi ký hợp đồng",
+        description: "Có lỗi xảy ra khi ký hợp đồng",
+        color: "danger",
+      });
     } finally {
       setIsSigning(false);
     }
@@ -131,12 +148,20 @@ const ContractSigningModal = ({
 
   const saveDraftSignature = () => {
     if (draftSigRef.current?.isEmpty()) {
-      alert("Vui lòng ký trước khi lưu");
+      addToast({
+        title: "Chưa có chữ ký",
+        description: "Vui lòng ký trước khi lưu",
+        color: "warning",
+      });
       return;
     }
      const canvas = draftSigRef.current?.getTrimmedCanvas()
     const dataURL = canvas?.toDataURL("image/png");
     setDraftSignature(dataURL || null);
+    addToast({
+      title: "Đã lưu chữ ký nháy",
+      color: "success",
+    });
   };
 
   const clearOfficialSignature = () => {
@@ -146,12 +171,20 @@ const ContractSigningModal = ({
 
   const saveOfficialSignature = () => {
     if (officialSigRef.current?.isEmpty()) {
-      alert("Vui lòng ký trước khi lưu");
+      addToast({
+        title: "Chưa có chữ ký",
+        description: "Vui lòng ký trước khi lưu",
+        color: "warning",
+      });
       return;
     }
     const canvas = officialSigRef.current?.getTrimmedCanvas()
     const dataURL = canvas?.toDataURL("image/png");
     setOfficialSignature(dataURL || null);
+    addToast({
+      title: "Đã lưu chữ ký chính thức",
+      color: "success",
+    });
   };
 
   return (

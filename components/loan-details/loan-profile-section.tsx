@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Chip, Link, Button } from "@heroui/react";
-import { FileText, CheckCircle2, FileSignature, QrCode, PenTool } from "lucide-react";
+import { addToast } from "@heroui/toast";
+import { FileText, CheckCircle2, QrCode, PenTool } from "lucide-react";
 import type { TLoanDetails } from "@/types/loan.types";
 import { LOAN_STATUS } from "@/constants/loan";
 import { formatDateTimeVN } from "@/lib/format";
@@ -30,10 +31,17 @@ const LoanProfileSection = ({ loanDetails }: TProps) => {
 
   const handleSign = async () => {
     // This function is called by the modal after successful signing
-    // Just close modal and reload
-    alert("Ký hợp đồng thành công!");
+    addToast({
+      title: "Ký hợp đồng thành công!",
+      description: "Hợp đồng đã được ký kết và đang tạo PDF...",
+      color: "success",
+    });
     setShowSigningModal(false);
-    window.location.reload(); // Refresh để cập nhật UI
+    
+    // Reload sau 1s để user thấy toast
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
   };
 
   const handleShowQR = () => {
