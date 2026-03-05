@@ -294,7 +294,6 @@ const ContractSigningModal = ({
                             canvasProps={{
                               className: "w-full h-48 cursor-crosshair",
                             }}
-                            backgroundColor="rgb(250, 250, 250)"
                           />
                         </div>
                         <div className="flex gap-2 mt-2">
@@ -352,7 +351,6 @@ const ContractSigningModal = ({
                             canvasProps={{
                               className: "w-full h-48 cursor-crosshair",
                             }}
-                            backgroundColor="rgb(240, 253, 244)"
                           />
                         </div>
                         <div className="flex gap-2 mt-2">
