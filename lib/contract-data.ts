@@ -297,6 +297,10 @@ export function buildFullPaymentConfirmationData(
 ): TFullPaymentConfirmationData {
   const d = new Date();
 
+   const assetInfo = buildAssetIdentityInfo(loan);
+
+   const assets = `${loan.asset.type}, ${assetInfo.chiTiet}`
+
   return {
     MA_HD: loan.code,
     NGAY_HD: formatDateShortVN(loan.signedAt ?? new Date().toISOString()),
@@ -315,7 +319,7 @@ export function buildFullPaymentConfirmationData(
     NOI_CAP: loan.customer.cccdIssuePlace,
     DIA_CHI: loan.customer.address,
     SDT: loan.customer.phone,
-    TAI_SAN: loan.asset.name ?? "",
+    TAI_SAN: assets ?? "",
     SO_TIEN: formatVND(loan.loanAmount),
     NGAN_HANG: loan.bank.name ?? "—",
     SO_TAI_KHOAN: loan.bank.accountNumber ?? "—",

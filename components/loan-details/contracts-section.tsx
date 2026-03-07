@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { FileText, Download, Eye, Loader2, Plus, CheckCircle, XCircle, RefreshCw } from "lucide-react";
+import { FileText, Download, Eye, Loader2, Plus, CheckCircle, RefreshCw } from "lucide-react";
 import type { TLoanFile } from "@/types/loan.types";
 import { generateContractsAction, regenerateContractsAction } from "@/features/contracts/actions/generate-contracts.action";
 import ContractPreviewModal from "@/components/contracts/contract-preview-modal";
 import RegenerateConfirmModal from "@/components/contracts/regenerate-confirm-modal";
 import ContractErrorDetails from "@/components/contracts/contract-error-details";
+import { sortContractsByType } from "@/lib/contract-utils";
 
 type TProps = {
   loanId: string;
@@ -26,6 +27,9 @@ const ContractsSection = ({ loanId, contracts = [] }: TProps) => {
   } | null>(null);
   const [selectedContract, setSelectedContract] = useState<TLoanFile | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  // Sắp xếp contracts theo thứ tự mong muốn
+  const sortedContracts = sortContractsByType(localContracts);
 
   const handleGenerateContracts = async () => {
     setIsGenerating(true);
@@ -195,7 +199,7 @@ const ContractsSection = ({ loanId, contracts = [] }: TProps) => {
             </div>
           ) : (
             <div className="space-y-2">
-              {localContracts.map((contract) => (
+              {sortedContracts.map((contract) => (
                 <div
                   key={contract.id}
                   className="flex items-center justify-between p-3 rounded-lg bg-default-100 hover:bg-default-200 transition-colors"

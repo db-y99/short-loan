@@ -63,6 +63,7 @@ export type TLoanFile = {
   name: string;
   fileId: string;
   provider: string;
+  type: string;
 };
 
 export type TPaymentMilestone = {

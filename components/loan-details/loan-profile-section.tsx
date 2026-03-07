@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Chip, Link, Button } from "@heroui/react";
+import { Link, Button } from "@heroui/react";
 import { addToast } from "@heroui/toast";
 import { FileText, CheckCircle2, QrCode, PenTool } from "lucide-react";
 import type { TLoanDetails } from "@/types/loan.types";
 import { LOAN_STATUS } from "@/constants/loan";
 import { formatDateTimeVN } from "@/lib/format";
 import ContractSigningModal from "@/components/contracts/contract-signing-modal";
+import { sortContractsByType } from "@/lib/contract-utils";
 
 type TProps = {
   loanDetails: TLoanDetails;
@@ -24,6 +25,11 @@ const LoanProfileSection = ({ loanDetails }: TProps) => {
   );
   const isApproved = loanDetails.status === LOAN_STATUS.APPROVED;
   const isSignedStatus = loanDetails.status === LOAN_STATUS.SIGNED;
+
+  // Sắp xếp originalFiles theo thứ tự mong muốn
+  const sortedOriginalFiles = loanDetails.originalFiles 
+    ? sortContractsByType(loanDetails.originalFiles)
+    : [];
 
   const handleDirectSign = () => {
     setShowSigningModal(true);
@@ -111,13 +117,13 @@ const LoanProfileSection = ({ loanDetails }: TProps) => {
       )}
 
       {/* File Gốc (Soạn thảo) */}
-      {loanDetails.originalFiles && loanDetails.originalFiles.length > 0 && (
+      {sortedOriginalFiles.length > 0 && (
         <div>
           <p className="text-sm font-medium text-default-700 dark:text-default-300 italic mb-2">
             File Gốc (Soạn thảo):
           </p>
           <div className="flex flex-wrap gap-2">
-            {loanDetails.originalFiles.map((file) => (
+            {sortedOriginalFiles.map((file) => (
               <Link
                 key={file.id}
                 isExternal
@@ -146,24 +152,23 @@ const LoanProfileSection = ({ loanDetails }: TProps) => {
       </div> */}
 
       {/* Fallback: Single originalFileUrl */}
-      {(!loanDetails.originalFiles || loanDetails.originalFiles.length === 0) &&
-        loanDetails.originalFileUrl && (
-          <div>
-            <p className="text-sm font-medium text-default-700 dark:text-default-300 italic mb-2">
-              File Gốc (Soạn thảo):
-            </p>
-            <Link
-              isExternal
-              href={loanDetails.originalFileUrl}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-default-100 border border-default-200 rounded-lg hover:border-primary transition-colors text-sm"
-            >
-              <FileText className="w-4 h-4 text-default-500" />
-              <span className="text-default-700 dark:text-default-300">
-                File Gốc
-              </span>
-            </Link>
-          </div>
-        )}
+      {sortedOriginalFiles.length === 0 && loanDetails.originalFileUrl && (
+        <div>
+          <p className="text-sm font-medium text-default-700 dark:text-default-300 italic mb-2">
+            File Gốc (Soạn thảo):
+          </p>
+          <Link
+            isExternal
+            href={loanDetails.originalFileUrl}
+            className="inline-flex items-center gap-2 px-3 py-2 bg-white dark:bg-default-100 border border-default-200 rounded-lg hover:border-primary transition-colors text-sm"
+          >
+            <FileText className="w-4 h-4 text-default-500" />
+            <span className="text-default-700 dark:text-default-300">
+              File Gốc
+            </span>
+          </Link>
+        </div>
+      )}
     </div>
 
     {/* Contract Signing Modal */}
