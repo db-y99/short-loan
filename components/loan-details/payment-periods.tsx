@@ -5,7 +5,7 @@ import { Card, CardBody, CardHeader, Button } from "@heroui/react";
 import { Clock, Calendar, History, MessageSquare } from "lucide-react";
 
 import type { TLoanDetails } from "@/types/loan.types";
-import { LOAN_STATUS } from "@/constants/loan";
+import { LOAN_STATUS, LOAN_TYPES } from "@/constants/loan";
 import PaymentTable from "@/components/loan-details/payment-table";
 import SectionHeader from "@/components/section-header";
 
@@ -83,6 +83,9 @@ const PaymentPeriods = ({ loanDetails, refreshKey, onOpenPaymentHistory }: TProp
   // Tính tổng tiền đã đóng lãi
   const totalInterestPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
 
+  // Kiểm tra xem có phải gói 1 không (Gói 1 chỉ có 1 kỳ thanh toán)
+  const isPackage1 = loanDetails.loanType === LOAN_TYPES.INSTALLMENT_3_PERIODS;
+
   return (
     <div className="col-span-2 grid grid-cols-1 gap-4">
       {/* Button xem lịch sử đóng lãi - hiển thị nếu có payments */}
@@ -155,28 +158,34 @@ const PaymentPeriods = ({ loanDetails, refreshKey, onOpenPaymentHistory }: TProp
               {loanDetails.currentPeriod.subtitle}
             </p>
           )}
-          <PaymentTable milestones={loanDetails.currentPeriod.milestones} />
+          <PaymentTable 
+            milestones={loanDetails.currentPeriod.milestones} 
+            showTotal={isPackage1}
+            showPrincipal={isPackage1}
+          />
         </CardBody>
       </Card>
 
-      {/* Kỳ kế tiếp */}
-      <Card shadow="sm">
-        <CardHeader className="pb-2">
-          <SectionHeader icon={Calendar} title={loanDetails.nextPeriod.title} />
-        </CardHeader>
-        <CardBody className="pt-0">
-          {loanDetails.nextPeriod.subtitle && (
-            <p className="text-sm text-default-500 mb-3">
-              {loanDetails.nextPeriod.subtitle}
-            </p>
-          )}
-          {loanDetails.nextPeriod.milestones && loanDetails.nextPeriod.milestones.length > 0 ? (
-            <PaymentTable milestones={loanDetails.nextPeriod.milestones} />
-          ) : (
-            <p className="text-sm text-default-400">Không có dữ liệu kỳ kế tiếp</p>
-          )}
-        </CardBody>
-      </Card>
+      {/* Kỳ kế tiếp - chỉ hiển thị nếu không phải gói 1 */}
+      {!isPackage1 && (
+        <Card shadow="sm">
+          <CardHeader className="pb-2">
+            <SectionHeader icon={Calendar} title={loanDetails.nextPeriod.title} />
+          </CardHeader>
+          <CardBody className="pt-0">
+            {loanDetails.nextPeriod.subtitle && (
+              <p className="text-sm text-default-500 mb-3">
+                {loanDetails.nextPeriod.subtitle}
+              </p>
+            )}
+            {loanDetails.nextPeriod.milestones && loanDetails.nextPeriod.milestones.length > 0 ? (
+              <PaymentTable milestones={loanDetails.nextPeriod.milestones} />
+            ) : (
+              <p className="text-sm text-default-400">Không có dữ liệu kỳ kế tiếp</p>
+            )}
+          </CardBody>
+        </Card>
+      )}
     </div>
   );
 };

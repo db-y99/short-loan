@@ -295,6 +295,7 @@ export async function getPaymentPeriodsService(
     milestones: currentPeriods.map((p) => ({
       days: p.milestone_day,
       date: p.due_date,
+      principal: p.principal ? Number(p.principal) : undefined,
       interestAndFee: Number(p.fee_amount),
       totalRedemption: Number(p.total_due),
     })),
@@ -306,6 +307,7 @@ export async function getPaymentPeriodsService(
     milestones: nextPeriods.map((p) => ({
       days: p.milestone_day,
       date: p.due_date,
+      principal: p.principal ? Number(p.principal) : undefined,
       interestAndFee: Number(p.fee_amount),
       totalRedemption: Number(p.total_due),
     })),

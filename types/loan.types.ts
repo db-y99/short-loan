@@ -69,6 +69,7 @@ export type TLoanFile = {
 export type TPaymentMilestone = {
   days: number;
   date: string;
+  principal?: number;
   interestAndFee: number;
   totalRedemption: number;
 };

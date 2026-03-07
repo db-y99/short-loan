@@ -46,6 +46,7 @@ function convertInstallmentToMilestone(
   return {
     days: period.dueDay,
     date: dueDate,
+    principal: period.principal,
     interestAndFee: period.interest + period.rentalFee,
     totalRedemption: period.total,
   };

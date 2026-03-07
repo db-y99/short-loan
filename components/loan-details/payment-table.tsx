@@ -6,42 +6,93 @@ import { formatCurrencyVND } from "@/lib/format";
 
 const PaymentTable = ({
     milestones,
+    showTotal = false,
+    showPrincipal = false,
 }: {
     milestones: TPaymentMilestone[];
-}) => (
-    <Table
-        aria-label="Bảng thanh toán"
-        classNames={{
-            wrapper: "shadow-none border border-default-200 rounded-lg",
-            th: "bg-default-100",
-        }}
-    >
-        <TableHeader>
-            <TableColumn>Mốc</TableColumn>
-            <TableColumn>Ngày</TableColumn>
-            <TableColumn align="end">Lãi + Phí</TableColumn>
-            <TableColumn align="end">Tổng chuộc</TableColumn>
-        </TableHeader>
-        <TableBody>
-            {milestones.map((milestone, index) => (
-                <TableRow key={index}>
-                    <TableCell>
-                        <Chip size="sm" variant="flat">
-                            {milestone.days} ngày
-                        </Chip>
-                    </TableCell>
-                    <TableCell>{formatDateShortVN(milestone.date)}</TableCell>
-                    <TableCell className="text-end">
-                        {formatCurrencyVND(milestone.interestAndFee)}
-                    </TableCell>
-                    <TableCell className="text-end font-semibold text-primary">
-                        {formatCurrencyVND(milestone.totalRedemption)}
-                    </TableCell>
-                </TableRow>
-            ))}
-        </TableBody>
-    </Table>
-);
+    showTotal?: boolean;
+    showPrincipal?: boolean;
+}) => {
+    // Tính tổng số tiền chuộc
+    const totalRedemption = milestones.reduce((sum, m) => sum + m.totalRedemption, 0);
+
+    return (
+        <Table
+            aria-label="Bảng thanh toán"
+            classNames={{
+                wrapper: "shadow-none border border-default-200 rounded-lg",
+                th: "bg-default-100",
+            }}
+        >
+            {showPrincipal ? (
+                <TableHeader>
+                    <TableColumn>Mốc</TableColumn>
+                    <TableColumn>Ngày</TableColumn>
+                    <TableColumn align="end">Gốc</TableColumn>
+                    <TableColumn align="end">Lãi + Phí</TableColumn>
+                    <TableColumn align="end">Tổng chuộc</TableColumn>
+                </TableHeader>
+            ) : (
+                <TableHeader>
+                    <TableColumn>Mốc</TableColumn>
+                    <TableColumn>Ngày</TableColumn>
+                    <TableColumn align="end">Lãi + Phí</TableColumn>
+                    <TableColumn align="end">Tổng chuộc</TableColumn>
+                </TableHeader>
+            )}
+            <TableBody>
+                {[
+                    ...milestones.map((milestone, index) => 
+                        showPrincipal ? (
+                            <TableRow key={index}>
+                                <TableCell>
+                                    <Chip size="sm" variant="flat">
+                                        {milestone.days} ngày
+                                    </Chip>
+                                </TableCell>
+                                <TableCell>{formatDateShortVN(milestone.date)}</TableCell>
+                                <TableCell className="text-end font-semibold">
+                                    {formatCurrencyVND(milestone.principal || 0)}
+                                </TableCell>
+                                <TableCell className="text-end">
+                                    {formatCurrencyVND(milestone.interestAndFee)}
+                                </TableCell>
+                                <TableCell className="text-end font-semibold text-primary">
+                                    {formatCurrencyVND(milestone.totalRedemption)}
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            <TableRow key={index}>
+                                <TableCell>
+                                    <Chip size="sm" variant="flat">
+                                        {milestone.days} ngày
+                                    </Chip>
+                                </TableCell>
+                                <TableCell>{formatDateShortVN(milestone.date)}</TableCell>
+                                <TableCell className="text-end">
+                                    {formatCurrencyVND(milestone.interestAndFee)}
+                                </TableCell>
+                                <TableCell className="text-end font-semibold text-primary">
+                                    {formatCurrencyVND(milestone.totalRedemption)}
+                                </TableCell>
+                            </TableRow>
+                        )
+                    ),
+                    ...(showTotal ? [
+                        <TableRow key="total">
+                            <TableCell colSpan={showPrincipal ? 4 : 3} className="text-end font-bold">
+                                TỔNG CỘNG
+                            </TableCell>
+                            <TableCell className="text-end font-bold text-success text-lg">
+                                {formatCurrencyVND(totalRedemption)}
+                            </TableCell>
+                        </TableRow>
+                    ] : [])
+                ]}
+            </TableBody>
+        </Table>
+    );
+};
 
 
 export default PaymentTable
