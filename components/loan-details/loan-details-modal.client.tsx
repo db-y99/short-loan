@@ -266,7 +266,11 @@ const LoanDetailsModal = ({
                       />
                     </div>
                     <LoanAmountSummary loanDetails={loanDetails} />
-                    <PaymentPeriods loanDetails={loanDetails} refreshKey={refreshKey} />
+                    <PaymentPeriods 
+                      loanDetails={loanDetails} 
+                      refreshKey={refreshKey}
+                      onOpenPaymentHistory={() => setIsPaymentHistoryOpen(true)}
+                    />
                     <ContractsSection
                       loanId={loanDetails.id}
                       contracts={loanDetails.originalFiles}
@@ -293,16 +297,6 @@ const LoanDetailsModal = ({
                         onPress={() => setIsPayInterestOpen(true)}
                       >
                         Đóng lãi
-                      </Button>
-                      <Button
-                        color="default"
-                        variant="flat"
-                        className="w-full"
-                        size="md"
-                        startContent={<MessageSquare size={16} />}
-                        onPress={() => setIsPaymentHistoryOpen(true)}
-                      >
-                        Xem lịch sử đóng lãi
                       </Button>
                       <Button
                         color="success"

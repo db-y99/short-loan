@@ -94,7 +94,7 @@ const PaymentHistoryModal = ({ isOpen, onClose, loanId }: TProps) => {
       <ModalContent>
         <ModalHeader className="flex items-center gap-2">
           <History className="w-5 h-5 text-primary" />
-          <span>Lịch sử đóng lãi</span>
+          <span>Lịch sử</span>
         </ModalHeader>
         <ModalBody>
           {isLoading ? (

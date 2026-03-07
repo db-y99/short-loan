@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
 import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
+import { Textarea } from "@heroui/input";
 
 type TProps = {
   isOpen: boolean;
@@ -68,11 +68,12 @@ const UpdateAssetConditionModal = ({
               {error}
             </div>
           )}
-          <Input
+          <Textarea
             label="Tình trạng tài sản"
-            placeholder="Ví dụ: Còn mới, hoạt động tốt"
+            placeholder="Ví dụ: Còn mới, hoạt động tốt, không trầy xước..."
             value={condition}
             onValueChange={setCondition}
+            minRows={6}
             autoFocus
           />
         </ModalBody>

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardBody, CardHeader } from "@heroui/react";
-import { Clock, Calendar, History } from "lucide-react";
+import { Card, CardBody, CardHeader, Button } from "@heroui/react";
+import { Clock, Calendar, History, MessageSquare } from "lucide-react";
 
 import type { TLoanDetails } from "@/types/loan.types";
 import { LOAN_STATUS } from "@/constants/loan";
@@ -27,10 +27,11 @@ type TPaymentTransaction = {
 
 type TProps = {
   loanDetails: TLoanDetails;
-  refreshKey?: number; // Thêm key để force refresh
+  refreshKey?: number;
+  onOpenPaymentHistory?: () => void; // Thêm callback để mở modal
 };
 
-const PaymentPeriods = ({ loanDetails, refreshKey }: TProps) => {
+const PaymentPeriods = ({ loanDetails, refreshKey, onOpenPaymentHistory }: TProps) => {
   const [payments, setPayments] = useState<TPaymentTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -84,6 +85,20 @@ const PaymentPeriods = ({ loanDetails, refreshKey }: TProps) => {
 
   return (
     <div className="col-span-2 grid grid-cols-1 gap-4">
+      {/* Button xem lịch sử đóng lãi - hiển thị nếu có payments */}
+      {payments.length > 0 && onOpenPaymentHistory && (
+        <Button
+          color="default"
+          variant="flat"
+          className="w-full"
+          size="md"
+          startContent={<MessageSquare size={16} />}
+          onPress={onOpenPaymentHistory}
+        >
+          Xem lịch sử đóng lãi ({payments.length})
+        </Button>
+      )}
+
       {/* Lịch sử đóng lãi - hiển thị nếu có payments */}
       {payments.length > 0 && (
         <Card shadow="sm" className="border-2 border-success-200 dark:border-success-800">
@@ -126,17 +141,6 @@ const PaymentPeriods = ({ loanDetails, refreshKey }: TProps) => {
               </table>
             </div>
           </CardBody>
-        </Card>
-      )}
-
-      {/* Đã cập nhật theo lịch đóng lãi (Kỳ 2) */}
-      {payments.length > 0 && (
-        <Card shadow="sm" className="bg-success-50 dark:bg-success-900/10">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-success-600 dark:text-success-400">✅ Đã cập nhật theo lịch đóng lãi (Kỳ 2):</span>
-            </div>
-          </CardHeader>
         </Card>
       )}
 

@@ -19,8 +19,24 @@ type TProps = {
 };
 
 const PaymentProgressCard = ({ periods, totalInterestPaid, cycleTitle }: TProps) => {
-  // Tính tổng lãi phải trả trong chu kỳ
-  const totalInterestDue = periods.reduce((sum, p) => sum + Number(p.fee_amount), 0);
+  // Tính phí theo mốc hiện tại (không cộng dồn)
+  // Tìm mốc hiện tại dựa vào ngày hôm nay
+  const today = new Date();
+  let currentMilestoneFee = 0;
+  
+  // Sắp xếp periods theo milestone_day
+  const sortedPeriods = [...periods].sort((a, b) => a.milestone_day - b.milestone_day);
+  
+  // Tìm mốc hiện tại: mốc đầu tiên có status pending hoặc overdue
+  // Nếu không tìm thấy (đã đóng hết), lấy mốc cuối cùng
+  const currentPeriod = sortedPeriods.find(p => p.status === 'pending' || p.status === 'overdue') 
+    || sortedPeriods[sortedPeriods.length - 1];
+  
+  if (currentPeriod) {
+    currentMilestoneFee = Number(currentPeriod.fee_amount);
+  }
+  
+  const totalInterestDue = currentMilestoneFee;
   
   // Tính số kỳ đã đóng và chưa đóng
   const paidPeriods = periods.filter(p => p.status === 'paid').length;
@@ -45,6 +61,11 @@ const PaymentProgressCard = ({ periods, totalInterestPaid, cycleTitle }: TProps)
             <span className="text-sm text-default-500">({cycleTitle})</span>
           )}
         </div>
+        {currentPeriod && (
+          <Chip size="sm" color="primary" variant="flat">
+            Mốc {currentPeriod.milestone_day} ngày
+          </Chip>
+        )}
       </CardHeader>
       <CardBody className="pt-0 space-y-4">
         {/* Progress bar */}
@@ -105,14 +126,14 @@ const PaymentProgressCard = ({ periods, totalInterestPaid, cycleTitle }: TProps)
             <div className="flex items-center gap-2 mb-1">
               <TrendingUp className="w-4 h-4 text-primary" />
               <p className="text-xs text-primary-700 dark:text-primary-400 font-medium">
-                Tổng lãi
+                Lãi mốc hiện tại
               </p>
             </div>
             <p className="text-lg font-bold text-primary">
               {formatCurrencyVND(totalInterestDue)}
             </p>
             <p className="text-xs text-primary-600 dark:text-primary-500 mt-1">
-              {periods.length} kỳ
+              {currentPeriod ? `${currentPeriod.milestone_day} ngày` : 'N/A'}
             </p>
           </div>
         </div>
