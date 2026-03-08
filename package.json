@@ -9,6 +9,7 @@
     "lint": "eslint --fix",
     "create-user": "tsx scripts/create-user.ts",
     "create-default-user": "tsx scripts/create-default-user.ts",
+    "test-connection": "tsx scripts/test-connection.ts",
     "validate-env": "node scripts/validate-env.js",
     "migrate-payment-cycles": "tsx scripts/migrate-payment-cycles.ts"
   },

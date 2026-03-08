@@ -65,7 +65,8 @@ async function createUser() {
     });
 
     if (error) {
-      console.error("❌ Lỗi:", error.message);
+      console.error("❌ Lỗi:", error.message || "Unknown error");
+      console.error("Chi tiết lỗi:", JSON.stringify(error, null, 2));
       rl.close();
       process.exit(1);
     }

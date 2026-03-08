@@ -11,7 +11,6 @@ import {
 import { Button } from "@heroui/button";
 import { Loader2, History } from "lucide-react";
 import PaymentHistorySection from "./payment-history-section";
-import PaymentProgressCard from "./payment-progress-card";
 
 type TPaymentTransaction = {
   id: string;
@@ -37,13 +36,11 @@ type TProps = {
 const PaymentHistoryModal = ({ isOpen, onClose, loanId }: TProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [payments, setPayments] = useState<TPaymentTransaction[]>([]);
-  const [periods, setPeriods] = useState<TPaymentPeriod[]>([]);
   const [totalInterestPaid, setTotalInterestPaid] = useState(0);
 
   useEffect(() => {
     if (isOpen) {
       fetchPaymentHistory();
-      fetchPaymentProgress();
     }
   }, [isOpen, loanId]);
 
@@ -61,6 +58,9 @@ const PaymentHistoryModal = ({ isOpen, onClose, loanId }: TProps) => {
 
       if (result.success) {
         setPayments(result.data || []);
+        // Tính tổng tiền đã đóng
+        const total = (result.data || []).reduce((sum: number, p: TPaymentTransaction) => sum + Number(p.amount), 0);
+        setTotalInterestPaid(total);
       }
     } catch (error) {
       console.error("Failed to fetch payment history:", error);
@@ -69,32 +69,12 @@ const PaymentHistoryModal = ({ isOpen, onClose, loanId }: TProps) => {
     }
   };
 
-  const fetchPaymentProgress = async () => {
-    try {
-      const response = await fetch(`/api/loans/${loanId}/payment-progress`);
-      
-      if (!response.ok) {
-        console.error("Failed to fetch payment progress:", response.status);
-        return;
-      }
-
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        setPeriods(result.data.periods || []);
-        setTotalInterestPaid(Number(result.data.cycle?.totalInterestPaid || 0));
-      }
-    } catch (error) {
-      console.error("Failed to fetch payment progress:", error);
-    }
-  };
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
       <ModalContent>
         <ModalHeader className="flex items-center gap-2">
           <History className="w-5 h-5 text-primary" />
-          <span>Lịch sử</span>
+          <span>Lịch sử đóng tiền</span>
         </ModalHeader>
         <ModalBody>
           {isLoading ? (
@@ -103,28 +83,16 @@ const PaymentHistoryModal = ({ isOpen, onClose, loanId }: TProps) => {
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Hiển thị lịch sử đóng lãi trước nếu có */}
-              {payments.length > 0 && (
+              {/* Hiển thị lịch sử đóng tiền */}
+              {payments.length > 0 ? (
                 <PaymentHistorySection
                   payments={payments}
                   totalInterestPaid={totalInterestPaid}
                 />
-              )}
-              
-              {/* Sau đó hiển thị payment progress */}
-              {periods.length > 0 && (
-                <PaymentProgressCard
-                  periods={periods}
-                  totalInterestPaid={totalInterestPaid}
-                  cycleTitle="Kỳ hiện tại"
-                />
-              )}
-              
-              {/* Nếu không có gì thì hiển thị empty state */}
-              {payments.length === 0 && periods.length === 0 && (
+              ) : (
                 <div className="text-center py-12 text-default-500">
                   <History className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p>Chưa có lịch sử đóng lãi</p>
+                  <p>Chưa có lịch sử đóng tiền</p>
                 </div>
               )}
             </div>

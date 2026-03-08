@@ -72,7 +72,7 @@ const LoanDetailsModal = ({
     const title = isApproving ? "Xác nhận duyệt" : "Xác nhận giải ngân";
     const message = isApproving
       ? "Xác nhận duyệt khoản vay này?\n\nSau khi duyệt:\n- Chuyển sang trạng thái Đã duyệt (Chờ ký)\n- Có thể ký hợp đồng"
-      : "Xác nhận giải ngân khoản vay này?\n\nSau khi giải ngân:\n- Chuyển sang trạng thái Đang cầm\n- Bắt đầu tính lãi từ thời điểm này\n- Có thể đóng lãi và chuộc đồ";
+      : "Xác nhận giải ngân khoản vay này?\n\nSau khi giải ngân:\n- Chuyển sang trạng thái Đang cầm\n- Bắt đầu tính lãi từ thời điểm này\n- Có thể đóng tiền và chuộc đồ";
 
     setConfirmConfig({
       title,
@@ -130,7 +130,7 @@ const LoanDetailsModal = ({
   const handlePayInterestSuccess = () => {
     setMessage({
       type: "success",
-      text: "Đóng lãi thành công!",
+      text: "Đóng tiền thành công!",
     });
     
     // Tăng refreshKey để force refresh PaymentPeriods
@@ -288,6 +288,7 @@ const LoanDetailsModal = ({
 
                   {isDisbursed && (
                     <div className="flex items-center flex-col gap-2 mt-4">
+                      {/* Button Đóng tiền - áp dụng cho tất cả các gói */}
                       <Button
                         color="primary"
                         variant="bordered"
@@ -296,7 +297,7 @@ const LoanDetailsModal = ({
                         startContent={<CreditCard size={16} />}
                         onPress={() => setIsPayInterestOpen(true)}
                       >
-                        Đóng lãi
+                        Đóng tiền
                       </Button>
                       <Button
                         color="success"
@@ -374,6 +375,7 @@ const LoanDetailsModal = ({
             isOpen={isPayInterestOpen}
             onClose={() => setIsPayInterestOpen(false)}
             loanId={loanDetails.id}
+            loanType={loanDetails.loanType}
             onSuccess={handlePayInterestSuccess}
           />
 
@@ -388,6 +390,7 @@ const LoanDetailsModal = ({
             onClose={() => setIsRedeemOpen(false)}
             loanId={loanDetails.id}
             loanAmount={loanDetails.loanAmount}
+            loanType={loanDetails.loanType}
             onSuccess={handleRedeemSuccess}
           />
 

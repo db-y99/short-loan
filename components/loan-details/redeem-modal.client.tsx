@@ -22,10 +22,11 @@ type TProps = {
   onClose: () => void;
   loanId: string;
   loanAmount: number;
+  loanType?: string; // Thêm loanType để phân biệt logic
   onSuccess?: () => void;
 };
 
-const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, onSuccess }: TProps) => {
+const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, loanType, onSuccess }: TProps) => {
   const [principalAmount, setPrincipalAmount] = useState("");
   const [interestAmount, setInterestAmount] = useState("");
   const [notes, setNotes] = useState("");
@@ -40,16 +41,32 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, onSuccess }: TProps)
     text: string;
   } | null>(null);
 
+  // Xác định loại gói
+  const isInstallmentType = loanType === "installment_3_periods" || 
+                            loanType?.includes("trả góp") || 
+                            loanType?.includes("Gói 1");
+  
+  const isBulletPaymentType = loanType === "bullet_payment_by_milestone" || 
+                              loanType === "bullet_payment_with_collateral_hold" ||
+                              loanType?.includes("Gói 2") || 
+                              loanType?.includes("Gói 3");
+
   // Reset form và fetch data khi mở modal
   useEffect(() => {
     if (isOpen) {
-      setPrincipalAmount(loanAmount.toLocaleString("vi-VN"));
+      // Gói 1: Không cần nhập tiền gốc riêng (đã bao gồm trong tổng 3 kỳ)
+      // Gói 2, 3: Cần nhập tiền gốc
+      if (isInstallmentType) {
+        setPrincipalAmount("0"); // Gói 1 không cần gốc riêng
+      } else {
+        setPrincipalAmount(loanAmount.toLocaleString("vi-VN"));
+      }
       setInterestAmount("");
       setNotes("");
       setMessage(null);
       fetchPaymentProgress();
     }
-  }, [isOpen, loanAmount, loanId]);
+  }, [isOpen, loanAmount, loanId, isInstallmentType]);
 
   const fetchPaymentProgress = async () => {
     setIsLoadingProgress(true);
@@ -67,30 +84,35 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, onSuccess }: TProps)
         const paid = Number(result.data.cycle?.totalInterestPaid || 0);
         const periods = result.data.periods || [];
         
-        // Tính phí theo mốc hiện tại (không cộng dồn)
-        // Tìm mốc hiện tại dựa vào ngày hôm nay
-        const today = new Date();
-        let currentMilestoneFee = 0;
+        let totalDue = 0;
         
-        // Sắp xếp periods theo due_date
-        const sortedPeriods = [...periods].sort((a: any, b: any) => 
-          new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
-        );
-        
-        // Tìm mốc hiện tại: mốc đầu tiên có due_date >= hôm nay
-        // Nếu không tìm thấy (đã quá tất cả mốc), lấy mốc cuối cùng
-        const currentPeriod = sortedPeriods.find((p: any) => new Date(p.due_date) >= today) 
-          || sortedPeriods[sortedPeriods.length - 1];
-        
-        if (currentPeriod) {
-          currentMilestoneFee = Number(currentPeriod.fee_amount);
+        if (isInstallmentType) {
+          // Gói 1: Tính tổng của cả 3 kỳ (Gốc + Lãi + Phí)
+          totalDue = periods.reduce((sum: number, p: any) => {
+            const feeAmount = Number(p.fee_amount || 0);
+            const principalAmount = Number(p.principal || 0);
+            return sum + principalAmount + feeAmount;
+          }, 0);
+        } else {
+          // Gói 2, 3: Chỉ tính mốc hiện tại (Lãi + Phí)
+          const today = new Date();
+          const sortedPeriods = [...periods].sort((a: any, b: any) => 
+            new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+          );
+          
+          const currentPeriod = sortedPeriods.find((p: any) => new Date(p.due_date) >= today) 
+            || sortedPeriods[sortedPeriods.length - 1];
+          
+          if (currentPeriod) {
+            totalDue = Number(currentPeriod.fee_amount || 0);
+          }
         }
         
         setTotalInterestPaid(paid);
-        setTotalInterestDue(currentMilestoneFee);
+        setTotalInterestDue(totalDue);
         
         // Auto-fill remaining interest
-        const remaining = Math.max(0, currentMilestoneFee - paid);
+        const remaining = Math.max(0, totalDue - paid);
         if (remaining > 0) {
           setInterestAmount(remaining.toLocaleString("vi-VN"));
         }
@@ -126,34 +148,43 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, onSuccess }: TProps)
     const numericPrincipal = parseAmount(principalAmount);
     const numericInterest = parseAmount(interestAmount);
     
-    if (!principalAmount || numericPrincipal <= 0) {
-      setMessage({ type: "error", text: "Vui lòng nhập số tiền gốc hợp lệ" });
-      return;
-    }
+    // Gói 1: Không cần kiểm tra gốc (đã bao gồm trong tổng 3 kỳ)
+    if (!isInstallmentType) {
+      if (!principalAmount || numericPrincipal <= 0) {
+        setMessage({ type: "error", text: "Vui lòng nhập số tiền gốc hợp lệ" });
+        return;
+      }
 
-    if (numericPrincipal !== loanAmount) {
-      setMessage({ 
-        type: "error", 
-        text: `Số tiền gốc phải bằng ${formatCurrencyVND(loanAmount)}` 
-      });
-      return;
+      if (numericPrincipal !== loanAmount) {
+        setMessage({ 
+          type: "error", 
+          text: `Số tiền gốc phải bằng ${formatCurrencyVND(loanAmount)}` 
+        });
+        return;
+      }
     }
 
     if (!interestAmount || numericInterest < 0) {
-      setMessage({ type: "error", text: "Vui lòng nhập số tiền lãi hợp lệ" });
+      setMessage({ type: "error", text: isInstallmentType ? "Vui lòng nhập tổng tiền hợp lệ" : "Vui lòng nhập số tiền lãi hợp lệ" });
       return;
     }
 
     // Build confirm message
-    const totalAmount = numericPrincipal + numericInterest;
+    const totalAmount = isInstallmentType ? numericInterest : (numericPrincipal + numericInterest);
     const remainingInterest = totalInterestDue - totalInterestPaid;
     
-    let msg = `Tiền gốc: ${formatCurrencyVND(numericPrincipal)}\n`;
-    msg += `Tiền lãi: ${formatCurrencyVND(numericInterest)}\n`;
-    msg += `Tổng cộng: ${formatCurrencyVND(totalAmount)}\n\n`;
+    let msg = "";
+    
+    if (isInstallmentType) {
+      msg += `Tổng chuộc (cả 3 kỳ): ${formatCurrencyVND(numericInterest)}\n\n`;
+    } else {
+      msg += `Tiền gốc: ${formatCurrencyVND(numericPrincipal)}\n`;
+      msg += `Tiền lãi: ${formatCurrencyVND(numericInterest)}\n`;
+      msg += `Tổng cộng: ${formatCurrencyVND(totalAmount)}\n\n`;
+    }
     
     if (numericInterest < remainingInterest) {
-      msg += `⚠️ Lưu ý: Còn thiếu ${formatCurrencyVND(remainingInterest - numericInterest)} lãi\n\n`;
+      msg += `⚠️ Lưu ý: Còn thiếu ${formatCurrencyVND(remainingInterest - numericInterest)}\n\n`;
     }
     
     msg += `Sau khi chuộc đồ, khoản vay sẽ chuyển sang trạng thái "Hoàn thành"`;
@@ -165,7 +196,7 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, onSuccess }: TProps)
   const handleConfirmRedeem = async () => {
     const numericPrincipal = parseAmount(principalAmount);
     const numericInterest = parseAmount(interestAmount);
-    const totalAmount = numericPrincipal + numericInterest;
+    const totalAmount = isInstallmentType ? numericInterest : (numericPrincipal + numericInterest);
 
     setIsSubmitting(true);
     setMessage(null);
@@ -175,7 +206,7 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, onSuccess }: TProps)
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          principalAmount: numericPrincipal,
+          principalAmount: isInstallmentType ? 0 : numericPrincipal, // Gói 1 không cần gốc riêng
           interestAmount: numericInterest,
           notes: notes.trim(),
         }),
@@ -221,7 +252,7 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, onSuccess }: TProps)
 
   const numericPrincipal = parseAmount(principalAmount);
   const numericInterest = parseAmount(interestAmount);
-  const totalAmount = numericPrincipal + numericInterest;
+  const totalAmount = isInstallmentType ? numericInterest : (numericPrincipal + numericInterest);
   const remainingInterest = totalInterestDue - totalInterestPaid;
 
   return (
@@ -272,7 +303,7 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, onSuccess }: TProps)
                   <span className="font-semibold">{formatCurrencyVND(totalInterestDue)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-default-600">Đã đóng lãi:</span>
+                  <span className="text-default-600">Đã đóng:</span>
                   <span className="font-semibold text-success">{formatCurrencyVND(totalInterestPaid)}</span>
                 </div>
                 <Divider />
@@ -290,29 +321,35 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, onSuccess }: TProps)
             <div className="flex items-start gap-2">
               <Info className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
               <p className="text-sm text-primary-700 dark:text-primary-400">
-                Chuộc đồ = Trả gốc + Trả lãi còn thiếu. Sau khi chuộc đồ, khoản vay sẽ hoàn thành.
+                {isInstallmentType 
+                  ? "Gói 1: Chuộc đồ = Tổng (Gốc + Lãi + Phí) của cả 3 kỳ (trừ phần đã thanh toán). Tổng 3 kỳ đã bao gồm cả gốc."
+                  : "Chuộc đồ = Trả gốc + Trả lãi còn thiếu. Sau khi chuộc đồ, khoản vay sẽ hoàn thành."
+                }
               </p>
             </div>
           </div>
 
-          <Input
-            label="Tiền gốc"
-            placeholder="Nhập số tiền gốc"
-            value={principalAmount}
-            onValueChange={handlePrincipalChange}
-            endContent={
-              <div className="pointer-events-none flex items-center">
-                <span className="text-default-400 text-small">VNĐ</span>
-              </div>
-            }
-            description={`Phải bằng số tiền vay: ${formatCurrencyVND(loanAmount)}`}
-            isRequired
-            isDisabled={isSubmitting}
-          />
+          {/* Chỉ hiển thị input tiền gốc cho Gói 2, 3 */}
+          {!isInstallmentType && (
+            <Input
+              label="Tiền gốc"
+              placeholder="Nhập số tiền gốc"
+              value={principalAmount}
+              onValueChange={handlePrincipalChange}
+              endContent={
+                <div className="pointer-events-none flex items-center">
+                  <span className="text-default-400 text-small">VNĐ</span>
+                </div>
+              }
+              description={`Phải bằng số tiền vay: ${formatCurrencyVND(loanAmount)}`}
+              isRequired
+              isDisabled={isSubmitting}
+            />
+          )}
 
           <Input
-            label="Tiền lãi"
-            placeholder="Nhập số tiền lãi"
+            label={isInstallmentType ? "Tổng chuộc (Gốc + Lãi + Phí) cả 3 kỳ" : "Tiền lãi"}
+            placeholder={isInstallmentType ? "Nhập tổng tiền" : "Nhập số tiền lãi"}
             value={interestAmount}
             onValueChange={handleInterestChange}
             endContent={
@@ -320,7 +357,7 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, onSuccess }: TProps)
                 <span className="text-default-400 text-small">VNĐ</span>
               </div>
             }
-            description={remainingInterest > 0 ? `Còn thiếu: ${formatCurrencyVND(remainingInterest)}` : "Đã đóng đủ lãi"}
+            description={remainingInterest > 0 ? `Còn thiếu: ${formatCurrencyVND(remainingInterest)}` : isInstallmentType ? "Đã thanh toán đủ" : "Đã đóng đủ lãi"}
             isRequired
             isDisabled={isSubmitting}
           />
@@ -355,7 +392,7 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, onSuccess }: TProps)
           <Button
             color="primary"
             onPress={handleSubmit}
-            isDisabled={isSubmitting || !principalAmount || !interestAmount}
+            isDisabled={isSubmitting || !interestAmount || (isInstallmentType ? false : !principalAmount)}
             startContent={
               isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />

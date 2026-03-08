@@ -29,7 +29,7 @@ const PaymentHistorySection = ({ payments, totalInterestPaid }: TProps) => {
       <CardHeader className="flex items-center justify-between pb-2">
         <div className="flex items-center gap-2">
           <History className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold">Lịch sử đóng lãi</h3>
+          <h3 className="text-lg font-semibold">Lịch sử đóng tiền</h3>
           <span className="text-sm text-default-500">({payments.length})</span>
         </div>
         {totalInterestPaid !== undefined && totalInterestPaid > 0 && (

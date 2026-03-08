@@ -80,7 +80,7 @@ const PaymentPeriods = ({ loanDetails, refreshKey, onOpenPaymentHistory }: TProp
     nextPeriodMilestones: loanDetails.nextPeriod.milestones?.length
   });
 
-  // Tính tổng tiền đã đóng lãi
+  // Tính tổng tiền đã đóng
   const totalInterestPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
 
   // Kiểm tra xem có phải gói 1 không (Gói 1 chỉ có 1 kỳ thanh toán)
@@ -88,7 +88,7 @@ const PaymentPeriods = ({ loanDetails, refreshKey, onOpenPaymentHistory }: TProp
 
   return (
     <div className="col-span-2 grid grid-cols-1 gap-4">
-      {/* Button xem lịch sử đóng lãi - hiển thị nếu có payments */}
+      {/* Button xem lịch sử đóng tiền - hiển thị nếu có payments */}
       {payments.length > 0 && onOpenPaymentHistory && (
         <Button
           color="default"
@@ -98,15 +98,15 @@ const PaymentPeriods = ({ loanDetails, refreshKey, onOpenPaymentHistory }: TProp
           startContent={<MessageSquare size={16} />}
           onPress={onOpenPaymentHistory}
         >
-          Xem lịch sử đóng lãi ({payments.length})
+          Xem lịch sử đóng tiền ({payments.length})
         </Button>
       )}
 
-      {/* Lịch sử đóng lãi - hiển thị nếu có payments */}
+      {/* Lịch sử đóng tiền - hiển thị nếu có payments */}
       {payments.length > 0 && (
         <Card shadow="sm" className="border-2 border-success-200 dark:border-success-800">
           <CardHeader className="pb-2">
-            <SectionHeader icon={History} title="🔄 LỊCH SỬ ĐÓNG LÃI" />
+            <SectionHeader icon={History} title="🔄 LỊCH SỬ ĐÓNG TIỀN" />
           </CardHeader>
           <CardBody className="pt-0">
             <div className="overflow-x-auto">

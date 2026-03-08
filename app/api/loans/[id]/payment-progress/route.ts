@@ -57,7 +57,7 @@ export async function GET(
     // Get payment periods
     const { data: periods, error: periodsError } = await supabase
       .from("loan_payment_periods")
-      .select("milestone_day, fee_amount, status, due_date, period_number")
+      .select("milestone_day, fee_amount, principal, status, due_date, period_number, paid_amount")
       .eq("cycle_id", cycle.id)
       .eq("period_type", "current")
       .order("period_number", { ascending: true });

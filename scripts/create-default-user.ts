@@ -24,8 +24,8 @@ async function createDefaultUser() {
     },
   });
 
-  const email = "admin@y99.com";
-  const password = "Admin@123";
+  const email = "admin@y99.vn";
+  const password = "admin";
   const fullName = "Admin Y99";
 
   try {
@@ -41,14 +41,15 @@ async function createDefaultUser() {
     });
 
     if (error) {
-      if (error.message.includes("already registered")) {
+      if (error.message?.includes("already registered")) {
         console.log("\n⚠️  Tài khoản đã tồn tại!");
         console.log("\nThông tin đăng nhập:");
         console.log(`Email: ${email}`);
         console.log(`Mật khẩu: ${password}`);
         return;
       }
-      console.error("❌ Lỗi:", error.message);
+      console.error("❌ Lỗi:", error.message || "Unknown error");
+      console.error("Chi tiết lỗi:", JSON.stringify(error, null, 2));
       process.exit(1);
     }
 

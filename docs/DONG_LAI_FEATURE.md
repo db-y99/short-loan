@@ -12,6 +12,9 @@ Tính năng cho phép ghi nhận các lần đóng lãi của khách hàng trong
 - Tự động format số tiền (1.000.000 VNĐ)
 - Validation số tiền hợp lệ
 - Ghi nhận vào database
+- **Chỉ áp dụng cho Gói 2, 3:**
+  - **Gói 1 (Trả góp 3 kỳ)**: KHÔNG có tính năng đóng lãi - chỉ đóng tiền tổng chuộc theo từng mốc (Gốc + Lãi + Phí)
+  - **Gói 2, 3 (Gốc cuối kỳ)**: Có thể đóng nhiều lần cho 1 mốc - nhưng đóng xong 1 mốc rồi thì XONG, không cho đóng thêm mốc nào nữa
 
 ### 2. Lịch sử đóng lãi
 - Hiển thị tất cả lần đóng lãi
@@ -140,6 +143,12 @@ Lịch sử đóng lãi sẽ hiển thị trong loan details modal (nếu có co
 
 ### Modal đóng lãi
 - Title: "Đóng lãi" với icon DollarSign
+- **Thông báo loại gói:**
+  - Gói 1: Danger box "Gói 1 không có tính năng đóng lãi - Chỉ đóng tiền tổng chuộc theo từng mốc" + Disable nút
+  - Gói 2, 3: Warning box "Đóng lãi theo mốc - Có thể đóng nhiều lần cho 1 mốc. Nhưng đóng xong 1 mốc rồi thì XONG"
+- **Cảnh báo nếu đã đóng xong 1 mốc (Gói 2, 3):**
+  - Hiển thị danger box "Đã đóng xong 1 mốc rồi - Không cho đóng thêm mốc nào nữa"
+  - Disable nút "Xác nhận đóng lãi"
 - Info box: Hướng dẫn nhập số tiền
 - Input số tiền: Auto format với dấu phân cách hàng nghìn
 - Textarea ghi chú: Optional
@@ -164,6 +173,25 @@ Lịch sử đóng lãi sẽ hiển thị trong loan details modal (nếu có co
 - ✅ Log all activities với user_id
 
 ## 📊 Business Logic
+
+### Phân biệt theo gói vay
+
+#### Gói 1: Trả góp 3 kỳ (`installment_3_periods`)
+- **KHÔNG có tính năng đóng lãi**
+- Gói này chỉ đóng tiền tổng chuộc theo từng mốc
+- Ví dụ:
+  - Mốc 7 ngày (10/03/2026): Đóng 3.450.000 đ (Gốc 3tr + Lãi+Phí 450k)
+  - Mốc 18 ngày (21/03/2026): Đóng 5.250.000 đ (Gốc 4.5tr + Lãi+Phí 750k)
+  - Mốc 30 ngày (02/04/2026): Đóng 8.550.000 đ (Gốc 7.5tr + Lãi+Phí 1.05tr)
+- Validation: Block tính năng đóng lãi cho gói này
+
+#### Gói 2, 3: Gốc cuối kỳ (`bullet_payment_by_milestone`, `bullet_payment_with_collateral_hold`)
+- Có thể đóng nhiều lần cho 1 mốc (đóng thiếu được đóng tiếp)
+- Nhưng khi đóng đủ 1 mốc rồi → XONG, không cho đóng thêm mốc nào nữa
+- Validation: 
+  - Kiểm tra xem đã đóng đủ bất kỳ mốc nào chưa (totalPaid >= fee_amount của bất kỳ mốc nào)
+  - Nếu đã đóng đủ 1 mốc → Block, không cho đóng thêm
+  - Không được vượt quá số tiền còn thiếu của mốc hiện tại
 
 ### Tính tổng lãi đã đóng
 
@@ -212,6 +240,21 @@ if (remaining <= 0) {
    - Dashboard tổng quan
 
 ## 🐛 Troubleshooting
+
+### Lỗi: "Gói 1 không có tính năng đóng lãi"
+- Áp dụng cho Gói 1
+- Gói 1 chỉ đóng tiền tổng chuộc theo từng mốc (Gốc + Lãi + Phí)
+- Không có tính năng đóng lãi riêng
+
+### Lỗi: "Gói 2/3 đã đóng xong 1 mốc rồi"
+- Áp dụng cho Gói 2, 3
+- Bạn đã đóng đủ 1 mốc rồi
+- Không thể đóng thêm mốc nào nữa (đã hoàn thành)
+
+### Lỗi: "Số tiền vượt quá số tiền còn thiếu của mốc hiện tại"
+- Áp dụng cho cả 3 gói
+- Số tiền bạn nhập lớn hơn số tiền còn thiếu của mốc hiện tại
+- Vui lòng nhập số tiền nhỏ hơn hoặc bằng số tiền còn thiếu
 
 ### Lỗi: "Khoản vay chưa được giải ngân"
 - Kiểm tra loan.status = "disbursed"
