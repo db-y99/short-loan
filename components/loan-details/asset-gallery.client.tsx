@@ -229,7 +229,6 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
         isDismissable={!isUploading}
         hideCloseButton={isUploading}
         onClose={handleCancelUpload}
-        portalContainer={typeof document !== 'undefined' ? document.body : undefined}
       >
         <ModalContent>
           {(onClose) => (
@@ -367,7 +366,6 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
           scrollBehavior="inside"
           size="5xl"
           onClose={handleClose}
-          portalContainer={typeof document !== 'undefined' ? document.body : undefined}
         >
           <ModalContent>
             {(onClose) => (
