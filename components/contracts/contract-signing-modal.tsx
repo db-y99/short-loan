@@ -155,13 +155,41 @@ const ContractSigningModal = ({
       });
       return;
     }
-     const canvas = draftSigRef.current?.getTrimmedCanvas()
-    const dataURL = canvas?.toDataURL("image/png");
-    setDraftSignature(dataURL || null);
-    addToast({
-      title: "Đã lưu chữ ký nháy",
-      color: "success",
-    });
+    
+    try {
+      const canvas = draftSigRef.current?.getTrimmedCanvas();
+      if (!canvas) {
+        addToast({
+          title: "Lỗi lưu chữ ký",
+          description: "Không thể lấy dữ liệu chữ ký. Vui lòng thử lại.",
+          color: "danger",
+        });
+        return;
+      }
+      
+      const dataURL = canvas.toDataURL("image/png");
+      if (!dataURL || dataURL === "data:,") {
+        addToast({
+          title: "Lỗi lưu chữ ký",
+          description: "Dữ liệu chữ ký không hợp lệ. Vui lòng ký lại.",
+          color: "danger",
+        });
+        return;
+      }
+      
+      setDraftSignature(dataURL);
+      addToast({
+        title: "Đã lưu chữ ký nháy",
+        color: "success",
+      });
+    } catch (error) {
+      console.error("Error saving draft signature:", error);
+      addToast({
+        title: "Lỗi lưu chữ ký",
+        description: "Có lỗi xảy ra khi lưu chữ ký. Vui lòng thử lại.",
+        color: "danger",
+      });
+    }
   };
 
   const clearOfficialSignature = () => {
@@ -178,13 +206,41 @@ const ContractSigningModal = ({
       });
       return;
     }
-    const canvas = officialSigRef.current?.getTrimmedCanvas()
-    const dataURL = canvas?.toDataURL("image/png");
-    setOfficialSignature(dataURL || null);
-    addToast({
-      title: "Đã lưu chữ ký chính thức",
-      color: "success",
-    });
+    
+    try {
+      const canvas = officialSigRef.current?.getTrimmedCanvas();
+      if (!canvas) {
+        addToast({
+          title: "Lỗi lưu chữ ký",
+          description: "Không thể lấy dữ liệu chữ ký. Vui lòng thử lại.",
+          color: "danger",
+        });
+        return;
+      }
+      
+      const dataURL = canvas.toDataURL("image/png");
+      if (!dataURL || dataURL === "data:,") {
+        addToast({
+          title: "Lỗi lưu chữ ký",
+          description: "Dữ liệu chữ ký không hợp lệ. Vui lòng ký lại.",
+          color: "danger",
+        });
+        return;
+      }
+      
+      setOfficialSignature(dataURL);
+      addToast({
+        title: "Đã lưu chữ ký chính thức",
+        color: "success",
+      });
+    } catch (error) {
+      console.error("Error saving official signature:", error);
+      addToast({
+        title: "Lỗi lưu chữ ký",
+        description: "Có lỗi xảy ra khi lưu chữ ký. Vui lòng thử lại.",
+        color: "danger",
+      });
+    }
   };
 
   return (
@@ -277,7 +333,7 @@ const ContractSigningModal = ({
             {/* Right Sidebar - Signing Actions */}
             <div className="flex-[4] border-l border-default-200 flex flex-col">
               <div className="p-4 border-b border-default-200">
-                <h3 className="font-semibold text-sm">Sẵn sàng để ký bản</h3>
+                <h3 className="font-semibold text-sm">Sẵn sàng để ký</h3>
                 <p className="text-xs text-default-500 mt-1">
                   Vui lòng xem và đồng ý với các điều khoản
                 </p>
