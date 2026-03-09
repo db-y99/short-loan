@@ -88,6 +88,7 @@ export type TLoanDetails = {
   notes: string;
   isSigned?: boolean;
   originalFiles?: TLoanFile[];
+  signedFiles?: TLoanFile[];
 
   customer: {
     fullName: string;

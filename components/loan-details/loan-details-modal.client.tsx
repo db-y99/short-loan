@@ -274,6 +274,7 @@ const LoanDetailsModal = ({
                     <ContractsSection
                       loanId={loanDetails.id}
                       contracts={loanDetails.originalFiles}
+                      signedContracts={loanDetails.signedFiles}
                     />
                   </div>
 

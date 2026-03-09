@@ -384,13 +384,18 @@ export const getLoanDetailsService = async (
      FILES (HỢP ĐỒNG)
   ========================== */
 
-  const originalFiles: TLoanFile[] = (filesRes.data ?? []).map((f) => ({
+  const allFiles: TLoanFile[] = (filesRes.data ?? []).map((f) => ({
     id: f.id,
     name: f.name,
     fileId: f.file_id,
     provider: f.provider,
     type: f.type,
   }));
+
+  // Tách file gốc và file đã ký
+  const signedContractTypes = ['asset_pledge', 'asset_lease', 'full_payment', 'asset_disposal'];
+  const originalFiles = allFiles.filter(f => !signedContractTypes.includes(f.type));
+  const signedFiles = allFiles.filter(f => signedContractTypes.includes(f.type));
 
   /* =========================
      ASSET IMAGES
@@ -521,6 +526,7 @@ export const getLoanDetailsService = async (
     notes: loan.notes ?? "",
     isSigned: loan.is_signed ?? false,
     originalFiles: originalFiles.length ? originalFiles : undefined,
+    signedFiles: signedFiles.length ? signedFiles : undefined,
 
     customer: {
       fullName: customer.full_name,

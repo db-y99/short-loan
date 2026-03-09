@@ -14,13 +14,14 @@ import { sortContractsByType } from "@/lib/contract-utils";
 type TProps = {
   loanId: string;
   contracts?: TLoanFile[];
+  signedContracts?: TLoanFile[];
 };
 
-const ContractsSection = ({ loanId, contracts = [] }: TProps) => {
+const ContractsSection = ({ loanId, contracts = [], signedContracts = [] }: TProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [localContracts, setLocalContracts] = useState<TLoanFile[]>(contracts);
+  const [localContracts, setLocalContracts] = useState<TLoanFile[]>(signedContracts);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -136,7 +137,7 @@ const ContractsSection = ({ loanId, contracts = [] }: TProps) => {
         <CardHeader className="flex items-center justify-between pb-2">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold">Hợp đồng</h3>
+            <h3 className="text-lg font-semibold">Hợp đồng đã ký</h3>
           </div>
           <div className="flex items-center gap-2">
             {localContracts.length === 0 ? (
@@ -192,9 +193,9 @@ const ContractsSection = ({ loanId, contracts = [] }: TProps) => {
           {localContracts.length === 0 ? (
             <div className="text-center py-8 text-default-500">
               <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Chưa có hợp đồng</p>
+              <p className="text-sm">Chưa có hợp đồng đã ký</p>
               <p className="text-xs mt-1">
-                Nhấn "Tạo hợp đồng" để tạo bộ hợp đồng
+                Hợp đồng sẽ được tạo tự động sau khi ký
               </p>
             </div>
           ) : (
