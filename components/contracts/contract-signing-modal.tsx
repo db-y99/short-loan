@@ -157,17 +157,8 @@ const ContractSigningModal = ({
     }
     
     try {
-      const canvas = draftSigRef.current?.getTrimmedCanvas();
-      if (!canvas) {
-        addToast({
-          title: "Lỗi lưu chữ ký",
-          description: "Không thể lấy dữ liệu chữ ký. Vui lòng thử lại.",
-          color: "danger",
-        });
-        return;
-      }
-      
-      const dataURL = canvas.toDataURL("image/png");
+      // Use toDataURL directly instead of getTrimmedCanvas for compatibility
+      const dataURL = draftSigRef.current?.toDataURL("image/png");
       if (!dataURL || dataURL === "data:,") {
         addToast({
           title: "Lỗi lưu chữ ký",
@@ -208,17 +199,8 @@ const ContractSigningModal = ({
     }
     
     try {
-      const canvas = officialSigRef.current?.getTrimmedCanvas();
-      if (!canvas) {
-        addToast({
-          title: "Lỗi lưu chữ ký",
-          description: "Không thể lấy dữ liệu chữ ký. Vui lòng thử lại.",
-          color: "danger",
-        });
-        return;
-      }
-      
-      const dataURL = canvas.toDataURL("image/png");
+      // Use toDataURL directly instead of getTrimmedCanvas for compatibility
+      const dataURL = officialSigRef.current?.toDataURL("image/png");
       if (!dataURL || dataURL === "data:,") {
         addToast({
           title: "Lỗi lưu chữ ký",
