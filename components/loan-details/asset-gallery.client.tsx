@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Modal,
   ModalContent,
@@ -45,6 +45,26 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
   const handleClose = () => {
     setSelectedImage(null);
   };
+
+  // Handle ESC key and prevent body scroll when image viewer is open
+  useEffect(() => {
+    if (!selectedImage) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.body.style.overflow = '';
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [selectedImage]);
 
   const handleDownloadImage = () => {
     if (!selectedImage) return;
@@ -359,53 +379,60 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
         </ModalContent>
       </Modal>
 
-      {/* Image View Modal - Xem ảnh đã upload */}
+      {/* Image View Overlay - Custom implementation để tránh conflict với parent modal */}
       {selectedImage && (
-        <Modal
-          isOpen={!!selectedImage}
-          scrollBehavior="inside"
-          size="5xl"
-          onClose={handleClose}
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={handleClose}
+          style={{ position: 'fixed' }}
         >
-          <ModalContent>
-            {(onClose) => (
-              <>
-                <ModalHeader className="flex flex-col gap-1">
-                  Ảnh tài sản{" "}
-                  {selectedImage
-                    ? `(${selectedIndex + 1}/${displayImages.length})`
-                    : ""}
-                </ModalHeader>
-                <ModalBody className="flex items-center justify-center p-6">
-                  {selectedImage && (
-                    <Image
-                      alt="Ảnh tài sản"
-                      className="max-w-full max-h-[80vh] object-contain"
-                      src={selectedImage}
-                    />
-                  )}
-                </ModalBody>
-                <ModalFooter>
-                  <Button
-                    color="primary"
-                    variant="flat"
-                    onPress={handleDownloadImage}
-                    startContent={<Download size={16} />}
-                  >
-                    Tải xuống
-                  </Button>
-                  <Button 
-                    color="danger" 
-                    variant="light" 
-                    onPress={onClose}
-                  >
-                    Đóng
-                  </Button>
-                </ModalFooter>
-              </>
-            )}
-          </ModalContent>
-        </Modal>
+          <div
+            className="relative max-w-7xl max-h-[90vh] w-full mx-4 bg-content1 rounded-2xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-divider bg-content1">
+              <h3 className="text-lg font-semibold">
+                Ảnh tài sản ({selectedIndex + 1}/{displayImages.length})
+              </h3>
+              <button
+                type="button"
+                className="p-2 rounded-lg hover:bg-default-100 transition-colors"
+                onClick={handleClose}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Image Container */}
+            <div className="flex items-center justify-center p-6 bg-content2" style={{ maxHeight: 'calc(90vh - 140px)' }}>
+              <img
+                alt="Ảnh tài sản"
+                className="max-w-full max-h-full object-contain"
+                src={selectedImage}
+              />
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-divider bg-content1">
+              <Button
+                color="primary"
+                variant="flat"
+                onPress={handleDownloadImage}
+                startContent={<Download size={16} />}
+              >
+                Tải xuống
+              </Button>
+              <Button 
+                color="danger" 
+                variant="light" 
+                onPress={handleClose}
+              >
+                Đóng
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
