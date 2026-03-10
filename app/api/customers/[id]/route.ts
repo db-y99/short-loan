@@ -39,8 +39,6 @@ export async function PATCH(
       income,
     } = body;
 
-    console.log({income, cccd_issue_date})
-
     // Validate required fields
     if (!full_name?.trim()) {
       return NextResponse.json(

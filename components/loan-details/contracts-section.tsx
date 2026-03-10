@@ -17,7 +17,6 @@ type TProps = {
 };
 
 const ContractsSection = ({ loanId, loanFiles = [] }: TProps) => {
-  console.log({loanFiles})
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);

@@ -88,7 +88,6 @@ const EditCustomerModal = ({
     setMessage(null);
 
     try {
-      console.log({formData})
       const response = await fetch(`/api/customers/${customerId}`, {
         method: "PATCH",
         headers: {
