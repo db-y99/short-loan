@@ -5,6 +5,9 @@ import { Divider } from "@heroui/divider";
 
 import type { TCreateLoanForm } from "@/types/loan.types";
 import { formatNumberInput } from "@/lib/format";
+import { DatePicker } from "@heroui/date-picker";
+import { getLocalTimeZone, today } from "@internationalized/date";
+import { CCCD_ISSUE_PLACE } from "@/constants/loan";
 
 type TProps = {
   form: TCreateLoanForm;
@@ -40,12 +43,33 @@ const CustomerInfoSection = ({ form, onChange }: TProps) => {
           value={form.phone}
           onValueChange={(v) => onChange("phone", v)}
         />
-        <Input
+        <DatePicker
           label="Ngày cấp CCCD"
-          placeholder="dd/mm/yyyy"
-          type="date"
-          value={form.cccd_issue_date}
-          onValueChange={(v) => onChange("cccd_issue_date", v)}
+          showMonthAndYearPickers
+          maxValue={today(getLocalTimeZone())}
+          onChange={(date) => {
+             if (!date) {
+            onChange("cccd_issue_date", "");
+            return;
+          }
+
+            // Chuyển sang ISO yyyy-mm-dd để lưu
+          const isoDate = String(date); // DateValue có toString()
+          onChange("cccd_issue_date", isoDate);
+
+          // So sánh với 01/07/2024
+          const cutoffDate = new Date("2024-07-01");
+          const selectedDate = new Date(isoDate);
+
+          if (selectedDate >= cutoffDate) {
+            onChange("cccd_issue_place", CCCD_ISSUE_PLACE.MINISTRY_OF_PUBLIC_SECURITY);
+          } else {
+            onChange(
+              "cccd_issue_place",
+              CCCD_ISSUE_PLACE.POLICE_ADMIN
+            );
+          }
+          }}
         />
         <Input
           label="Nơi cấp"

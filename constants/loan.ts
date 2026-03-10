@@ -130,3 +130,9 @@ export const ACTIVITY_COLOR_MAP: Record<TActivityLogType, string> = {
   [ACTIVITY_LOG_TYPE.CONTRACT_SIGNED]: "text-success",
   [ACTIVITY_LOG_TYPE.DISBURSEMENT]: "text-success",
 };
+
+
+export const CCCD_ISSUE_PLACE = {
+  POLICE_ADMIN: "Cục Cảnh sát QLHC về TTXH",
+  MINISTRY_OF_PUBLIC_SECURITY: "Bộ Công An",
+} as const;
