@@ -158,28 +158,13 @@ export async function POST(
       );
     }
 
-    // Generate 4 signed contract PDFs in background (don't wait)
-    console.log("[SIGN_CONTRACT] Triggering PDF generation in background...");
-    // Fire and forget - don't await
-    import("@/services/contracts/contracts.service")
-      .then(({ generateSignedContractsService }) => generateSignedContractsService(loanId))
-      .then((result) => {
-        if (!result.success) {
-          console.error("[SIGN_CONTRACT] Failed to generate PDFs:", result.error);
-        } else {
-          console.log("[SIGN_CONTRACT] Successfully generated", result.contracts?.length, "PDFs");
-        }
-      })
-      .catch((pdfError) => {
-        console.error("[SIGN_CONTRACT] Error generating PDFs:", pdfError);
-      });
-
-    // Return immediately without waiting for PDF generation
+    // Return immediately - PDF generation will be triggered from client
     return NextResponse.json({
       success: true,
       message: "Ký hợp đồng thành công",
       data: {
         signedAt,
+        loanId, // Return loanId so client can trigger PDF generation
       },
     });
   } catch (error) {

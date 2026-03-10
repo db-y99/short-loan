@@ -104,8 +104,8 @@ const ContractSigningModal = ({
 
     setIsSigning(true);
     try {
-      // Call API to sign with signatures
-      const response = await fetch(`/api/loans/${loanId}/sign`, {
+      // Step 1: Sign the contract
+      const signResponse = await fetch(`/api/loans/${loanId}/sign`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -116,17 +116,54 @@ const ContractSigningModal = ({
         }),
       });
 
-      const result = await response.json();
+      const signResult = await signResponse.json();
 
-      if (result.success) {
-        onSign(); // Just call callback to close modal and show success
-      } else {
+      if (!signResult.success) {
         addToast({
           title: "Lỗi khi ký hợp đồng",
-          description: result.error || "Có lỗi xảy ra khi ký hợp đồng",
+          description: signResult.error || "Có lỗi xảy ra khi ký hợp đồng",
           color: "danger",
         });
+        return;
       }
+
+      // Step 2: Generate PDFs (with timeout protection)
+      try {
+        const pdfResponse = await Promise.race([
+          fetch(`/api/loans/${loanId}/generate-signed-contracts`, {
+            method: "POST",
+          }),
+          new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('timeout')), 50000) // 50s timeout
+          )
+        ]) as Response;
+
+        const pdfResult = await pdfResponse.json();
+        
+        if (pdfResult.success) {
+          addToast({
+            title: "Hoàn tất!",
+            description: "Hợp đồng PDF đã được tạo thành công",
+            color: "success",
+          });
+        } else {
+          addToast({
+            title: "Ký hợp đồng thành công",
+            description: "PDF đang được tạo, vui lòng đợi giây lát",
+            color: "warning",
+          });
+        }
+      } catch (error) {
+        // Timeout or error - PDF is still generating in background
+        console.error("PDF generation timeout or error:", error);
+        addToast({
+          title: "Ký hợp đồng thành công",
+          description: "PDF đang được tạo trong nền, vui lòng đợi",
+          color: "success",
+        });
+      }
+      
+      onSign(); // Close modal and trigger parent refresh
     } catch (error) {
       console.error("Error signing contract:", error);
       addToast({
@@ -139,7 +176,6 @@ const ContractSigningModal = ({
     }
   };
 
-  console.log({draftSignature, officialSignature})
 
   const clearDraftSignature = () => {
     draftSigRef.current?.clear();

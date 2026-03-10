@@ -346,7 +346,7 @@ export function AssetLeaseContractView({
         <tr>
               <th style={S.tdBorder}>Mốc thanh toán</th>
               <th style={S.tdBorder}>Thời điểm tất toán</th>
-              <th style={S.tdBorder}>Phí thuê phải trả</th>
+              <th style={S.tdBorder}>Tổng tiền phải thanh toán</th>
             </tr>
         </thead>
 

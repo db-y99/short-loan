@@ -1,0 +1,78 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { generateSignedContractsService } from "@/services/contracts/contracts.service";
+
+/**
+ * POST /api/loans/[id]/generate-signed-contracts
+ * Generate signed contract PDFs (called separately after signing)
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { id: loanId } = await params;
+
+    // Check authentication
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Verify loan exists and is signed
+    const { data: loan, error: fetchError } = await supabase
+      .from("loans")
+      .select("id, status")
+      .eq("id", loanId)
+      .single();
+
+    if (fetchError || !loan) {
+      return NextResponse.json(
+        { success: false, error: "Không tìm thấy khoản vay" },
+        { status: 404 }
+      );
+    }
+
+    if (loan.status !== "signed") {
+      return NextResponse.json(
+        { success: false, error: "Khoản vay chưa được ký" },
+        { status: 400 }
+      );
+    }
+
+    // Generate PDFs
+    console.log("[GENERATE_CONTRACTS] Starting PDF generation for loan:", loanId);
+    const result = await generateSignedContractsService(loanId);
+
+    if (!result.success) {
+      console.error("[GENERATE_CONTRACTS] Failed:", result.error);
+      return NextResponse.json(
+        { success: false, error: result.error || "Lỗi khi tạo PDF" },
+        { status: 500 }
+      );
+    }
+
+    console.log("[GENERATE_CONTRACTS] Successfully generated", result.contracts?.length, "PDFs");
+    return NextResponse.json({
+      success: true,
+      message: "Tạo hợp đồng PDF thành công",
+      data: result.contracts,
+    });
+  } catch (error) {
+    console.error("[GENERATE_CONTRACTS] Error:", error);
+    return NextResponse.json(
+      { success: false, error: "Lỗi server" },
+      { status: 500 }
+    );
+  }
+}
+
+// Increase timeout for PDF generation (Vercel Pro only)
+export const maxDuration = 60; // 60 seconds

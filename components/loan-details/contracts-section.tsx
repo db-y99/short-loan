@@ -13,15 +13,14 @@ import { sortContractsByType } from "@/lib/contract-utils";
 
 type TProps = {
   loanId: string;
-  contracts?: TLoanFile[];
-  signedContracts?: TLoanFile[];
+  loanFiles?: TLoanFile[]; // All loan files from DB
 };
 
-const ContractsSection = ({ loanId, contracts = [], signedContracts = [] }: TProps) => {
+const ContractsSection = ({ loanId, loanFiles = [] }: TProps) => {
+  console.log({loanFiles})
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [localContracts, setLocalContracts] = useState<TLoanFile[]>(signedContracts);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -30,7 +29,7 @@ const ContractsSection = ({ loanId, contracts = [], signedContracts = [] }: TPro
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   // Sắp xếp contracts theo thứ tự mong muốn
-  const sortedContracts = sortContractsByType(localContracts);
+  const sortedContracts = sortContractsByType(loanFiles);
 
   const handleGenerateContracts = async () => {
     setIsGenerating(true);
@@ -40,19 +39,12 @@ const ContractsSection = ({ loanId, contracts = [], signedContracts = [] }: TPro
 
       if (result.success) {
         setMessage({ type: "success", text: "Tạo hợp đồng thành công!" });
-        // Update local state
-        setLocalContracts(
-          result.data.map((c) => ({
-            id: c.id,
-            name: c.name,
-            fileId: c.fileId,
-            provider: c.provider,
-            type: c.type,
-          })),
-        );
         
-        // Auto hide message after 3s
-        setTimeout(() => setMessage(null), 3000);
+        // Auto hide message after 3s and reload to get fresh data
+        setTimeout(() => {
+          setMessage(null);
+          window.location.reload();
+        }, 3000);
       } else {
         setMessage({ type: "error", text: result.error });
       }
@@ -74,19 +66,12 @@ const ContractsSection = ({ loanId, contracts = [], signedContracts = [] }: TPro
 
       if (result.success) {
         setMessage({ type: "success", text: "Tạo lại hợp đồng thành công!" });
-        // Update local state
-        setLocalContracts(
-          result.data.map((c) => ({
-            id: c.id,
-            name: c.name,
-            fileId: c.fileId,
-            provider: c.provider,
-            type: c.type,
-          })),
-        );
         
-        // Auto hide message after 3s
-        setTimeout(() => setMessage(null), 3000);
+        // Auto hide message after 3s and reload to get fresh data
+        setTimeout(() => {
+          setMessage(null);
+          window.location.reload();
+        }, 3000);
       } else {
         setMessage({ type: "error", text: result.error });
       }
@@ -140,7 +125,7 @@ const ContractsSection = ({ loanId, contracts = [], signedContracts = [] }: TPro
             <h3 className="text-lg font-semibold">Hợp đồng đã ký</h3>
           </div>
           <div className="flex items-center gap-2">
-            {localContracts.length === 0 ? (
+            {loanFiles.length === 0 ? (
               <Button
                 color="primary"
                 size="sm"
@@ -177,6 +162,21 @@ const ContractsSection = ({ loanId, contracts = [], signedContracts = [] }: TPro
           </div>
         </CardHeader>
         <CardBody className="pt-0 space-y-3">
+          {/* Loading state khi đang tạo hợp đồng */}
+          {(isGenerating || isRegenerating) && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-warning-50 text-warning-700 dark:bg-warning-900/20 dark:text-warning-400 border border-warning-200 dark:border-warning-800">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold">
+                  {isRegenerating ? "Đang tạo lại hợp đồng PDF..." : "Đang tạo hợp đồng PDF..."}
+                </p>
+                <p className="text-xs mt-1">
+                  Quá trình này có thể mất vài giây. Vui lòng đợi.
+                </p>
+              </div>
+            </div>
+          )}
+
           {message && (
             <>
               {message.type === "success" ? (
@@ -190,7 +190,7 @@ const ContractsSection = ({ loanId, contracts = [], signedContracts = [] }: TPro
             </>
           )}
 
-          {localContracts.length === 0 ? (
+          {loanFiles.length === 0 ? (
             <div className="text-center py-8 text-default-500">
               <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p className="text-sm">Chưa có hợp đồng đã ký</p>

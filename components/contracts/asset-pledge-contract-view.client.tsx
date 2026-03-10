@@ -269,7 +269,7 @@ export function AssetPledgeContractView({
             <tr>
               <th style={S.tdBorder}>Mốc thanh toán</th>
               <th style={S.tdBorder}>Thời điểm tất toán</th>
-              <th style={S.tdBorder}>Lãi suất pháp lý (0.033%/ngày)</th>
+              <th style={S.tdBorder}>Tổng tiền phải thanh toán</th>
             </tr>
           </thead>
           <tbody>

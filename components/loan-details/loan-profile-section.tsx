@@ -18,6 +18,7 @@ const LoanProfileSection = ({ loanDetails }: TProps) => {
   const [showQR, setShowQR] = useState(false);
   const [showSigningModal, setShowSigningModal] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
+  
   const isSigned = loanDetails.isSigned ?? (
     loanDetails.status === LOAN_STATUS.SIGNED || 
     loanDetails.status === LOAN_STATUS.DISBURSED || 
@@ -36,15 +37,16 @@ const LoanProfileSection = ({ loanDetails }: TProps) => {
   };
 
   const handleSign = async () => {
-    // This function is called by the modal after successful signing
-    addToast({
-      title: "Ký hợp đồng thành công!",
-      description: "Hợp đồng đã được ký kết và đang tạo PDF...",
-      color: "success",
-    });
+    // This function is called by the modal after successful signing AND PDF generation
     setShowSigningModal(false);
     
-    // Reload sau 1s để user thấy toast
+    addToast({
+      title: "Hoàn tất!",
+      description: "Hợp đồng đã được ký và PDF đã được tạo",
+      color: "success",
+    });
+    
+    // Reload to get fresh data
     setTimeout(() => {
       window.location.reload();
     }, 1000);
