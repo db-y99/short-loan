@@ -11,3 +11,15 @@ export type TCustomer = {
   income: number | null;
   created_at: string;
 };
+
+export type TCustomerFormData = {
+  fullName: string;
+  cccd: string;
+  phone: string;
+  address: string;
+  cccdIssueDate: string;
+  cccdIssuePlace: string;
+  facebookUrl?: string;
+  job: string;
+  income: number;
+};

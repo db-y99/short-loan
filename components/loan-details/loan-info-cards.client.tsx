@@ -14,6 +14,7 @@ import {
   Smartphone,
   Calendar,
   UserPlus,
+  Edit,
 } from "lucide-react";
 
 import type { TLoanDetails } from "@/types/loan.types";
@@ -28,7 +29,8 @@ type TProps = {
   loanDetails: TLoanDetails;
   showAssetGallery?: boolean;
   onAddReference?: () => void;
-  onUpdateAssetCondition?: () => void; // Thêm callback mới
+  onUpdateAssetCondition?: () => void;
+  onEditBank?: () => void;
 };
 
 const LoanInfoCards = ({
@@ -36,6 +38,7 @@ const LoanInfoCards = ({
   showAssetGallery = false,
   onAddReference,
   onUpdateAssetCondition,
+  onEditBank,
 }: TProps) => {
   // Xác định loại tài sản để hiển thị đúng thông tin định danh
   // So sánh với cả label tiếng Việt và key tiếng Anh
@@ -52,6 +55,11 @@ const LoanInfoCards = ({
           <SectionHeader icon={User} title="Khách hàng" />
         </CardHeader>
         <CardBody className="pt-0 space-y-2 gap-2 grid grid-cols-2">
+          <InfoRow
+            icon={User}
+            label="Họ tên"
+            value={loanDetails.customer.fullName}
+          />
           <InfoRow
             icon={CreditCard}
             label="CCCD"
@@ -107,8 +115,19 @@ const LoanInfoCards = ({
         </CardBody>
       </Card>
       <Card shadow="sm">
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-2 flex items-center justify-between">
           <SectionHeader icon={Building2} title="Ngân hàng" />
+          {onEditBank && (
+            <Button
+              color="primary"
+              variant="light"
+              size="sm"
+              startContent={<Edit className="w-4 h-4" />}
+              onPress={onEditBank}
+            >
+              Sửa
+            </Button>
+          )}
         </CardHeader>
         <CardBody className="space-y-2 gap-2">
           <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 rounded-lg p-3 flex items-center justify-between">

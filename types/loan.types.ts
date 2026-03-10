@@ -91,6 +91,7 @@ export type TLoanDetails = {
   signedFiles?: TLoanFile[];
 
   customer: {
+    id: string;
     fullName: string;
     cccd: string;
     phone: string;

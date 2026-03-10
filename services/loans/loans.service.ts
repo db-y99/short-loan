@@ -313,7 +313,9 @@ export const getLoanDetailsService = async (
       is_signed,
       created_at,
       drive_folder_id,
+      customer_id,
       customers!inner (
+        id,
         full_name,
         cccd,
         phone,
@@ -529,6 +531,7 @@ export const getLoanDetailsService = async (
     signedFiles: signedFiles.length ? signedFiles : undefined,
 
     customer: {
+      id: loan.customer_id,
       fullName: customer.full_name,
       cccd: customer.cccd,
       phone: customer.phone,

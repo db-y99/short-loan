@@ -7,7 +7,7 @@ import {
   ModalFooter,
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
-import { AlertCircle, CreditCard, MessageSquare, ShoppingCart, CheckCircle, XCircle, DollarSign, Loader2, UserPlus, FileEdit } from "lucide-react";
+import { AlertCircle, CreditCard, MessageSquare, ShoppingCart, CheckCircle, XCircle, DollarSign, Loader2, UserPlus, FileEdit, UserCog } from "lucide-react";
 import type { TLoanDetails } from "@/types/loan.types";
 import { LOAN_STATUS } from "@/constants/loan";
 import ContractHeader from "@/components/loan-details/loan-header";
@@ -22,6 +22,8 @@ import PaymentHistoryModal from "@/components/loan-details/payment-history-modal
 import RedeemModal from "@/components/loan-details/redeem-modal.client";
 import AddReferenceModal from "@/components/loan-details/add-reference-modal";
 import UpdateAssetConditionModal from "@/components/loan-details/update-asset-condition-modal";
+import EditCustomerModal from "@/components/loan-details/edit-customer-modal";
+import EditBankModal from "@/components/loan-details/edit-bank-modal";
 import ConfirmModal from "@/components/confirm-modal";
 
 import { useAuth } from "@/lib/contexts/auth-context";
@@ -50,6 +52,8 @@ const LoanDetailsModal = ({
   const [isRedeemOpen, setIsRedeemOpen] = useState(false);
   const [isAddReferenceOpen, setIsAddReferenceOpen] = useState(false);
   const [isUpdateConditionOpen, setIsUpdateConditionOpen] = useState(false);
+  const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
+  const [isEditBankOpen, setIsEditBankOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState<{
     title: string;
@@ -187,6 +191,34 @@ const LoanDetailsModal = ({
     }
   };
 
+  const handleEditCustomerSuccess = () => {
+    setMessage({
+      type: "success",
+      text: "Cập nhật thông tin khách hàng thành công!",
+    });
+    
+    if (onRefresh) {
+      setTimeout(() => {
+        onRefresh();
+        setMessage(null);
+      }, 1500);
+    }
+  };
+
+  const handleEditBankSuccess = () => {
+    setMessage({
+      type: "success",
+      text: "Cập nhật thông tin ngân hàng thành công!",
+    });
+    
+    if (onRefresh) {
+      setTimeout(() => {
+        onRefresh();
+        setMessage(null);
+      }, 1500);
+    }
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -247,6 +279,19 @@ const LoanDetailsModal = ({
                     </div>
                   )}
 
+                  {/* Edit Customer Button */}
+                  <div className="mb-4">
+                    <Button
+                      color="default"
+                      variant="bordered"
+                      size="sm"
+                      startContent={<UserCog className="w-4 h-4" />}
+                      onPress={() => setIsEditCustomerOpen(true)}
+                    >
+                      Sửa thông tin khách hàng
+                    </Button>
+                  </div>
+
                   {loanDetails.notes && (
                     <div className="flex items-start gap-3 p-3 mb-4 rounded-xl bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800">
                       <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
@@ -263,6 +308,7 @@ const LoanDetailsModal = ({
                         showAssetGallery
                         onAddReference={() => setIsAddReferenceOpen(true)}
                         onUpdateAssetCondition={() => setIsUpdateConditionOpen(true)}
+                        onEditBank={() => setIsEditBankOpen(true)}
                       />
                     </div>
                     <LoanAmountSummary loanDetails={loanDetails} />
@@ -407,6 +453,36 @@ const LoanDetailsModal = ({
             loanId={loanDetails.id}
             currentCondition={loanDetails.assetCondition}
             onSuccess={handleUpdateConditionSuccess}
+          />
+
+          <EditCustomerModal
+            isOpen={isEditCustomerOpen}
+            onClose={() => setIsEditCustomerOpen(false)}
+            customerId={loanDetails.customer.id}
+            customerData={{
+              fullName: loanDetails.customer.fullName,
+              cccd: loanDetails.customer.cccd,
+              phone: loanDetails.customer.phone,
+              address: loanDetails.customer.address,
+              cccdIssueDate: loanDetails.customer.cccdIssueDate,
+              cccdIssuePlace: loanDetails.customer.cccdIssuePlace,
+              facebookUrl: loanDetails.customer.facebookUrl,
+              job: loanDetails.customer.job,
+              income: loanDetails.customer.income,
+            }}
+            onSuccess={handleEditCustomerSuccess}
+          />
+
+          <EditBankModal
+            isOpen={isEditBankOpen}
+            onClose={() => setIsEditBankOpen(false)}
+            loanId={loanDetails.id}
+            bankData={{
+              name: loanDetails.bank.name,
+              accountNumber: loanDetails.bank.accountNumber,
+              accountHolder: loanDetails.bank.accountHolder,
+            }}
+            onSuccess={handleEditBankSuccess}
           />
         </>
       )}
