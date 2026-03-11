@@ -8,8 +8,10 @@ Hệ thống này sử dụng Puppeteer và Chromium để tạo PDF chất lư�
 
 Các package đã được cài đặt:
 - `puppeteer-core` - Core Puppeteer library (production)
-- `@sparticuz/chromium-min` - Chromium binary tối ưu cho serverless (~50MB, nhỏ hơn 3x so với chromium thường)
+- `@sparticuz/chromium` - Chromium binary tối ưu cho Vercel (production)
 - `puppeteer` - Full Puppeteer cho development (dev dependency)
+
+**Lưu ý:** Có thể dùng `@sparticuz/chromium-min` (~50MB) thay vì `@sparticuz/chromium` (~150MB) để giảm bundle size, nhưng cần cấu hình thêm brotli decompression.
 
 ## Cấu trúc
 

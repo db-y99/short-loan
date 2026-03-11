@@ -72,8 +72,8 @@ export async function POST(request: NextRequest) {
       // Use puppeteer-core with Chromium in production
       try {
         puppeteer = (await import("puppeteer-core")).default;
-        chromium = (await import("@sparticuz/chromium-min")).default;
-        console.log("Using puppeteer-core with Chromium-min in production mode (optimized for serverless)");
+        chromium = (await import("@sparticuz/chromium")).default;
+        console.log("Using puppeteer-core with Chromium in production mode");
 
         const executablePath = await chromium.executablePath();
         console.log("Chromium executable path:", executablePath);
