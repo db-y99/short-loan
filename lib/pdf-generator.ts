@@ -59,9 +59,9 @@ export async function generatePDFFromHTML(
       
       browser = await puppeteer.launch(launchOptions);
     } else {
-      // Production: Use puppeteer-core with Chromium
+      // Production: Use puppeteer-core with Chromium-min (optimized for serverless)
       puppeteer = (await import("puppeteer-core")).default;
-      const chromium = (await import("@sparticuz/chromium")).default;
+      const chromium = (await import("@sparticuz/chromium-min")).default;
       
       browser = await puppeteer.launch({
         args: [

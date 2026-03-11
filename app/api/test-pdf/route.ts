@@ -48,9 +48,9 @@ export async function GET(request: NextRequest) {
       browser = await puppeteer.launch(launchOptions);
       console.log("Browser launched successfully");
     } else {
-      // Use puppeteer-core with Chromium in production
-      console.log("Attempting to import puppeteer-core and chromium...");
-      const chromium = (await import("@sparticuz/chromium")).default;
+      // Use puppeteer-core with Chromium-min in production (optimized for serverless)
+      console.log("Attempting to import puppeteer-core and chromium-min...");
+      const chromium = (await import("@sparticuz/chromium-min")).default;
       puppeteer = (await import("puppeteer-core")).default;
       console.log("Imports successful");
       
