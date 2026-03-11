@@ -59,7 +59,6 @@
     "@react-aria/ssr": "3.9.10",
     "@react-aria/visually-hidden": "3.8.29",
     "@sparticuz/chromium": "^143.0.4",
-    "@sparticuz/chromium-min": "^143.0.4",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
     "@types/react-signature-canvas": "^1.0.7",
