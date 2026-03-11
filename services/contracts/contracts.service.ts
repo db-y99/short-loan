@@ -97,15 +97,18 @@ export async function generateContractsService(
 
     console.log(buildAssetDisposalAuthorizationData(loan, folderId))
 
-    // BƯỚC 1: Generate tất cả PDF song song
+    // BƯỚC 1: Generate PDF tuần tự (sequential) để tránh ETXTBSY trên Vercel
     console.time("Generate PDFs");
-    const pdfPromises = contractsData.map((contract) =>
-      generateContractPDFDirect(contract.data, contract.type).catch((err: Error) => {
+    const pdfBuffers: (Buffer | null)[] = [];
+    for (const contract of contractsData) {
+      try {
+        const buffer = await generateContractPDFDirect(contract.data, contract.type);
+        pdfBuffers.push(buffer);
+      } catch (err) {
         console.error(`[PDF_GEN_ERROR] ${contract.name}:`, err);
-        return null;
-      })
-    );
-    const pdfBuffers = await Promise.all(pdfPromises);
+        pdfBuffers.push(null);
+      }
+    }
     console.timeEnd("Generate PDFs");
 
     // Lọc ra các PDF thành công
