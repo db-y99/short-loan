@@ -1,6 +1,6 @@
 /**
- * PDF Generator - Direct function call (không qua HTTP)
- * Dùng cho server-side code
+ * PDF Generator - Gọi PDF microservice
+ * Thay thế Puppeteer local bằng PDF service riêng
  */
 
 import { CONTRACT_TYPE } from "@/types/contract.types";
@@ -12,113 +12,40 @@ import {
   generateAssetDisposalHTML,
 } from "@/lib/contract-html-generators";
 
+const PDF_SERVICE_URL = process.env.PDF_SERVICE_URL || "http://localhost:3001";
+
 /**
- * Generate PDF buffer từ contract data
- * Gọi trực tiếp, không qua HTTP API
+ * Generate PDF buffer từ HTML
+ * Gọi PDF microservice thay vì dùng Puppeteer local
  */
-export async function generatePDFFromHTML(
-  html: string,
-): Promise<Buffer> {
-  const isDev = process.env.NODE_ENV === "development";
-  
-  let puppeteer: any;
-  let browser: any;
-  
+export async function generatePDFFromHTML(html: string): Promise<Buffer> {
   try {
-    if (isDev) {
-      // Development: Use full puppeteer
-      puppeteer = (await import("puppeteer")).default;
-      
-      const fs = require('fs');
-      const possiblePaths = [
-        'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-        'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-        process.env.LOCALAPPDATA + '\\Google\\Chrome\\Application\\chrome.exe',
-      ];
-      
-      let chromePath = null;
-      for (const path of possiblePaths) {
-        if (path && fs.existsSync(path)) {
-          chromePath = path;
-          break;
-        }
-      }
-      
-      const launchOptions: any = {
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-        ],
-      };
-      
-      if (chromePath) {
-        launchOptions.executablePath = chromePath;
-      }
-      
-      browser = await puppeteer.launch(launchOptions);
-    } else {
-      // Production: Use puppeteer-core with Chromium
-      puppeteer = (await import("puppeteer-core")).default;
-      const chromium = (await import("@sparticuz/chromium")).default;
-      
-      browser = await puppeteer.launch({
-        args: [
-          ...chromium.args,
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-gpu",
-        ],
-        defaultViewport: {
-          width: 1920,
-          height: 1080,
-        },
-        executablePath: await chromium.executablePath(),
-        headless: true,
-      });
-    }
+    console.log(`[PDF_CLIENT] Calling PDF service at ${PDF_SERVICE_URL}/generate`);
+    console.log(`[PDF_CLIENT] HTML length: ${html.length} characters`);
     
-    const page = await browser.newPage();
-    
-    await page.setContent(html, {
-      waitUntil: ["networkidle0", "domcontentloaded"],
-      timeout: 30000,
-    });
-    
-    // Wait for fonts
-    try {
-      await page.evaluateHandle("document.fonts.ready");
-    } catch (fontError) {
-      console.warn("Font loading warning:", fontError);
-    }
-    
-    const pdf = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      preferCSSPageSize: false,
-      displayHeaderFooter: false,
-      margin: {
-        top: "0mm",
-        right: "0mm",
-        bottom: "0mm",
-        left: "0mm",
+    const response = await fetch(`${PDF_SERVICE_URL}/generate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
+      body: JSON.stringify({ html }),
     });
     
-    await browser.close();
-    
-    return Buffer.from(pdf);
-  } catch (error) {
-    if (browser) {
-      try {
-        await browser.close();
-      } catch (closeError) {
-        console.error("Error closing browser:", closeError);
-      }
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: "Unknown error" }));
+      throw new Error(`PDF service error: ${error.error || response.statusText}`);
     }
-    throw error;
+    
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    console.log(`[PDF_CLIENT] PDF generated successfully, size: ${buffer.length} bytes`);
+    return buffer;
+  } catch (error) {
+    console.error("[PDF_CLIENT] Error calling PDF service:", error);
+    throw new Error(
+      `Failed to generate PDF: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
   }
 }
 

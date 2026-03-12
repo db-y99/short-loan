@@ -43,6 +43,15 @@ export async function generateContractsService(
     }
     console.log(`[GENERATE_CONTRACTS] Loan found: ${loan.code}`);
 
+    // Kiểm tra trạng thái loan - chỉ cho phép tạo hợp đồng khi đã duyệt
+    if (loan.status !== "approved") {
+      console.error(`[GENERATE_CONTRACTS] Invalid loan status: ${loan.status}`);
+      return {
+        success: false,
+        error: `Không thể tạo hợp đồng. Trạng thái hiện tại: ${loan.status}. Cần trạng thái: approved`,
+      };
+    }
+
     // Kiểm tra drive folder
     const folderId = loan.driveFolderId;
     if (!folderId) {
@@ -97,18 +106,20 @@ export async function generateContractsService(
 
     console.log(buildAssetDisposalAuthorizationData(loan, folderId))
 
-    // BƯỚC 1: Generate PDF tuần tự (sequential) để tránh ETXTBSY trên Vercel
+    // BƯỚC 1: Generate PDF song song (parallel) với PDF service
+    // Vì dùng PDF service riêng nên không còn lo ETXTBSY như Puppeteer local
     console.time("Generate PDFs");
-    const pdfBuffers: (Buffer | null)[] = [];
-    for (const contract of contractsData) {
+    const pdfPromises = contractsData.map(async (contract) => {
       try {
         const buffer = await generateContractPDFDirect(contract.data, contract.type);
-        pdfBuffers.push(buffer);
+        return buffer;
       } catch (err) {
         console.error(`[PDF_GEN_ERROR] ${contract.name}:`, err);
-        pdfBuffers.push(null);
+        return null;
       }
-    }
+    });
+    
+    const pdfBuffers = await Promise.all(pdfPromises);
     console.timeEnd("Generate PDFs");
 
     // Lọc ra các PDF thành công
@@ -290,9 +301,27 @@ export async function regenerateContractsService(
   error?: string;
 }> {
   try {
+    console.log(`[REGENERATE_CONTRACTS] Starting for loan: ${loanId}`);
     const supabase = await createSupabaseServerClient();
 
+    // Kiểm tra loan tồn tại và lấy trạng thái hiện tại
+    const { data: currentLoan } = await supabase
+      .from("loans")
+      .select("id, status, code")
+      .eq("id", loanId)
+      .single();
+
+    if (!currentLoan) {
+      return {
+        success: false,
+        error: "Không tìm thấy khoản vay",
+      };
+    }
+
+    console.log(`[REGENERATE_CONTRACTS] Current loan status: ${currentLoan.status} (${currentLoan.code})`);
+
     // Xóa tất cả hợp đồng cũ trong DB (giữ file trên Drive)
+    console.log(`[REGENERATE_CONTRACTS] Deleting old contracts...`);
     const { error: deleteError } = await supabase
       .from("loan_files")
       .delete()
@@ -307,6 +336,7 @@ export async function regenerateContractsService(
     }
 
     // Reset loan status về approved và xóa chữ ký để có thể ký lại
+    console.log(`[REGENERATE_CONTRACTS] Resetting loan status to approved...`);
     const { error: updateError } = await supabase
       .from("loans")
       .update({
@@ -324,6 +354,8 @@ export async function regenerateContractsService(
         error: "Không thể reset trạng thái khoản vay",
       };
     }
+
+    console.log(`[REGENERATE_CONTRACTS] Status reset successful. Generating new contracts...`);
 
     // Tạo hợp đồng mới (version sẽ tự động tăng trong generateContractsService)
     return await generateContractsService(loanId);
