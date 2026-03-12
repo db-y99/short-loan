@@ -106,8 +106,8 @@ export async function generateContractsService(
 
     console.log(buildAssetDisposalAuthorizationData(loan, folderId))
 
-    // BƯỚC 1: Generate PDF song song (parallel) với PDF service
-    // Vì dùng PDF service riêng nên không còn lo ETXTBSY như Puppeteer local
+    // BƯỚC 1: Generate PDF song song (parallel) với Google Apps Script
+    // Google Apps Script có thể handle multiple requests tốt hơn PDF service local
     console.time("Generate PDFs");
     const pdfPromises = contractsData.map(async (contract) => {
       try {
@@ -243,13 +243,13 @@ export async function generateContractsService(
 }
 
 /**
- * Generate PDF buffer từ contract data - DIRECT CALL (không qua HTTP)
+ * Generate PDF buffer từ contract data - GOOGLE APPS SCRIPT
  */
 async function generateContractPDFDirect(
   contractData: any,
   contractType: string,
 ): Promise<Buffer> {
-  const { generateContractPDF } = await import("@/lib/pdf-generator");
+  const { generateContractPDF } = await import("@/lib/pdf-generator-app-scripts");
   return await generateContractPDF(contractData, contractType);
 }
 
