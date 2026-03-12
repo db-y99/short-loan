@@ -10,13 +10,15 @@ import ContractPreviewModal from "@/components/contracts/contract-preview-modal"
 import RegenerateConfirmModal from "@/components/contracts/regenerate-confirm-modal";
 import ContractErrorDetails from "@/components/contracts/contract-error-details";
 import { sortContractsByType } from "@/lib/contract-utils";
+import { LOAN_STATUS } from "@/constants/loan";
 
 type TProps = {
   loanId: string;
+  loanStatus: string; // Thêm loan status
   loanFiles?: TLoanFile[]; // All loan files from DB
 };
 
-const ContractsSection = ({ loanId, loanFiles = [] }: TProps) => {
+const ContractsSection = ({ loanId, loanStatus, loanFiles = [] }: TProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -121,42 +123,47 @@ const ContractsSection = ({ loanId, loanFiles = [] }: TProps) => {
         <CardHeader className="flex items-center justify-between pb-2">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold">Hợp đồng đã ký</h3>
+            <h3 className="text-lg font-semibold">Hợp đồng</h3>
           </div>
           <div className="flex items-center gap-2">
-            {loanFiles.length === 0 ? (
-              <Button
-                color="primary"
-                size="sm"
-                startContent={
-                  isGenerating ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Plus className="w-4 h-4" />
-                  )
-                }
-                isDisabled={isGenerating}
-                onPress={handleGenerateContracts}
-              >
-                {isGenerating ? "Đang tạo..." : "Tạo hợp đồng"}
-              </Button>
-            ) : (
-              <Button
-                color="warning"
-                size="sm"
-                variant="flat"
-                startContent={
-                  isRegenerating ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="w-4 h-4" />
-                  )
-                }
-                isDisabled={isRegenerating}
-                onPress={() => setIsConfirmOpen(true)}
-              >
-                {isRegenerating ? "Đang tạo lại..." : "Tạo lại"}
-              </Button>
+            {/* Chỉ hiển thị nút tạo/tạo lại hợp đồng khi loan đã được duyệt */}
+            {loanStatus === LOAN_STATUS.APPROVED && (
+              <>
+                {loanFiles.length === 0 ? (
+                  <Button
+                    color="primary"
+                    size="sm"
+                    startContent={
+                      isGenerating ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Plus className="w-4 h-4" />
+                      )
+                    }
+                    isDisabled={isGenerating}
+                    onPress={handleGenerateContracts}
+                  >
+                    {isGenerating ? "Đang tạo..." : "Tạo hợp đồng"}
+                  </Button>
+                ) : (
+                  <Button
+                    color="warning"
+                    size="sm"
+                    variant="flat"
+                    startContent={
+                      isRegenerating ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="w-4 h-4" />
+                      )
+                    }
+                    isDisabled={isRegenerating}
+                    onPress={() => setIsConfirmOpen(true)}
+                  >
+                    {isRegenerating ? "Đang tạo lại..." : "Tạo lại"}
+                  </Button>
+                )}
+              </>
             )}
           </div>
         </CardHeader>
@@ -192,10 +199,24 @@ const ContractsSection = ({ loanId, loanFiles = [] }: TProps) => {
           {loanFiles.length === 0 ? (
             <div className="text-center py-8 text-default-500">
               <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Chưa có hợp đồng đã ký</p>
-              <p className="text-xs mt-1">
-                Hợp đồng sẽ được tạo tự động sau khi ký
-              </p>
+              {loanStatus === "approved" ? (
+                <>
+                  <p className="text-sm">Chưa có hợp đồng đã ký</p>
+                  <p className="text-xs mt-1">
+                    Hợp đồng sẽ được tạo tự động sau khi ký
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm">Chưa có hợp đồng</p>
+                  <p className="text-xs mt-1">
+                    Hợp đồng chỉ có thể tạo khi khoản vay đã được duyệt
+                  </p>
+                  <p className="text-xs text-warning-600 mt-1">
+                    Trạng thái hiện tại: <span className="font-medium">{loanStatus}</span>
+                  </p>
+                </>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
