@@ -14,6 +14,7 @@ import { Textarea } from "@heroui/input";
 import { Card, CardBody } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Loader2, ShoppingCart, Info, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { addToast } from "@heroui/toast";
 import { formatCurrencyVND } from "@/lib/format";
 import ConfirmModal from "@/components/confirm-modal";
 
@@ -215,20 +216,19 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, loanType, onSuccess 
       const result = await response.json();
 
       if (result.success) {
-        setMessage({ 
-          type: "success", 
-          text: `Chuộc đồ thành công! Tổng: ${formatCurrencyVND(totalAmount)}` 
+        addToast({
+          title: "Thành công",
+          description: `Chuộc đồ thành công! Tổng: ${formatCurrencyVND(totalAmount)}`,
+          color: "success",
         });
         
-        // Close modal and refresh after 2s
-        setTimeout(() => {
-          setPrincipalAmount("");
-          setInterestAmount("");
-          setNotes("");
-          setMessage(null);
-          onClose();
-          if (onSuccess) onSuccess();
-        }, 2000);
+        // Close modal and refresh immediately
+        setPrincipalAmount("");
+        setInterestAmount("");
+        setNotes("");
+        setMessage(null);
+        onClose();
+        if (onSuccess) onSuccess();
       } else {
         setMessage({ type: "error", text: result.error || "Có lỗi xảy ra" });
       }

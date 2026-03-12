@@ -11,6 +11,7 @@ import {
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Loader2, UserPlus, CheckCircle, XCircle } from "lucide-react";
+import { addToast } from "@heroui/toast";
 
 type TProps = {
   isOpen: boolean;
@@ -64,9 +65,10 @@ const AddReferenceModal = ({ isOpen, onClose, loanId, onSuccess }: TProps) => {
       const result = await response.json();
 
       if (result.success) {
-        setMessage({
-          type: "success",
-          text: "Thêm tham chiếu thành công!",
+        addToast({
+          title: "Thành công",
+          description: "Thêm tham chiếu thành công!",
+          color: "success",
         });
         
         // Reset form
@@ -76,14 +78,14 @@ const AddReferenceModal = ({ isOpen, onClose, loanId, onSuccess }: TProps) => {
           relationship: "",
         });
 
-        // Call success callback
+        // Call success callback immediately
         if (onSuccess) {
-          setTimeout(() => {
-            onSuccess();
-            onClose();
-            setMessage(null);
-          }, 1500);
+          onSuccess();
         }
+        
+        // Close modal immediately
+        onClose();
+        setMessage(null);
       } else {
         setMessage({ type: "error", text: result.error || "Có lỗi xảy ra" });
       }

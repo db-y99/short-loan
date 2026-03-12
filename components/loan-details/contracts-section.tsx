@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { FileText, Download, Eye, Loader2, Plus, CheckCircle, RefreshCw } from "lucide-react";
+import { addToast } from "@heroui/toast";
 import type { TLoanFile, TLoanStatus } from "@/types/loan.types";
 import { generateContractsAction, regenerateContractsAction } from "@/features/contracts/actions/generate-contracts.action";
 import ContractPreviewModal from "@/components/contracts/contract-preview-modal";
@@ -16,9 +17,10 @@ type TProps = {
   loanId: string;
   loanStatus: TLoanStatus; // Thêm loan status
   loanFiles?: TLoanFile[]; // All loan files from DB
+  onRefresh?: () => void; // Thêm callback để refresh data
 };
 
-const ContractsSection = ({ loanId, loanStatus, loanFiles = [] }: TProps) => {
+const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -39,13 +41,18 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [] }: TProps) => {
       const result = await generateContractsAction(loanId);
 
       if (result.success) {
-        setMessage({ type: "success", text: "Tạo hợp đồng thành công!" });
+        addToast({
+          title: "Thành công",
+          description: "Tạo hợp đồng thành công!",
+          color: "success",
+        });
         
-        // Auto hide message after 3s and reload to get fresh data
-        setTimeout(() => {
-          setMessage(null);
-          window.location.reload();
-        }, 3000);
+        // Call refresh callback to update parent data
+        if (onRefresh) {
+          onRefresh();
+        }
+        
+        setMessage(null);
       } else {
         setMessage({ type: "error", text: result.error });
       }
@@ -66,13 +73,18 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [] }: TProps) => {
       const result = await regenerateContractsAction(loanId);
 
       if (result.success) {
-        setMessage({ type: "success", text: "Tạo lại hợp đồng thành công!" });
+        addToast({
+          title: "Thành công",
+          description: "Tạo lại hợp đồng thành công!",
+          color: "success",
+        });
         
-        // Auto hide message after 3s and reload to get fresh data
-        setTimeout(() => {
-          setMessage(null);
-          window.location.reload();
-        }, 3000);
+        // Call refresh callback to update parent data
+        if (onRefresh) {
+          onRefresh();
+        }
+        
+        setMessage(null);
       } else {
         setMessage({ type: "error", text: result.error });
       }
@@ -106,14 +118,17 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [] }: TProps) => {
       link.click();
       URL.revokeObjectURL(url);
 
-      setMessage({ type: "success", text: `Đã tải xuống: ${contract.name}` });
-      setTimeout(() => setMessage(null), 3000);
-    } catch (error) {
-      setMessage({
-        type: "error",
-        text: error instanceof Error ? error.message : "Lỗi khi tải xuống",
+      addToast({
+        title: "Thành công",
+        description: `Đã tải xuống: ${contract.name}`,
+        color: "success",
       });
-      setTimeout(() => setMessage(null), 3000);
+    } catch (error) {
+      addToast({
+        title: "Lỗi",
+        description: error instanceof Error ? error.message : "Lỗi khi tải xuống",
+        color: "danger",
+      });
     }
   };
 

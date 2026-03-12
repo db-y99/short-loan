@@ -11,6 +11,7 @@ import {
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Loader2, Building2, CheckCircle, XCircle } from "lucide-react";
+import { addToast } from "@heroui/toast";
 import type { TBankFormData } from "@/types/bank.types";
 
 type TProps = {
@@ -81,19 +82,18 @@ const EditBankModal = ({
       const result = await response.json();
 
       if (result.success) {
-        setMessage({
-          type: "success",
-          text: "Cập nhật thông tin ngân hàng thành công!",
+        addToast({
+          title: "Thành công",
+          description: "Cập nhật thông tin ngân hàng thành công!",
+          color: "success",
         });
 
-        // Call success callback
+        // Call success callback immediately
         if (onSuccess) {
-          setTimeout(() => {
-            onSuccess();
-            onClose();
-            setMessage(null);
-          }, 1500);
+          onSuccess();
         }
+        onClose();
+        setMessage(null);
       } else {
         setMessage({ type: "error", text: result.error || "Có lỗi xảy ra" });
       }

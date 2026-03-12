@@ -8,6 +8,7 @@ import {
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { AlertCircle, CreditCard, MessageSquare, ShoppingCart, CheckCircle, XCircle, DollarSign, Loader2, UserPlus, FileEdit, UserCog } from "lucide-react";
+import { addToast } from "@heroui/toast";
 import type { TLoanDetails } from "@/types/loan.types";
 import { LOAN_STATUS } from "@/constants/loan";
 import ContractHeader from "@/components/loan-details/loan-header";
@@ -62,10 +63,6 @@ const LoanDetailsModal = ({
     confirmColor?: "primary" | "success" | "warning" | "danger";
   } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0); // Thêm state để force refresh
-  const [message, setMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
 
   const handleDisburse = async () => {
     if (!loanDetails) return;
@@ -84,7 +81,6 @@ const LoanDetailsModal = ({
       confirmColor: isApproving ? "primary" : "success",
       onConfirm: async () => {
         setIsDisbursing(true);
-        setMessage(null);
 
         try {
           const endpoint = isApproving 
@@ -98,23 +94,29 @@ const LoanDetailsModal = ({
           const result = await response.json();
 
           if (result.success) {
-            setMessage({
-              type: "success",
-              text: isApproving ? "Duyệt thành công!" : "Giải ngân thành công!",
+            addToast({
+              title: "Thành công",
+              description: isApproving ? "Duyệt thành công!" : "Giải ngân thành công!",
+              color: "success",
             });
             
-            // Refresh data
+            // Refresh data immediately
             if (onRefresh) {
-              setTimeout(() => {
-                onRefresh();
-                setMessage(null);
-              }, 1500);
+              onRefresh();
             }
           } else {
-            setMessage({ type: "error", text: result.error || "Có lỗi xảy ra" });
+            addToast({
+              title: "Lỗi",
+              description: result.error || "Có lỗi xảy ra",
+              color: "danger",
+            });
           }
         } catch (error) {
-          setMessage({ type: "error", text: isApproving ? "Lỗi khi duyệt" : "Lỗi khi giải ngân" });
+          addToast({
+            title: "Lỗi",
+            description: isApproving ? "Lỗi khi duyệt" : "Lỗi khi giải ngân",
+            color: "danger",
+          });
           console.error(error);
         } finally {
           setIsDisbursing(false);
@@ -132,90 +134,42 @@ const LoanDetailsModal = ({
   const isDisbursed = loanDetails?.status === LOAN_STATUS.DISBURSED;
 
   const handlePayInterestSuccess = () => {
-    setMessage({
-      type: "success",
-      text: "Đóng tiền thành công!",
-    });
-    
     // Tăng refreshKey để force refresh PaymentPeriods
     setRefreshKey(prev => prev + 1);
     
     if (onRefresh) {
-      setTimeout(() => {
-        onRefresh();
-        setMessage(null);
-      }, 1500);
+      onRefresh();
     }
   };
 
   const handleAddReferenceSuccess = () => {
-    setMessage({
-      type: "success",
-      text: "Thêm tham chiếu thành công!",
-    });
-    
     if (onRefresh) {
-      setTimeout(() => {
-        onRefresh();
-        setMessage(null);
-      }, 1500);
+      onRefresh();
     }
   };
 
   const handleRedeemSuccess = () => {
-    setMessage({
-      type: "success",
-      text: "Chuộc đồ thành công!",
-    });
-    
     if (onRefresh) {
-      setTimeout(() => {
-        onRefresh();
-        setMessage(null);
-        onClose(); // Close the main modal after redeem
-      }, 2000);
+      onRefresh();
+      onClose(); // Close the main modal after redeem
     }
   };
 
   const handleUpdateConditionSuccess = () => {
-    setMessage({
-      type: "success",
-      text: "Cập nhật tình trạng tài sản thành công!",
-    });
-    
     if (onRefresh) {
-      setTimeout(() => {
-        onRefresh();
-        setMessage(null);
-      }, 1500);
+      onRefresh();
     }
   };
 
   const handleEditCustomerSuccess = () => {
-    setMessage({
-      type: "success",
-      text: "Cập nhật thông tin khách hàng thành công!",
-    });
-    
     if (onRefresh) {
-      setTimeout(() => {
-        onRefresh();
-        setMessage(null);
-      }, 1500);
+      onRefresh();
     }
   };
 
   const handleEditBankSuccess = () => {
-    setMessage({
-      type: "success",
-      text: "Cập nhật thông tin ngân hàng thành công!",
-    });
-    
     if (onRefresh) {
-      setTimeout(() => {
-        onRefresh();
-        setMessage(null);
-      }, 1500);
+      onRefresh();
     }
   };
 
@@ -260,24 +214,7 @@ const LoanDetailsModal = ({
               )}
               {loanDetails && !isLoading && (
                 <>
-                  <LoanProfileSection loanDetails={loanDetails} />
-
-                  {message && (
-                    <div
-                      className={`flex items-center gap-2 p-3 mb-4 rounded-xl ${
-                        message.type === "success"
-                          ? "bg-success-50 text-success-700 dark:bg-success-900/20 dark:text-success-400"
-                          : "bg-danger-50 text-danger-700 dark:bg-danger-900/20 dark:text-danger-400"
-                      }`}
-                    >
-                      {message.type === "success" ? (
-                        <CheckCircle className="w-4 h-4" />
-                      ) : (
-                        <XCircle className="w-4 h-4" />
-                      )}
-                      <p className="text-sm">{message.text}</p>
-                    </div>
-                  )}
+                  <LoanProfileSection loanDetails={loanDetails} onRefresh={onRefresh} />
 
                   {/* Edit Customer Button */}
                   <div className="mb-4">
@@ -321,6 +258,7 @@ const LoanDetailsModal = ({
                       loanId={loanDetails.id}
                       loanStatus={loanDetails.status}
                       loanFiles={loanDetails.originalFiles}
+                      onRefresh={onRefresh}
                     />
                   </div>
 
