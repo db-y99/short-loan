@@ -4,17 +4,17 @@ import { useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { FileText, Download, Eye, Loader2, Plus, CheckCircle, RefreshCw } from "lucide-react";
-import type { TLoanFile } from "@/types/loan.types";
+import type { TLoanFile, TLoanStatus } from "@/types/loan.types";
 import { generateContractsAction, regenerateContractsAction } from "@/features/contracts/actions/generate-contracts.action";
 import ContractPreviewModal from "@/components/contracts/contract-preview-modal";
 import RegenerateConfirmModal from "@/components/contracts/regenerate-confirm-modal";
 import ContractErrorDetails from "@/components/contracts/contract-error-details";
 import { sortContractsByType } from "@/lib/contract-utils";
-import { LOAN_STATUS } from "@/constants/loan";
+import { LOAN_STATUS, LOAN_STATUS_LABEL } from "@/constants/loan";
 
 type TProps = {
   loanId: string;
-  loanStatus: string; // Thêm loan status
+  loanStatus: TLoanStatus; // Thêm loan status
   loanFiles?: TLoanFile[]; // All loan files from DB
 };
 
@@ -213,7 +213,7 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [] }: TProps) => {
                     Hợp đồng chỉ có thể tạo khi khoản vay đã được duyệt
                   </p>
                   <p className="text-xs text-warning-600 mt-1">
-                    Trạng thái hiện tại: <span className="font-medium">{loanStatus}</span>
+                    Trạng thái hiện tại: <span className="font-medium">{LOAN_STATUS_LABEL[loanStatus]}</span>
                   </p>
                 </>
               )}
