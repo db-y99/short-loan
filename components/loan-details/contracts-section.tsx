@@ -141,8 +141,8 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
             <h3 className="text-lg font-semibold">Hợp đồng</h3>
           </div>
           <div className="flex items-center gap-2">
-            {/* Chỉ hiển thị nút tạo/tạo lại hợp đồng khi loan đã được duyệt */}
-            {loanStatus === LOAN_STATUS.APPROVED && (
+            {/* Chỉ hiển thị nút tạo/tạo lại hợp đồng khi loan đã được duyệt hoặc đã ký */}
+            {(loanStatus === LOAN_STATUS.APPROVED || loanStatus === LOAN_STATUS.SIGNED) && (
               <>
                 {loanFiles.length === 0 ? (
                   <Button
@@ -198,6 +198,19 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
             </div>
           )}
 
+          {/* Cảnh báo khi loan đã ký nhưng muốn tạo lại hợp đồng */}
+          {loanStatus === LOAN_STATUS.SIGNED && loanFiles.length > 0 && (
+            <div className="p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
+              <div className="flex items-start gap-2">
+                <CheckCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-warning-700 dark:text-warning-400">
+                  <p className="font-semibold">Hợp đồng đã được ký</p>
+                  <p className="mt-1">Bạn có thể tạo lại hợp đồng nếu khách hàng ký sai hoặc cần chỉnh sửa.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {message && (
             <>
               {message.type === "success" ? (
@@ -214,11 +227,14 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
           {loanFiles.length === 0 ? (
             <div className="text-center py-8 text-default-500">
               <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              {loanStatus === "approved" ? (
+              {loanStatus === "approved" || loanStatus === "signed" ? (
                 <>
                   <p className="text-sm">Chưa có hợp đồng đã ký</p>
                   <p className="text-xs mt-1">
-                    Hợp đồng sẽ được tạo tự động sau khi ký
+                    {loanStatus === "approved" 
+                      ? "Hợp đồng sẽ được tạo tự động sau khi ký"
+                      : "Có thể tạo lại hợp đồng nếu cần thiết"
+                    }
                   </p>
                 </>
               ) : (
