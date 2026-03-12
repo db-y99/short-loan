@@ -12,9 +12,10 @@ import { sortContractsByType } from "@/lib/contract-utils";
 
 type TProps = {
   loanDetails: TLoanDetails;
+  onRefresh?: () => void; // Thêm callback để refresh data
 };
 
-const LoanProfileSection = ({ loanDetails }: TProps) => {
+const LoanProfileSection = ({ loanDetails, onRefresh }: TProps) => {
   const [showQR, setShowQR] = useState(false);
   const [showSigningModal, setShowSigningModal] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
@@ -46,10 +47,10 @@ const LoanProfileSection = ({ loanDetails }: TProps) => {
       color: "success",
     });
     
-    // Reload to get fresh data
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+    // Call refresh callback instead of reloading page
+    if (onRefresh) {
+      onRefresh();
+    }
   };
 
   const handleShowQR = () => {

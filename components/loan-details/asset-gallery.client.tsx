@@ -11,6 +11,7 @@ import {
   Image,
 } from "@heroui/react";
 import { Download, ImageIcon, Upload, Loader2, CheckCircle, XCircle, X } from "lucide-react";
+import { addToast } from "@heroui/toast";
 import { TAssetImage } from "@/types/loan.types";
 
 type TProps = {
@@ -152,22 +153,20 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        setMessage({
-          type: "success",
-          text: `Đã upload ${result.data.length} ảnh thành công!`,
+        addToast({
+          title: "Thành công",
+          description: `Đã upload ${result.data.length} ảnh thành công!`,
+          color: "success",
         });
         
         // Cập nhật local state
         setLocalImages([...localImages, ...result.data]);
         
-        // Đóng modal sau 1.5s
-        setTimeout(() => {
-          // Cleanup preview URLs
-          previewImages.forEach((img) => URL.revokeObjectURL(img.preview));
-          setPreviewImages([]);
-          setIsUploadModalOpen(false);
-          setMessage(null);
-        }, 1500);
+        // Close modal immediately
+        previewImages.forEach((img) => URL.revokeObjectURL(img.preview));
+        setPreviewImages([]);
+        setIsUploadModalOpen(false);
+        setMessage(null);
       } else {
         setMessage({ type: "error", text: result.error || "Lỗi khi upload ảnh" });
       }

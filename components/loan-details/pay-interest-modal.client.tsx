@@ -14,6 +14,7 @@ import { Textarea } from "@heroui/input";
 import { Card, CardBody } from "@heroui/card";
 import { Divider } from "@heroui/divider";
 import { Loader2, DollarSign, Info, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { addToast } from "@heroui/toast";
 import { formatCurrencyVND } from "@/lib/format";
 
 type TProps = {
@@ -203,19 +204,18 @@ const PayInterestModal = ({ isOpen, onClose, loanId, loanType, onSuccess }: TPro
       const result = await response.json();
 
       if (result.success) {
-        setMessage({ 
-          type: "success", 
-          text: `Đã đóng tiền ${formatCurrencyVND(numericAmount)} thành công!` 
+        addToast({
+          title: "Thành công",
+          description: `Đã đóng tiền ${formatCurrencyVND(numericAmount)} thành công!`,
+          color: "success",
         });
         
-        // Close modal and refresh after 1.5s
-        setTimeout(() => {
-          setAmount("");
-          setNotes("");
-          setMessage(null);
-          onClose();
-          if (onSuccess) onSuccess();
-        }, 1500);
+        // Close modal and refresh immediately
+        setAmount("");
+        setNotes("");
+        setMessage(null);
+        onClose();
+        if (onSuccess) onSuccess();
       } else {
         setMessage({ type: "error", text: result.error || "Có lỗi xảy ra" });
       }

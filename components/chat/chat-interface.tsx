@@ -130,7 +130,59 @@ export function ChatInterface({
     }
   };
 
-  // Handle send image
+  // Handle send images (multiple)
+  const handleSendImages = async (files: File[]) => {
+    const tempIds = files.map((_, index) => `temp-${Date.now()}-${index}`);
+    
+    // Create optimistic messages for each image
+    const optimisticMsgs: OptimisticMessage[] = files.map((file, index) => ({
+      id: tempIds[index],
+      loan_id: loanId,
+      type: "image_upload",
+      user_id: currentUserId,
+      user_name: currentUserName,
+      content: null,
+      system_message: null,
+      images: ["uploading"],
+      links: null,
+      mentions: null,
+      created_at: new Date(Date.now() + index).toISOString(), // Slight delay for ordering
+      updated_at: new Date(Date.now() + index).toISOString(),
+      deleted_at: null,
+      status: "sending",
+      tempId: tempIds[index],
+    }));
+
+    setOptimisticMessages((prev) => [...prev, ...optimisticMsgs]);
+    setShouldAutoScroll(true);
+
+    // Upload images sequentially to maintain order
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const tempId = tempIds[i];
+      
+      try {
+        // Upload image
+        const imageUrl = await uploadImage(loanId, file, driveFolderId);
+        // Insert log
+        await insertImageLog(loanId, currentUserId, currentUserName, imageUrl);
+        // Remove optimistic message
+        setOptimisticMessages((prev) =>
+          prev.filter((msg) => msg.tempId !== tempId)
+        );
+      } catch (error) {
+        console.error(`Failed to send image ${i + 1}:`, error);
+        // Update status to error
+        setOptimisticMessages((prev) =>
+          prev.map((msg) =>
+            msg.tempId === tempId ? { ...msg, status: "error" } : msg
+          )
+        );
+      }
+    }
+  };
+
+  // Handle send image (single)
   const handleSendImage = async (file: File) => {
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg: OptimisticMessage = {
@@ -265,6 +317,7 @@ export function ChatInterface({
       <MessageInput
         onSendMessage={handleSendMessage}
         onSendImage={handleSendImage}
+        onSendImages={handleSendImages}
         disabled={connectionStatus === "error"}
       />
 
