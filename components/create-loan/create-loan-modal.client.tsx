@@ -212,6 +212,12 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
 
   const isLoading = isSubmitting || isUploading;
 
+  const [datePickerPortalContainer, setDatePickerPortalContainer] =
+    useState<HTMLDivElement | null>(null);
+  const setModalContentRef = useCallback((el: HTMLDivElement | null) => {
+    setDatePickerPortalContainer(el);
+  }, []);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -224,13 +230,17 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
           Tạo hợp đồng mới
         </ModalHeader>
 
-        <ModalBody className="flex flex-col gap-8">
+        <ModalBody className="flex flex-col gap-8" ref={setModalContentRef}>
           {error && (
             <div className="rounded-lg bg-danger-50 px-4 py-3 text-danger text-sm">
               {error}
             </div>
           )}
-          <CustomerInfoSection form={form} onChange={handleFieldChange} />
+          <CustomerInfoSection
+            form={form}
+            onChange={handleFieldChange}
+            datePickerPortalContainer={datePickerPortalContainer}
+          />
           <BankInfoSection form={form} onChange={handleFieldChange} />
           <LoanInfoSection form={form} onChange={handleFieldChange} />
           <ReferencesSection
