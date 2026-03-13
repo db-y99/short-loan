@@ -2,7 +2,6 @@
 
 import { Input } from "@heroui/input";
 import { Divider } from "@heroui/divider";
-import { I18nProvider } from "@react-aria/i18n";
 import { DatePicker } from "@heroui/date-picker";
 import { parseDate } from "@internationalized/date";
 
@@ -60,44 +59,43 @@ const CustomerInfoSection = ({
           onValueChange={(v) => onChange("phone", v)}
         />
         {/* locale vi-VN hoặc en-GB đều cho format dd/mm/yyyy */}
-        <I18nProvider locale="vi-VN">
-          <DatePicker
-            label="Ngày cấp CCCD"
-            value={parseDateSafe(form.cccd_issue_date)}
-            popoverProps={{
-              portalContainer: datePickerPortalContainer ?? undefined,
-            }}
-            onChange={(date) => {
-              try {
-                if (!date) {
-                  onChange("cccd_issue_date", "");
-                  onChange("cccd_issue_place", "");
-                  return;
-                }
-
-                // Chuyển sang ISO yyyy-mm-dd format
-                const isoDate = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
-                onChange("cccd_issue_date", isoDate);
-
-                // So sánh với 01/07/2024
-                const cutoffDate = new Date("2024-07-01");
-                const selectedDate = new Date(isoDate);
-
-                // Kiểm tra valid date trước khi so sánh
-                if (!isNaN(selectedDate.getTime())) {
-                  if (selectedDate >= cutoffDate) {
-                    onChange("cccd_issue_place", CCCD_ISSUE_PLACE.MINISTRY_OF_PUBLIC_SECURITY);
-                  } else {
-                    onChange("cccd_issue_place", CCCD_ISSUE_PLACE.POLICE_ADMIN);
-                  }
-                }
-              } catch (error) {
-                console.error("Error handling date change:", error);
-                // Không làm gì để tránh crash modal
+        <DatePicker
+          label="Ngày cấp CCCD"
+          showMonthAndYearPickers
+          value={parseDateSafe(form.cccd_issue_date)}
+          popoverProps={{
+            portalContainer: datePickerPortalContainer ?? undefined,
+          }}
+          onChange={(date) => {
+            try {
+              if (!date) {
+                onChange("cccd_issue_date", "");
+                onChange("cccd_issue_place", "");
+                return;
               }
-            }}
-          />
-        </I18nProvider>
+
+              // Chuyển sang ISO yyyy-mm-dd format
+              const isoDate = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
+              onChange("cccd_issue_date", isoDate);
+
+              // So sánh với 01/07/2024
+              const cutoffDate = new Date("2024-07-01");
+              const selectedDate = new Date(isoDate);
+
+              // Kiểm tra valid date trước khi so sánh
+              if (!isNaN(selectedDate.getTime())) {
+                if (selectedDate >= cutoffDate) {
+                  onChange("cccd_issue_place", CCCD_ISSUE_PLACE.MINISTRY_OF_PUBLIC_SECURITY);
+                } else {
+                  onChange("cccd_issue_place", CCCD_ISSUE_PLACE.POLICE_ADMIN);
+                }
+              }
+            } catch (error) {
+              console.error("Error handling date change:", error);
+              // Không làm gì để tránh crash modal
+            }
+          }}
+        />
         <Input
           label="Nơi cấp"
           placeholder="Cục Cảnh sát QLHC về TTXH"
