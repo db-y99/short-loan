@@ -72,6 +72,10 @@ export type TPaymentMilestone = {
   principal?: number;
   interestAndFee: number;
   totalRedemption: number;
+  // Chi tiết cho Gói 3
+  interest?: number;
+  rentalFee?: number;
+  serviceFee?: number;
 };
 
 export type TPaymentPeriod = {

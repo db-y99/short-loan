@@ -85,6 +85,9 @@ const PaymentPeriods = ({ loanDetails, refreshKey, onOpenPaymentHistory }: TProp
 
   // Kiểm tra xem có phải gói 1 không (Gói 1 chỉ có 1 kỳ thanh toán)
   const isPackage1 = loanDetails.loanType === LOAN_TYPES.INSTALLMENT_3_PERIODS;
+  
+  // Kiểm tra xem có phải gói 3 không (Gốc cuối kỳ + Giữ TS)
+  const isPackage3 = loanDetails.loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD;
 
   return (
     <div className="col-span-2 grid grid-cols-1 gap-4">
@@ -162,6 +165,7 @@ const PaymentPeriods = ({ loanDetails, refreshKey, onOpenPaymentHistory }: TProp
             milestones={loanDetails.currentPeriod.milestones} 
             showTotal={isPackage1}
             showPrincipal={isPackage1}
+            showDetailedBreakdown={isPackage3}
           />
         </CardBody>
       </Card>
@@ -179,7 +183,10 @@ const PaymentPeriods = ({ loanDetails, refreshKey, onOpenPaymentHistory }: TProp
               </p>
             )}
             {loanDetails.nextPeriod.milestones && loanDetails.nextPeriod.milestones.length > 0 ? (
-              <PaymentTable milestones={loanDetails.nextPeriod.milestones} />
+              <PaymentTable 
+                milestones={loanDetails.nextPeriod.milestones}
+                showDetailedBreakdown={isPackage3}
+              />
             ) : (
               <p className="text-sm text-default-400">Không có dữ liệu kỳ kế tiếp</p>
             )}

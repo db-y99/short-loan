@@ -65,11 +65,18 @@ function convertBulletToMilestone(
     ? calculateNextPeriodDueDate(signedAt, payment.days)
     : calculateDueDate(signedAt, payment.days);
 
+  // Tính phí dịch vụ (30,000 nếu vay <= 2,000,000)
+  const serviceFee = loanAmount <= 2000000 ? 30000 : 0;
+
   return {
     days: payment.days,
     date: dueDate,
     interestAndFee: payment.interest + payment.rentalFee,
     totalRedemption: payment.total,
+    // Chi tiết cho Gói 3
+    interest: payment.interest,
+    rentalFee: payment.rentalFee,
+    serviceFee: serviceFee,
   };
 }
 
