@@ -8,7 +8,7 @@ import {
   generateLoanCodeService,
   updateLoanDriveFolderIdService,
 } from "@/services/loans/loans.service";
-import { LOAN_TYPE_LABEL, LOAN_TYPES, type TLoanType } from "@/constants/loan";
+import { LOAN_TYPE_LABEL, type TLoanType } from "@/constants/loan";
 import { parseFormattedNumber } from "@/lib/format";
 import { TCreateLoanPayload } from "@/types/loan.types";
 import { createLoanFolder } from "@/lib/google-drive";
@@ -62,10 +62,10 @@ export const createLoanAction = async (
       income: input.income ? parseFormattedNumber(input.income) : null,
     });
 
-    const code = await generateLoanCodeService();
     const amount = parseFormattedNumber(input.loan_amount);
     const loanType = input.loan_type as TLoanType;
     const loanPackage = LOAN_TYPE_LABEL[loanType] ?? input.loan_type;
+    const code = await generateLoanCodeService(loanPackage);
 
     // Tính phí thẩm định tự động
     const appraisalFee = calculateAppraisalFee(amount, loanType);
@@ -106,7 +106,10 @@ export const createLoanAction = async (
     });
 
     // 3) Update loan.drive_folder_id = folderId
-    await updateLoanDriveFolderIdService({ loanId: id, driveFolderId: folderId });
+    await updateLoanDriveFolderIdService({
+      loanId: id,
+      driveFolderId: folderId,
+    });
 
     // 4) Tạo payment cycle và periods
     const signedAt = new Date().toISOString();

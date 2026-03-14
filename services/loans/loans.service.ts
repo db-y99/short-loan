@@ -15,6 +15,8 @@ import type {
 import {
   LOAN_TYPE_LABEL,
   ASSET_TYPE_LABEL,
+  CONTRACT_CODE_PREFIX,
+  getContractCodeSuffix,
   type TLoanType,
 } from "@/constants/loan";
 import { formatDateShortVN } from "@/lib/format";
@@ -92,41 +94,47 @@ export const getLoansService = async (
     });
   }
 
-  return results.map((row) => {
-    const cust = row.customers as
-      | { full_name: string }
-      | { full_name: string }[]
-      | null;
-    const customer = Array.isArray(cust) ? cust[0] : cust;
-    
-    const prof = row.profiles as
-      | { full_name: string; email: string }
-      | { full_name: string; email: string }[]
-      | null;
-    const profile = Array.isArray(prof) ? prof[0] : prof;
-    
-    const loanTypeKey = row.loan_type as TLoanType;
-    const creator = profile?.full_name ?? profile?.email ?? "—";
+  return results
+    .map((row) => {
+      const cust = row.customers as
+        | { full_name: string }
+        | { full_name: string }[]
+        | null;
+      const customer = Array.isArray(cust) ? cust[0] : cust;
 
-    // Filter by creator (client-side vì cần join data)
-    if (filters?.creator && filters.creator !== "all" && creator !== filters.creator) {
-      return null;
-    }
+      const prof = row.profiles as
+        | { full_name: string; email: string }
+        | { full_name: string; email: string }[]
+        | null;
+      const profile = Array.isArray(prof) ? prof[0] : prof;
 
-    return {
-      id: row.id,
-      code: row.code,
-      creator,
-      customer: (customer?.full_name as string | undefined) ?? "—",
-      asset: row.asset_name ?? "—",
-      amount: Number(row.amount),
-      loan_package:
-        row.loan_package ?? LOAN_TYPE_LABEL[loanTypeKey] ?? row.loan_type,
-      created_at: row.created_at,
-      approved_at: row.approved_at,
-      status: row.status as TLoanStatus,
-    } satisfies TLoan;
-  }).filter((loan): loan is TLoan => loan !== null);
+      const loanTypeKey = row.loan_type as TLoanType;
+      const creator = profile?.full_name ?? profile?.email ?? "—";
+
+      // Filter by creator (client-side vì cần join data)
+      if (
+        filters?.creator &&
+        filters.creator !== "all" &&
+        creator !== filters.creator
+      ) {
+        return null;
+      }
+
+      return {
+        id: row.id,
+        code: row.code,
+        creator,
+        customer: (customer?.full_name as string | undefined) ?? "—",
+        asset: row.asset_name ?? "—",
+        amount: Number(row.amount),
+        loan_package:
+          row.loan_package ?? LOAN_TYPE_LABEL[loanTypeKey] ?? row.loan_type,
+        created_at: row.created_at,
+        approved_at: row.approved_at,
+        status: row.status as TLoanStatus,
+      } satisfies TLoan;
+    })
+    .filter((loan): loan is TLoan => loan !== null);
 };
 
 /**
@@ -395,9 +403,18 @@ export const getLoanDetailsService = async (
   }));
 
   // Tách file gốc và file đã ký
-  const signedContractTypes = ['asset_pledge', 'asset_lease', 'full_payment', 'asset_disposal'];
-  const originalFiles = allFiles.filter(f => !signedContractTypes.includes(f.type));
-  const signedFiles = allFiles.filter(f => signedContractTypes.includes(f.type));
+  const signedContractTypes = [
+    "asset_pledge",
+    "asset_lease",
+    "full_payment",
+    "asset_disposal",
+  ];
+  const originalFiles = allFiles.filter(
+    (f) => !signedContractTypes.includes(f.type),
+  );
+  const signedFiles = allFiles.filter((f) =>
+    signedContractTypes.includes(f.type),
+  );
 
   /* =========================
      ASSET IMAGES
@@ -460,13 +477,13 @@ export const getLoanDetailsService = async (
     // Nếu chưa có cycle, tự động tạo
     if (!cycle) {
       console.log("⚠️ No payment cycle found, creating one...");
-      
+
       const startDate = new Date(loan.signed_at ?? loan.created_at)
         .toISOString()
         .split("T")[0];
       const endDate = new Date(
         new Date(loan.signed_at ?? loan.created_at).getTime() +
-          30 * 24 * 60 * 60 * 1000
+          30 * 24 * 60 * 60 * 1000,
       )
         .toISOString()
         .split("T")[0];
@@ -585,27 +602,26 @@ export const getLoanDetailsService = async (
   } satisfies TLoanDetails;
 };
 
-/** Sinh mã khoản vay HD-YYYY-NNN */
-export const generateLoanCodeService = async (): Promise<string> => {
+/**
+ * Sinh mã hợp đồng: [CT] + [Số thứ tự 3 chữ số] + [Hậu tố theo gói vay].
+ * Số thứ tự lấy atomic từ app_sequences (CONTRACT_SEQ) để tránh trùng khi tạo đồng thời.
+ * Hậu tố: /Y99GTS (giữ TS), /Y99GCK (gốc cuối kỳ), /Y99DNGD (trả góp).
+ */
+export const generateLoanCodeService = async (
+  loanPackage: string | null,
+): Promise<string> => {
   const supabase = await createSupabaseServerClient();
-  const year = new Date().getFullYear();
-  const prefix = `HD-${year}-`;
 
-  const { data, error } = await supabase
-    .from("loans")
-    .select("code")
-    .like("code", `${prefix}%`)
-    .order("code", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  const { data: seq, error } = await supabase.rpc("get_next_contract_seq");
 
   if (error) throw new Error(error.message);
-
-  let nextNum = 1;
-  if (data?.code) {
-    const match = data.code.match(new RegExp(`^${prefix}(\\d+)$`));
-    if (match) nextNum = parseInt(match[1], 10) + 1;
+  const num = typeof seq === "number" ? seq : parseInt(String(seq), 10);
+  if (Number.isNaN(num) || num < 1) {
+    throw new Error("Invalid contract sequence from get_next_contract_seq");
   }
 
-  return `${prefix}${String(nextNum).padStart(3, "0")}`;
+  const sequencePart = String(num).padStart(3, "0");
+  const suffix = getContractCodeSuffix(loanPackage);
+
+  return `${CONTRACT_CODE_PREFIX}${sequencePart}${suffix}`;
 };

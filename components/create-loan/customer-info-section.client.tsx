@@ -2,19 +2,34 @@
 
 import { Input } from "@heroui/input";
 import { Divider } from "@heroui/divider";
+import { DatePicker } from "@heroui/date-picker";
+import { parseDate } from "@internationalized/date";
 
 import type { TCreateLoanForm } from "@/types/loan.types";
 import { formatNumberInput } from "@/lib/format";
-import { DatePicker } from "@heroui/date-picker";
-import { getLocalTimeZone, today } from "@internationalized/date";
 import { CCCD_ISSUE_PLACE } from "@/constants/loan";
+
+/** Chỉ parse khi chuỗi đúng ISO yyyy-mm-dd, tránh lỗi "Invalid ISO 8601 date string". */
+function parseDateSafe(value: string | undefined): ReturnType<typeof parseDate> | null {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) return null;
+  try {
+    return parseDate(value.trim());
+  } catch {
+    return null;
+  }
+}
 
 type TProps = {
   form: TCreateLoanForm;
   onChange: (field: keyof TCreateLoanForm, value: string) => void;
+  datePickerPortalContainer?: HTMLDivElement | null;
 };
 
-const CustomerInfoSection = ({ form, onChange }: TProps) => {
+const CustomerInfoSection = ({
+  form,
+  onChange,
+  datePickerPortalContainer,
+}: TProps) => {
   return (
     <div className="flex flex-col gap-4">
       <h3 className="text-lg font-semibold">Thông tin khách hàng</h3>
@@ -43,32 +58,42 @@ const CustomerInfoSection = ({ form, onChange }: TProps) => {
           value={form.phone}
           onValueChange={(v) => onChange("phone", v)}
         />
+        {/* locale vi-VN hoặc en-GB đều cho format dd/mm/yyyy */}
         <DatePicker
           label="Ngày cấp CCCD"
           showMonthAndYearPickers
-          maxValue={today(getLocalTimeZone())}
+          value={parseDateSafe(form.cccd_issue_date)}
+          popoverProps={{
+            portalContainer: datePickerPortalContainer ?? undefined,
+          }}
           onChange={(date) => {
-             if (!date) {
-            onChange("cccd_issue_date", "");
-            return;
-          }
+            try {
+              if (!date) {
+                onChange("cccd_issue_date", "");
+                onChange("cccd_issue_place", "");
+                return;
+              }
 
-            // Chuyển sang ISO yyyy-mm-dd để lưu
-          const isoDate = String(date); // DateValue có toString()
-          onChange("cccd_issue_date", isoDate);
+              // Chuyển sang ISO yyyy-mm-dd format
+              const isoDate = `${date.year}-${String(date.month).padStart(2, '0')}-${String(date.day).padStart(2, '0')}`;
+              onChange("cccd_issue_date", isoDate);
 
-          // So sánh với 01/07/2024
-          const cutoffDate = new Date("2024-07-01");
-          const selectedDate = new Date(isoDate);
+              // So sánh với 01/07/2024
+              const cutoffDate = new Date("2024-07-01");
+              const selectedDate = new Date(isoDate);
 
-          if (selectedDate >= cutoffDate) {
-            onChange("cccd_issue_place", CCCD_ISSUE_PLACE.MINISTRY_OF_PUBLIC_SECURITY);
-          } else {
-            onChange(
-              "cccd_issue_place",
-              CCCD_ISSUE_PLACE.POLICE_ADMIN
-            );
-          }
+              // Kiểm tra valid date trước khi so sánh
+              if (!isNaN(selectedDate.getTime())) {
+                if (selectedDate >= cutoffDate) {
+                  onChange("cccd_issue_place", CCCD_ISSUE_PLACE.MINISTRY_OF_PUBLIC_SECURITY);
+                } else {
+                  onChange("cccd_issue_place", CCCD_ISSUE_PLACE.POLICE_ADMIN);
+                }
+              }
+            } catch (error) {
+              console.error("Error handling date change:", error);
+              // Không làm gì để tránh crash modal
+            }
           }}
         />
         <Input
