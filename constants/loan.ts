@@ -79,6 +79,39 @@ export const LOAN_TYPE_LABEL: Record<TLoanType, string> = {
     "Gói 3: Gốc cuối kỳ + Giữ TS",
 } as const;
 
+/** Mã hợp đồng: [Tiền tố] + [Số thứ tự 3 chữ số] + [Hậu tố] */
+export const CONTRACT_CODE_PREFIX = "CT" as const;
+
+/** Hậu tố mã hợp đồng theo gói vay */
+export const CONTRACT_CODE_SUFFIX = {
+  /** Giữ TS / Giữ tài sản */
+  Y99GTS: "/Y99GTS",
+  /** Gốc cuối kỳ (Gói 2) */
+  Y99GCK: "/Y99GCK",
+  /** Mặc định (Gói 1: Vay trả góp) */
+  Y99DNGD: "/Y99DNGD",
+} as const;
+
+/**
+ * Xác định hậu tố mã hợp đồng theo gói vay (loan_package label).
+ * - Có "giữ ts" hoặc "giữ tài sản" → /Y99GTS
+ * - Có "gốc cuối kỳ" (không thuộc Gói 3) → /Y99GCK
+ * - Còn lại (Gói 1: Vay trả góp) → /Y99DNGD
+ */
+export function getContractCodeSuffix(loanPackage: string | null): string {
+  if (!loanPackage || typeof loanPackage !== "string") {
+    return CONTRACT_CODE_SUFFIX.Y99DNGD;
+  }
+  const lower = loanPackage.toLowerCase();
+  if (lower.includes("giữ ts") || lower.includes("giữ tài sản")) {
+    return CONTRACT_CODE_SUFFIX.Y99GTS;
+  }
+  if (lower.includes("gốc cuối kỳ")) {
+    return CONTRACT_CODE_SUFFIX.Y99GCK;
+  }
+  return CONTRACT_CODE_SUFFIX.Y99DNGD;
+}
+
 export const LOANS_TABLE_COLUMNS = [
   { key: "code", label: "Mã khoản vay" },
   { key: "creator", label: "Người tạo" },
@@ -130,7 +163,6 @@ export const ACTIVITY_COLOR_MAP: Record<TActivityLogType, string> = {
   [ACTIVITY_LOG_TYPE.CONTRACT_SIGNED]: "text-success",
   [ACTIVITY_LOG_TYPE.DISBURSEMENT]: "text-success",
 };
-
 
 export const CCCD_ISSUE_PLACE = {
   POLICE_ADMIN: "Cục Cảnh sát QLHC về TTXH",
