@@ -31,7 +31,8 @@ export type TBulletPayment = {
   rate: number; // Tỷ lệ % (5%, 8%, 12% hoặc 1.25%, 3.5%, 5%)
   interest: number; // Tiền lãi (0.033%/ngày)
   rentalFee: number; // Phí thuê tài sản
-  total: number; // Tổng chuộc = Vay + Lãi + Phí
+  serviceFee?: number; // Phí dịch vụ (chỉ có ở Gói 3)
+  total: number; // Tổng chuộc = Vay + Lãi + Phí (+ Phí dịch vụ nếu có)
 };
 
 export type TLoanCalculationResult = {
@@ -255,6 +256,7 @@ export function calculateBulletPaymentWithCollateralHold(
       rate: 0.0125, // 1.25%
       interest: interest1,
       rentalFee: rentalFee1,
+      serviceFee: serviceFee,
       total: total1,
     },
     {
@@ -263,6 +265,7 @@ export function calculateBulletPaymentWithCollateralHold(
       rate: 0.035, // 3.5%
       interest: interest2,
       rentalFee: rentalFee2,
+      serviceFee: serviceFee,
       total: total2,
     },
     {
@@ -271,6 +274,7 @@ export function calculateBulletPaymentWithCollateralHold(
       rate: 0.05, // 5%
       interest: interest3,
       rentalFee: rentalFee3,
+      serviceFee: serviceFee,
       total: total3,
     },
   ];

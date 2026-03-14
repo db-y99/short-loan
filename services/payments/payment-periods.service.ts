@@ -223,10 +223,10 @@ export async function saveDetailedPaymentPeriodsService({
         milestone_day: payment.days,
         due_date: calculateDueDate(signedAt, payment.days),
         principal: loanAmount,
-        interest: 0,
-        rental_fee: 0,
+        interest: payment.interest,
+        rental_fee: payment.rentalFee,
         rate: payment.rate,
-        fee_amount: payment.total - loanAmount,
+        fee_amount: payment.interest + payment.rentalFee + (payment.serviceFee || 0),
         total_due: payment.total,
         status: "pending" as const,
       })),
@@ -238,10 +238,10 @@ export async function saveDetailedPaymentPeriodsService({
         milestone_day: payment.days,
         due_date: calculateNextPeriodDueDate(signedAt, payment.days),
         principal: loanAmount,
-        interest: 0,
-        rental_fee: 0,
+        interest: payment.interest,
+        rental_fee: payment.rentalFee,
         rate: payment.rate,
-        fee_amount: payment.total - loanAmount,
+        fee_amount: payment.interest + payment.rentalFee + (payment.serviceFee || 0),
         total_due: payment.total,
         status: "pending" as const,
       })),
@@ -270,6 +270,17 @@ export async function getPaymentPeriodsService(
 }> {
   const supabase = await createSupabaseServerClient();
 
+  // Lấy thông tin loan để biết loan_type và amount
+  const { data: loanData, error: loanError } = await supabase
+    .from("loans")
+    .select("amount, loan_type")
+    .eq("id", loanId)
+    .single();
+
+  if (loanError) {
+    throw new Error(`Failed to get loan info: ${loanError.message}`);
+  }
+
   const { data, error } = await supabase
     .from("loan_payment_periods")
     .select("*")
@@ -286,6 +297,11 @@ export async function getPaymentPeriodsService(
   const currentPeriods = data.filter((p) => p.period_type === "current");
   const nextPeriods = data.filter((p) => p.period_type === "next");
 
+  // Tính service fee cho Gói 3
+  const isPackage3 = loanData.loan_type === 'bullet_payment_with_collateral_hold' || 
+                     loanData.loan_type?.includes('Giữ TS');
+  const serviceFee = (isPackage3 && loanData.amount <= 2000000) ? 30000 : 0;
+
   // Convert to TPaymentPeriod format
   const currentPeriod: TPaymentPeriod = {
     title: "Kỳ hiện tại",
@@ -298,6 +314,10 @@ export async function getPaymentPeriodsService(
       principal: p.principal ? Number(p.principal) : undefined,
       interestAndFee: Number(p.fee_amount),
       totalRedemption: Number(p.total_due),
+      // Chi tiết cho Gói 3
+      interest: p.interest ? Number(p.interest) : undefined,
+      rentalFee: p.rental_fee ? Number(p.rental_fee) : undefined,
+      serviceFee: isPackage3 ? serviceFee : undefined,
     })),
   };
 
@@ -310,6 +330,10 @@ export async function getPaymentPeriodsService(
       principal: p.principal ? Number(p.principal) : undefined,
       interestAndFee: Number(p.fee_amount),
       totalRedemption: Number(p.total_due),
+      // Chi tiết cho Gói 3
+      interest: p.interest ? Number(p.interest) : undefined,
+      rentalFee: p.rental_fee ? Number(p.rental_fee) : undefined,
+      serviceFee: isPackage3 ? serviceFee : undefined,
     })),
   };
 
