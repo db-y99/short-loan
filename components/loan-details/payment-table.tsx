@@ -8,10 +8,12 @@ const PaymentTable = ({
     milestones,
     showTotal = false,
     showPrincipal = false,
+    showDetailedBreakdown = false, // Hiển thị chi tiết lãi, phí, phí dịch vụ
 }: {
     milestones: TPaymentMilestone[];
     showTotal?: boolean;
     showPrincipal?: boolean;
+    showDetailedBreakdown?: boolean;
 }) => {
     // Tính tổng số tiền chuộc
     const totalRedemption = milestones.reduce((sum, m) => sum + m.totalRedemption, 0);
@@ -24,7 +26,17 @@ const PaymentTable = ({
                 th: "bg-default-100",
             }}
         >
-            {showPrincipal ? (
+            {showDetailedBreakdown ? (
+                // Hiển thị chi tiết cho Gói 3
+                <TableHeader>
+                    <TableColumn>Mốc</TableColumn>
+                    <TableColumn>Ngày</TableColumn>
+                    <TableColumn align="end">Lãi</TableColumn>
+                    <TableColumn align="end">Phí thuê</TableColumn>
+                    <TableColumn align="end">Phí dịch vụ</TableColumn>
+                    <TableColumn align="end">Tổng chuộc</TableColumn>
+                </TableHeader>
+            ) : showPrincipal ? (
                 <TableHeader>
                     <TableColumn>Mốc</TableColumn>
                     <TableColumn>Ngày</TableColumn>
@@ -43,7 +55,28 @@ const PaymentTable = ({
             <TableBody>
                 {[
                     ...milestones.map((milestone, index) => 
-                        showPrincipal ? (
+                        showDetailedBreakdown ? (
+                            <TableRow key={index}>
+                                <TableCell>
+                                    <Chip size="sm" variant="flat">
+                                        {milestone.days} ngày
+                                    </Chip>
+                                </TableCell>
+                                <TableCell>{formatDateShortVN(milestone.date)}</TableCell>
+                                <TableCell className="text-end">
+                                    {formatCurrencyVND(milestone.interest || 0)}
+                                </TableCell>
+                                <TableCell className="text-end">
+                                    {formatCurrencyVND(milestone.rentalFee || 0)}
+                                </TableCell>
+                                <TableCell className="text-end">
+                                    {formatCurrencyVND(milestone.serviceFee || 0)}
+                                </TableCell>
+                                <TableCell className="text-end font-semibold text-primary">
+                                    {formatCurrencyVND(milestone.totalRedemption)}
+                                </TableCell>
+                            </TableRow>
+                        ) : showPrincipal ? (
                             <TableRow key={index}>
                                 <TableCell>
                                     <Chip size="sm" variant="flat">
@@ -80,7 +113,7 @@ const PaymentTable = ({
                     ),
                     ...(showTotal ? [
                         <TableRow key="total">
-                            <TableCell colSpan={showPrincipal ? 4 : 3} className="text-end font-bold">
+                            <TableCell colSpan={showDetailedBreakdown ? 5 : (showPrincipal ? 4 : 3)} className="text-end font-bold">
                                 TỔNG CỘNG
                             </TableCell>
                             <TableCell className="text-end font-bold text-success text-lg">

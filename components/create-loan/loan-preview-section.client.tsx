@@ -29,12 +29,20 @@ const LoanPreviewSection = ({ form }: TProps) => {
 
       const result = calculateLoan(loanAmount, loanType);
       
+      // Tính phí dịch vụ cho gói 3
+      const serviceFee = loanAmount <= 2000000 ? 30000 : 0;
+      const isPackage3 = loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD;
+
       // Tạo mock milestones cho current period
       const currentMilestones: (TPaymentMilestone & { principal?: number })[] = result.bulletPayments?.map((payment, index) => ({
         days: payment.days,
         date: new Date(Date.now() + payment.days * 24 * 60 * 60 * 1000).toISOString(),
         interestAndFee: payment.interest + payment.rentalFee,
         totalRedemption: payment.total,
+        // Chi tiết cho gói 3
+        interest: isPackage3 ? payment.interest : undefined,
+        rentalFee: isPackage3 ? payment.rentalFee : undefined,
+        serviceFee: isPackage3 ? serviceFee : undefined,
       })) || result.installments?.map((installment, index) => ({
         days: installment.dueDay,
         date: new Date(Date.now() + installment.dueDay * 24 * 60 * 60 * 1000).toISOString(),
@@ -49,6 +57,10 @@ const LoanPreviewSection = ({ form }: TProps) => {
         date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000 + payment.days * 24 * 60 * 60 * 1000).toISOString(),
         interestAndFee: payment.interest + payment.rentalFee,
         totalRedemption: loanAmount + payment.interest + payment.rentalFee, // Gốc + lãi (không chuộc gốc)
+        // Chi tiết cho gói 3
+        interest: isPackage3 ? payment.interest : undefined,
+        rentalFee: isPackage3 ? payment.rentalFee : undefined,
+        serviceFee: isPackage3 ? serviceFee : undefined,
       })) || [];
 
       return {
@@ -56,6 +68,7 @@ const LoanPreviewSection = ({ form }: TProps) => {
         currentMilestones,
         nextMilestones,
         isInstallment: loanType === LOAN_TYPES.INSTALLMENT_3_PERIODS,
+        isPackage3: loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD,
       };
     } catch (error) {
       console.error("Error calculating loan preview:", error);
@@ -67,7 +80,7 @@ const LoanPreviewSection = ({ form }: TProps) => {
     return null;
   }
 
-  const { loanAmount, appraisalFee, netAmount, currentMilestones, nextMilestones, isInstallment } = previewData;
+  const { loanAmount, appraisalFee, netAmount, currentMilestones, nextMilestones, isInstallment, isPackage3 } = previewData;
   const showAppraisalFee = appraisalFee > 0;
 
   return (
@@ -150,6 +163,14 @@ const LoanPreviewSection = ({ form }: TProps) => {
                       <div className="text-xs text-default-500">
                         Gốc: {formatCurrencyVND(milestone.principal)} | Lãi: {formatCurrencyVND(milestone.interestAndFee)}
                       </div>
+                    ) : isPackage3 ? (
+                      <div className="text-xs text-default-500 space-y-1">
+                        <div>Lãi: {formatCurrencyVND(milestone.interest || 0)}</div>
+                        <div>Phí thuê: {formatCurrencyVND(milestone.rentalFee || 0)}</div>
+                        {(milestone.serviceFee || 0) > 0 && (
+                          <div>Phí DV: {formatCurrencyVND(milestone.serviceFee || 0)}</div>
+                        )}
+                      </div>
                     ) : (
                       <div className="text-xs text-default-500">
                         Lãi: {formatCurrencyVND(milestone.interestAndFee)}
@@ -193,7 +214,10 @@ const LoanPreviewSection = ({ form }: TProps) => {
             <p className="text-sm text-default-500 mb-3">
               Nếu gia hạn (Đóng lãi ngày 30)
             </p>
-            <PaymentTable milestones={nextMilestones} />
+            <PaymentTable 
+              milestones={nextMilestones}
+              showDetailedBreakdown={isPackage3}
+            />
           </CardBody>
         </Card>
       )}
