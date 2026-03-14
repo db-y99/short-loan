@@ -55,6 +55,24 @@ export default function Navbar({ onOpenSidebar }: Props) {
             <p className="font-bold text-inherit">{siteConfig.name}</p>
           </NextLink>
         </NavbarBrand>
+        <ul className="hidden lg:flex gap-4 justify-start ml-2">
+          <NavbarItem>
+            <NextLink
+              className={`${pathname === "/" ? "text-primary font-semibold" : "text-foreground"}`}
+              href="/"
+            >
+              Khoản vay
+            </NextLink>
+          </NavbarItem>
+          <NavbarItem>
+            <NextLink
+              className={`${pathname === "/overdue" ? "text-primary font-semibold" : "text-foreground"}`}
+              href="/overdue"
+            >
+              Khách quá hạn
+            </NextLink>
+          </NavbarItem>
+        </ul>
       </NavbarContent>
 
       <NavbarContent className="hidden sm:flex gap-4" justify="end">

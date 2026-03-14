@@ -305,14 +305,7 @@ export async function GET(
     // Get payment history with user info
     const { data: payments, error } = await supabase
       .from("loan_payment_transactions")
-      .select(`
-        *,
-        created_by_user:profiles!created_by(
-          id,
-          email,
-          full_name
-        )
-      `)
+      .select("*")
       .eq("loan_id", loanId)
       .eq("transaction_type", "interest_payment")
       .order("created_at", { ascending: false });
