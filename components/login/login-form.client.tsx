@@ -4,11 +4,19 @@ import { useState, useTransition, useEffect } from "react";
 import { Card, CardBody, CardFooter } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
+import { Divider } from "@heroui/divider";
+import { Tabs, Tab } from "@heroui/tabs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { siteConfig } from "@/config/site";
 import { ROUTES } from "@/constants/routes";
 import { useAuth } from "@/lib/contexts/auth-context";
-import { signInWithEmailPassword } from "@/lib/actions/auth";
+import { OtpInput, CountdownTimer } from "@/components/auth/otp-input";
+import {
+  signInWithEmailPassword,
+  sendOtpToEmail,
+  verifyEmailOtp,
+  resendOtp,
+} from "@/lib/actions/auth";
 
 const ERROR_MESSAGES: Record<string, string> = {
   auth_failed: "Xác thực thất bại. Vui lòng thử lại.",
@@ -19,6 +27,9 @@ const ERROR_MESSAGES: Record<string, string> = {
 const INTERNAL_SUPPORT_TEXT =
   "Hệ thống nội bộ. Có vấn đề vui lòng liên hệ Admin hoặc IT.";
 
+type LoginMode = "password" | "otp";
+type OtpStep = "email" | "verify";
+
 export default function LoginForm() {
   const router = useRouter();
   const { refresh } = useAuth();
@@ -26,6 +37,12 @@ export default function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loginMode, setLoginMode] = useState<LoginMode>("password");
+  const [otpStep, setOtpStep] = useState<OtpStep>("email");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSentMessage, setOtpSentMessage] = useState<string | null>(null);
+  const [showResendTimer, setShowResendTimer] = useState(false);
+
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -35,7 +52,7 @@ export default function LoginForm() {
     }
   }, [searchParams]);
 
-  const handleEmailSubmit = (e: React.FormEvent) => {
+  const handleEmailPasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -43,7 +60,6 @@ export default function LoginForm() {
       setError("Vui lòng nhập email.");
       return;
     }
-
     if (!password) {
       setError("Vui lòng nhập mật khẩu.");
       return;
@@ -51,15 +67,88 @@ export default function LoginForm() {
 
     startTransition(async () => {
       const result = await signInWithEmailPassword(email, password);
-
       if (result?.error) {
         setError(result.error);
         return;
       }
-      refresh()
-
-      router.push(ROUTES.APPROVE)
+      await refresh();
+      router.push(ROUTES.APPROVE);
     });
+  };
+
+  const handleSendOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setOtpSentMessage(null);
+
+    if (!email.trim()) {
+      setError("Vui lòng nhập email.");
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await sendOtpToEmail(email);
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+
+      setOtpStep("verify");
+      setOtpCode("");
+      setOtpSentMessage(result.message || "Mã OTP đã gửi đến email.");
+      setShowResendTimer(true);
+    });
+  };
+
+  const handleVerifyOtp = (code?: string) => {
+    const codeToVerify = code || otpCode;
+    setError(null);
+
+    if (!codeToVerify.trim() || codeToVerify.trim().length < 6) {
+      setError("Vui lòng nhập đủ 6 số mã OTP.");
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await verifyEmailOtp(email, codeToVerify);
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+      await refresh();
+      router.push(ROUTES.APPROVE);
+    });
+  };
+
+  const handleResendOtp = () => {
+    setError(null);
+    setOtpSentMessage(null);
+
+    startTransition(async () => {
+      const result = await resendOtp(email);
+      if (result?.error) {
+        setError(result.error);
+        return;
+      }
+      setOtpSentMessage(result.message || "Mã OTP mới đã được gửi.");
+    });
+  };
+
+  const handleBackToOtpEmail = () => {
+    setOtpStep("email");
+    setOtpCode("");
+    setOtpSentMessage(null);
+    setError(null);
+    setShowResendTimer(false);
+  };
+
+  const handleModeChange = (key: React.Key) => {
+    setLoginMode(key as LoginMode);
+    setError(null);
+    setOtpStep("email");
+    setOtpSentMessage(null);
+    setOtpCode("");
+    setShowResendTimer(false);
   };
 
   return (
@@ -79,7 +168,7 @@ export default function LoginForm() {
             <div className="text-center mb-2">
               <h2 className="text-xl font-semibold mb-1">Đăng nhập</h2>
               <p className="text-sm text-default-500">
-                Nhập email và mật khẩu để đăng nhập
+                Email & mật khẩu hoặc email & mã OTP
               </p>
             </div>
 
@@ -89,38 +178,141 @@ export default function LoginForm() {
               </div>
             )}
 
-            <form onSubmit={handleEmailSubmit} className="flex flex-col gap-4">
-              <Input
-                type="email"
-                label="Email"
-                value={email}
-                onValueChange={setEmail}
-                isRequired
-                autoComplete="email"
-                isDisabled={isPending}
-              />
+            {otpSentMessage && (
+              <div className="p-3 rounded-lg bg-success-50 dark:bg-success-950/20 border border-success-200 dark:border-success-800">
+                <p className="text-sm text-success">{otpSentMessage}</p>
+              </div>
+            )}
 
-              <Input
-                type="password"
-                label="Mật khẩu"
-                value={password}
-                onValueChange={setPassword}
-                isRequired
-                autoComplete="current-password"
-                isDisabled={isPending}
-              />
+            <Tabs
+              selectedKey={loginMode}
+              onSelectionChange={handleModeChange}
+              fullWidth
+              variant="bordered"
+            >
+              <Tab key="password" title="Email & mật khẩu">
+                <form
+                  onSubmit={handleEmailPasswordSubmit}
+                  className="flex flex-col gap-4 mt-2"
+                >
+                  <Input
+                    type="email"
+                    label="Email"
+                    value={email}
+                    onValueChange={setEmail}
+                    isRequired
+                    autoComplete="email"
+                    isDisabled={isPending}
+                  />
+                  <Input
+                    type="password"
+                    label="Mật khẩu"
+                    value={password}
+                    onValueChange={setPassword}
+                    isRequired
+                    autoComplete="current-password"
+                    isDisabled={isPending}
+                  />
+                  <Button
+                    type="submit"
+                    fullWidth
+                    size="lg"
+                    color="primary"
+                    isLoading={isPending}
+                    isDisabled={isPending}
+                  >
+                    Đăng nhập
+                  </Button>
+                </form>
+              </Tab>
 
-              <Button
-                type="submit"
-                fullWidth
-                size="lg"
-                color="primary"
-                isLoading={isPending}
-                isDisabled={isPending}
-              >
-                Đăng nhập
-              </Button>
-            </form>
+              <Tab key="otp" title="Email & mã OTP">
+                <div className="mt-2">
+                  {otpStep === "email" ? (
+                    <form
+                      onSubmit={handleSendOtp}
+                      className="flex flex-col gap-4"
+                    >
+                      <Input
+                        type="email"
+                        label="Email"
+                        value={email}
+                        onValueChange={setEmail}
+                        isRequired
+                        autoComplete="email"
+                        isDisabled={isPending}
+                      />
+                      <Button
+                        type="submit"
+                        fullWidth
+                        size="lg"
+                        color="primary"
+                        isLoading={isPending}
+                        isDisabled={isPending}
+                      >
+                        Gửi mã OTP
+                      </Button>
+                    </form>
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      <p className="text-sm text-default-500 text-center">
+                        Mã OTP đã gửi đến <strong>{email}</strong>
+                      </p>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">
+                            Nhập mã OTP (6 số)
+                          </label>
+                          <OtpInput
+                            value={otpCode}
+                            onChange={setOtpCode}
+                            onComplete={handleVerifyOtp}
+                            disabled={isPending}
+                          />
+                        </div>
+
+                        {showResendTimer && (
+                          <CountdownTimer
+                            initialSeconds={60}
+                            onResend={handleResendOtp}
+                            disabled={isPending}
+                          />
+                        )}
+                      </div>
+
+                      <Button
+                        fullWidth
+                        size="lg"
+                        color="primary"
+                        onPress={() => handleVerifyOtp()}
+                        isLoading={isPending}
+                        isDisabled={isPending || otpCode.length < 6}
+                      >
+                        Xác thực
+                      </Button>
+
+                      <Button
+                        type="button"
+                        fullWidth
+                        variant="flat"
+                        size="sm"
+                        onPress={handleBackToOtpEmail}
+                        isDisabled={isPending}
+                      >
+                        Đổi email khác
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </Tab>
+            </Tabs>
+
+            <Divider className="my-2" />
+
+            <div className="text-center">
+              <p className="text-xs text-default-500">{INTERNAL_SUPPORT_TEXT}</p>
+            </div>
           </CardBody>
 
           <CardFooter className="justify-center pb-6">
