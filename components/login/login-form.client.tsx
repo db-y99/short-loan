@@ -10,7 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { siteConfig } from "@/config/site";
 import { ROUTES } from "@/constants/routes";
 import { useAuth } from "@/lib/contexts/auth-context";
-import { OtpInput, CountdownTimer } from "@/components/auth/otp-input";
+import { OtpInput, CountdownTimer, OtpExpiryTimer } from "@/components/auth/otp-input";
 import {
   signInWithEmailPassword,
   sendOtpToEmail,
@@ -42,6 +42,7 @@ export default function LoginForm() {
   const [otpCode, setOtpCode] = useState("");
   const [otpSentMessage, setOtpSentMessage] = useState<string | null>(null);
   const [showResendTimer, setShowResendTimer] = useState(false);
+  const [otpSentTime, setOtpSentTime] = useState<number | null>(null);
 
   const searchParams = useSearchParams();
 
@@ -97,6 +98,7 @@ export default function LoginForm() {
       setOtpCode("");
       setOtpSentMessage(result.message || "Mã OTP đã gửi đến email.");
       setShowResendTimer(true);
+      setOtpSentTime(Date.now());
     });
   };
 
@@ -130,7 +132,15 @@ export default function LoginForm() {
         setError(result.error);
         return;
       }
+      
+      // Reset OTP input và restart timer
+      setOtpCode("");
       setOtpSentMessage(result.message || "Mã OTP mới đã được gửi.");
+      setOtpSentTime(Date.now());
+      
+      // Force restart timer by toggling showResendTimer
+      setShowResendTimer(false);
+      setTimeout(() => setShowResendTimer(true), 100);
     });
   };
 
@@ -140,6 +150,7 @@ export default function LoginForm() {
     setOtpSentMessage(null);
     setError(null);
     setShowResendTimer(false);
+    setOtpSentTime(null);
   };
 
   const handleModeChange = (key: React.Key) => {
@@ -149,6 +160,7 @@ export default function LoginForm() {
     setOtpSentMessage(null);
     setOtpCode("");
     setShowResendTimer(false);
+    setOtpSentTime(null);
   };
 
   return (
@@ -272,12 +284,30 @@ export default function LoginForm() {
                           />
                         </div>
 
-                        {showResendTimer && (
-                          <CountdownTimer
-                            initialSeconds={60}
-                            onResend={handleResendOtp}
-                            disabled={isPending}
+                        {otpSentTime && (
+                          <OtpExpiryTimer
+                            expirySeconds={3600} // 1 hour
+                            onExpiry={() => {
+                              setError("Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.");
+                              setOtpStep("email");
+                              setOtpSentTime(null);
+                            }}
                           />
+                        )}
+
+                        {showResendTimer && (
+                          <div className="space-y-2">
+                            <CountdownTimer
+                              initialSeconds={60}
+                              onResend={handleResendOtp}
+                              disabled={isPending}
+                            />
+                            <div className="text-center">
+                              <p className="text-xs text-default-400">
+                                Không nhận được email? Kiểm tra thư mục spam hoặc thử gửi lại
+                              </p>
+                            </div>
+                          </div>
                         )}
                       </div>
 

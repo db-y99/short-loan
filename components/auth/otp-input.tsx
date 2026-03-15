@@ -160,7 +160,7 @@ export function CountdownTimer({
     <div className="flex items-center justify-between text-sm">
       {seconds > 0 ? (
         <span className="text-default-500">
-          Gửi lại mã sau: <span className="font-mono font-semibold">{formatTime(seconds)}</span>
+          Gửi lại mã sau: <span className="font-mono font-semibold text-primary">{formatTime(seconds)}</span>
         </span>
       ) : (
         <span className="text-default-500">Chưa nhận được mã?</span>
@@ -173,9 +173,66 @@ export function CountdownTimer({
         onPress={handleResend}
         disabled={disabled || seconds > 0}
         className="min-w-0 px-2"
+        isLoading={disabled && seconds === 0}
       >
         Gửi lại
       </Button>
+    </div>
+  );
+}
+
+interface OtpExpiryTimerProps {
+  expirySeconds: number;
+  onExpiry?: () => void;
+}
+
+export function OtpExpiryTimer({ expirySeconds, onExpiry }: OtpExpiryTimerProps) {
+  const [seconds, setSeconds] = useState(expirySeconds);
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    
+    if (seconds > 0) {
+      interval = setInterval(() => {
+        setSeconds(seconds => seconds - 1);
+      }, 1000);
+    } else if (seconds === 0) {
+      onExpiry?.();
+    }
+    
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [seconds, onExpiry]);
+
+  const formatTime = (time: number) => {
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor((time % 3600) / 60);
+    const remainingSeconds = time % 60;
+    
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const getColorClass = () => {
+    if (seconds <= 300) return "text-danger"; // Dưới 5 phút
+    if (seconds <= 900) return "text-warning"; // Dưới 15 phút
+    return "text-success";
+  };
+
+  return (
+    <div className="text-center">
+      <p className="text-xs text-default-500 mb-1">Mã OTP có hiệu lực trong:</p>
+      <p className={`text-sm font-mono font-semibold ${getColorClass()}`}>
+        {formatTime(seconds)}
+      </p>
+      {seconds <= 300 && (
+        <p className="text-xs text-danger mt-1">
+          ⚠️ Mã sắp hết hạn, vui lòng nhập nhanh!
+        </p>
+      )}
     </div>
   );
 }
