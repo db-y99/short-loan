@@ -34,7 +34,7 @@ const PaymentPeriods = ({ loanDetails, refreshKey, onOpenPaymentHistory }: TProp
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (loanDetails.id && loanDetails.status === LOAN_STATUS.DISBURSED) {
+    if (loanDetails.id && (loanDetails.status === LOAN_STATUS.DISBURSED || loanDetails.status === LOAN_STATUS.COMPLETED || loanDetails.status === LOAN_STATUS.REDEEMED) ) {
       fetchPaymentHistory();
     }
   }, [loanDetails.id, loanDetails.status, refreshKey]); // Thêm refreshKey vào dependencies
@@ -80,8 +80,6 @@ const PaymentPeriods = ({ loanDetails, refreshKey, onOpenPaymentHistory }: TProp
     nextPeriodMilestones: loanDetails.nextPeriod.milestones?.length
   });
 
-  // Tính tổng tiền đã đóng
-  const totalInterestPaid = payments.reduce((sum, p) => sum + Number(p.amount), 0);
 
   // Kiểm tra xem có phải gói 1 không (Gói 1 chỉ có 1 kỳ thanh toán)
   const isPackage1 = loanDetails.loanType === LOAN_TYPES.INSTALLMENT_3_PERIODS;
