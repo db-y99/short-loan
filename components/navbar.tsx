@@ -46,7 +46,7 @@ export default function Navbar({ onOpenSidebar }: Props) {
   return (
     <HeroUINavbar
       className="border-b border-divider"
-      maxWidth="xl"
+      maxWidth="2xl"
       position="sticky"
     >
       <NavbarContent className="hidden sm:flex basis-1/5 sm:basis-full">
