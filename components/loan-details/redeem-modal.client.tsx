@@ -290,8 +290,7 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, loanType, onSuccess 
             </div>
           )}
 
-          {/* Payment Progress Summary */}
-          {isLoadingProgress ? (
+          {/* {isLoadingProgress ? (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
@@ -315,7 +314,7 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, loanType, onSuccess 
                 </div>
               </CardBody>
             </Card>
-          )}
+          )} */}
 
           <div className="p-3 rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">
             <div className="flex items-start gap-2">
