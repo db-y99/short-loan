@@ -12,7 +12,7 @@ export default function AppLayout({
   return (
     <div className="relative flex flex-col h-screen">
       <Navbar onOpenSidebar={onOpenSidebar} />
-      <main className="container mx-auto max-w-7xl pt-16 px-6 flex-grow">
+      <main className="container mx-auto max-w-[1536px] pt-16 px-6 flex-grow">
         {children}
       </main>
     </div>
