@@ -70,6 +70,23 @@ export async function GET(
       );
     }
 
+    // Get total payments made from loan_payment_transactions
+    const { data: payments, error: paymentsError } = await supabase
+      .from("loan_payment_transactions")
+      .select("amount")
+      .eq("loan_id", loanId)
+
+      console.log({payments})
+    if (paymentsError) {
+      console.error("[GET_PAYMENTS_ERROR]", paymentsError);
+      // Don't fail the request, just set totalPaid to 0
+    }
+
+    // Calculate total payments made
+    const totalPaid = payments?.reduce((sum, payment) => {
+      return sum + (Number(payment.amount) || 0);
+    }, 0) || 0;
+
     return NextResponse.json({
       success: true,
       data: {
@@ -81,6 +98,7 @@ export async function GET(
           endDate: cycle.end_date,
         },
         periods: periods || [],
+        totalPaid: totalPaid, // Add total payments made
       },
     });
   } catch (error) {

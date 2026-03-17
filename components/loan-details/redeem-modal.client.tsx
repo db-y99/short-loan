@@ -82,10 +82,10 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, loanType, onSuccess 
       const result = await response.json();
 
       if (result.success && result.data) {
-        const paid = Number(result.data.cycle?.totalInterestPaid || 0);
         const periods = result.data.periods || [];
         
         let totalDue = 0;
+        let totalPaid = 0;
         
         if (isInstallmentType) {
           // Gói 1: Tính tổng của cả 3 kỳ (Gốc + Lãi + Phí)
@@ -94,6 +94,10 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, loanType, onSuccess 
             const principalAmount = Number(p.principal || 0);
             return sum + principalAmount + feeAmount;
           }, 0);
+          
+          // Gói 1: Sử dụng tổng tiền đã thanh toán từ API
+          totalPaid = Number(result.data.totalPaid || 0);
+
         } else {
           // Gói 2, 3: Chỉ tính mốc hiện tại (Lãi + Phí)
           const today = new Date();
@@ -107,15 +111,21 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, loanType, onSuccess 
           if (currentPeriod) {
             totalDue = Number(currentPeriod.fee_amount || 0);
           }
+          
+          // Gói 2, 3: Chỉ tính lãi đã trả
+          totalPaid = Number(result.data.cycle?.totalInterestPaid || 0);
         }
         
-        setTotalInterestPaid(paid);
+        setTotalInterestPaid(totalPaid);
         setTotalInterestDue(totalDue);
         
-        // Auto-fill remaining interest
-        const remaining = Math.max(0, totalDue - paid);
+        // Auto-fill remaining amount
+        const remaining = Math.max(0, totalDue - totalPaid);
         if (remaining > 0) {
           setInterestAmount(remaining.toLocaleString("vi-VN"));
+        } else {
+          // If fully paid, set to 0
+          setInterestAmount("0");
         }
       }
     } catch (error) {
@@ -290,7 +300,7 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, loanType, onSuccess 
             </div>
           )}
 
-          {/* {isLoadingProgress ? (
+          {isLoadingProgress ? (
             <div className="flex items-center justify-center py-4">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
             </div>
@@ -314,14 +324,14 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, loanType, onSuccess 
                 </div>
               </CardBody>
             </Card>
-          )} */}
+          )}
 
           <div className="p-3 rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">
             <div className="flex items-start gap-2">
               <Info className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
               <p className="text-sm text-primary-700 dark:text-primary-400">
                 {isInstallmentType 
-                  ? "Gói 1: Chuộc đồ = Tổng (Gốc + Lãi + Phí) của cả 3 kỳ (trừ phần đã thanh toán). Tổng 3 kỳ đã bao gồm cả gốc."
+                  ? "Gói 1: Chuộc đồ = Tổng (Gốc + Lãi + Phí) của cả 3 kỳ trừ đi số tiền đã thanh toán. Tổng 3 kỳ đã bao gồm cả gốc."
                   : "Chuộc đồ = Trả gốc + Trả lãi còn thiếu. Sau khi chuộc đồ, khoản vay sẽ hoàn thành."
                 }
               </p>
@@ -356,7 +366,7 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, loanType, onSuccess 
                 <span className="text-default-400 text-small">VNĐ</span>
               </div>
             }
-            description={remainingInterest > 0 ? `Còn thiếu: ${formatCurrencyVND(remainingInterest)}` : isInstallmentType ? "Đã thanh toán đủ" : "Đã đóng đủ lãi"}
+            description={remainingInterest > 0 ? `Còn thiếu: ${formatCurrencyVND(remainingInterest)}` : isInstallmentType ? "Đã thanh toán đủ (tổng cả 3 kỳ)" : "Đã đóng đủ lãi"}
             isRequired
             isDisabled={isSubmitting}
           />
