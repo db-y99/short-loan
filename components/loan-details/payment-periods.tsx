@@ -19,10 +19,8 @@ type TPaymentTransaction = {
   created_by_user?: {
     id: string;
     email: string;
-    raw_user_meta_data?: {
-      full_name?: string;
-    };
-  };
+    full_name?: string;
+  } | null;
 };
 
 type TProps = {
@@ -41,10 +39,12 @@ const PaymentPeriods = ({ loanDetails, refreshKey, onOpenPaymentHistory }: TProp
     }
   }, [loanDetails.id, loanDetails.status, refreshKey]); // Thêm refreshKey vào dependencies
 
+  console.log({payments})
+
   const fetchPaymentHistory = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch(`/api/loans/${loanDetails.id}/pay-interest`);
+      const response = await fetch(`/api/loans/${loanDetails.id}/payment-history`);
       
       if (!response.ok) {
         console.error("Failed to fetch payment history:", response.status);
@@ -117,6 +117,7 @@ const PaymentPeriods = ({ loanDetails, refreshKey, onOpenPaymentHistory }: TProp
                 <thead>
                   <tr className="border-b border-default-200">
                     <th className="text-left py-2 px-3 text-sm font-semibold text-default-600">THỜI GIAN</th>
+                    <th className="text-left py-2 px-3 text-sm font-semibold text-default-600">LOẠI</th>
                     <th className="text-right py-2 px-3 text-sm font-semibold text-default-600">SỐ TIỀN</th>
                     <th className="text-right py-2 px-3 text-sm font-semibold text-default-600">NHÂN VIÊN</th>
                   </tr>
@@ -127,13 +128,34 @@ const PaymentPeriods = ({ loanDetails, refreshKey, onOpenPaymentHistory }: TProp
                     const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
                     
                     // Lấy tên nhân viên từ user info
-                    const userName = payment.created_by_user?.raw_user_meta_data?.full_name 
+                    const userName = payment.created_by_user?.full_name 
                       || payment.created_by_user?.email?.split('@')[0] 
                       || 'N/A';
+                    
+                    // Định nghĩa loại thanh toán
+                    const getPaymentTypeLabel = (type: string) => {
+                      switch (type) {
+                        case 'interest_payment':
+                          return '💰 Đóng lãi';
+                        case 'principal_payment':
+                          return '🏦 Đóng gốc';
+                        case 'fee_payment':
+                          return '💸 Đóng phí';
+                        case 'penalty_payment':
+                          return '⚠️ Phạt';
+                        default:
+                          return '💳 Thanh toán';
+                      }
+                    };
                     
                     return (
                       <tr key={payment.id} className="border-b border-default-100 hover:bg-default-50">
                         <td className="py-2 px-3 text-sm">{formattedDate}</td>
+                        <td className="py-2 px-3 text-sm">
+                          <span className="text-xs bg-default-100 px-2 py-1 rounded-full">
+                            {getPaymentTypeLabel(payment.transaction_type)}
+                          </span>
+                        </td>
                         <td className="py-2 px-3 text-sm text-right font-semibold text-success-600">
                           {Number(payment.amount).toLocaleString('vi-VN')}
                         </td>

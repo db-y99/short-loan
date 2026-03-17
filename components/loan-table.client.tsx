@@ -11,7 +11,6 @@ import {
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Chip } from "@heroui/chip";
-import { Skeleton } from "@heroui/skeleton";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
@@ -60,8 +59,8 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
+  const [isClient, setIsClient] = useState(false);
   
-  const [isMounted, setIsMounted] = useState(false);
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [debouncedSearch] = useDebounceValue(search, 500);
   const [statusFilter, setStatusFilter] = useState(
@@ -75,25 +74,33 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
   );
 
   useEffect(() => {
-    setIsMounted(true);
+    setIsClient(true);
   }, []);
 
-  // Update URL when debounced search changes
+  // Update URL when debounced search changes - separate effect to avoid dependency issues
   useEffect(() => {
-    if (isMounted) {
-      const params = new URLSearchParams(searchParams.toString());
-      
-      if (debouncedSearch && debouncedSearch !== "") {
-        params.set("search", debouncedSearch);
-      } else {
-        params.delete("search");
-      }
+    if (!isClient || !debouncedSearch) return;
+    
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("search", debouncedSearch);
 
+    startTransition(() => {
+      router.push(`?${params.toString()}`, { scroll: false });
+    });
+  }, [debouncedSearch, isClient]);
+
+  // Clear search from URL when empty
+  useEffect(() => {
+    if (!isClient || debouncedSearch) return;
+    
+    const params = new URLSearchParams(searchParams.toString());
+    if (params.has("search")) {
+      params.delete("search");
       startTransition(() => {
         router.push(`?${params.toString()}`, { scroll: false });
       });
     }
-  }, [debouncedSearch, isMounted, router, searchParams]);
+  }, [debouncedSearch, isClient]);
 
   // Update URL when filters change
   const updateFilters = useCallback(
@@ -193,6 +200,7 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
     <div className="flex flex-col gap-4">
       {/* Search & Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        {/* Search Input - Always render consistently */}
         <Input
           className="w-full sm:max-w-xs"
           label="Tìm kiếm"
@@ -205,7 +213,8 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
           onValueChange={setSearch}
         />
 
-        {isMounted ? (
+        {/* Filters - Render only on client to avoid hydration mismatch */}
+        {isClient ? (
           <>
             <Select
               className="w-full sm:max-w-[180px]"
@@ -248,18 +257,9 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
           </>
         ) : (
           <>
-            <div className="w-full sm:max-w-[180px] flex flex-col gap-1">
-              <Skeleton className="h-3 w-16 rounded-md" />
-              <Skeleton className="h-8 w-full rounded-lg" />
-            </div>
-            <div className="w-full sm:max-w-[180px] flex flex-col gap-1">
-              <Skeleton className="h-3 w-12 rounded-md" />
-              <Skeleton className="h-8 w-full rounded-lg" />
-            </div>
-            <div className="w-full sm:max-w-[180px] flex flex-col gap-1">
-              <Skeleton className="h-3 w-16 rounded-md" />
-              <Skeleton className="h-8 w-full rounded-lg" />
-            </div>
+            <div className="w-full sm:max-w-[180px] h-14 bg-default-100 rounded-lg animate-pulse" />
+            <div className="w-full sm:max-w-[180px] h-14 bg-default-100 rounded-lg animate-pulse" />
+            <div className="w-full sm:max-w-[180px] h-14 bg-default-100 rounded-lg animate-pulse" />
           </>
         )}
 

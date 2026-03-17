@@ -25,6 +25,7 @@ import AddReferenceModal from "@/components/loan-details/add-reference-modal";
 import UpdateAssetConditionModal from "@/components/loan-details/update-asset-condition-modal";
 import EditCustomerModal from "@/components/loan-details/edit-customer-modal";
 import EditBankModal from "@/components/loan-details/edit-bank-modal";
+import SimplePaymentModal from "@/components/loan-details/simple-payment-modal";
 import ConfirmModal from "@/components/confirm-modal";
 
 import { useAuth } from "@/lib/contexts/auth-context";
@@ -49,6 +50,7 @@ const LoanDetailsModal = ({
   const { user } = useAuth();
   const [isDisbursing, setIsDisbursing] = useState(false);
   const [isPayInterestOpen, setIsPayInterestOpen] = useState(false);
+  const [isSimplePaymentOpen, setIsSimplePaymentOpen] = useState(false);
   const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
   const [isRedeemOpen, setIsRedeemOpen] = useState(false);
   const [isAddReferenceOpen, setIsAddReferenceOpen] = useState(false);
@@ -134,6 +136,15 @@ const LoanDetailsModal = ({
   const isDisbursed = loanDetails?.status === LOAN_STATUS.DISBURSED;
 
   const handlePayInterestSuccess = () => {
+    // Tăng refreshKey để force refresh PaymentPeriods
+    setRefreshKey(prev => prev + 1);
+    
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  const handleSimplePaymentSuccess = () => {
     // Tăng refreshKey để force refresh PaymentPeriods
     setRefreshKey(prev => prev + 1);
     
@@ -273,17 +284,30 @@ const LoanDetailsModal = ({
 
                   {isDisbursed && (
                     <div className="flex items-center flex-col gap-2 mt-4">
-                      {/* Button Đóng tiền - áp dụng cho tất cả các gói */}
+                      {/* Button Đóng tiền đơn giản - linh hoạt cho kế toán */}
                       <Button
                         color="primary"
-                        variant="bordered"
+                        variant="solid"
                         className="w-full"
                         size="lg"
-                        startContent={<CreditCard size={16} />}
-                        onPress={() => setIsPayInterestOpen(true)}
+                        startContent={<DollarSign size={16} />}
+                        onPress={() => setIsSimplePaymentOpen(true)}
                       >
                         Đóng tiền
                       </Button>
+                      
+                      {/* Button Đóng tiền theo gói - ẩn để đơn giản hóa */}
+                      {/* <Button
+                        color="primary"
+                        variant="bordered"
+                        className="w-full"
+                        size="sm"
+                        startContent={<CreditCard size={14} />}
+                        onPress={() => setIsPayInterestOpen(true)}
+                      >
+                        Đóng tiền theo gói
+                      </Button> */}
+                      
                       <Button
                         color="success"
                         variant="solid"
@@ -362,6 +386,14 @@ const LoanDetailsModal = ({
             loanId={loanDetails.id}
             loanType={loanDetails.loanType}
             onSuccess={handlePayInterestSuccess}
+          />
+
+          <SimplePaymentModal
+            isOpen={isSimplePaymentOpen}
+            onClose={() => setIsSimplePaymentOpen(false)}
+            loanId={loanDetails.id}
+            customerName={loanDetails.customer.fullName}
+            onSuccess={handleSimplePaymentSuccess}
           />
 
           <PaymentHistoryModal
