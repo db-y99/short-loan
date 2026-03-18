@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { ROLES } from "@/constants/roles";
 
 /**
  * GET /api/users
@@ -64,7 +65,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const { email, password, full_name, role = "user" } = await request.json();
+    const { email, password, full_name, role = ROLES.USER } = await request.json();
 
     if (!email?.trim() || !full_name?.trim() || !password?.trim()) {
       return NextResponse.json(

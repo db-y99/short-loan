@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const VALID_ROLES = ["admin", "user"];
+import { ROLES } from "@/constants/roles";
+
+const VALID_ROLES = Object.values(ROLES);
 
 /**
  * PUT /api/users/[id]/role

@@ -2,6 +2,7 @@ import UsersPageClient from "@/components/users/users-page.client";
 import AppLayout from "@/components/layouts/app-layout";
 import RoleGuard from "@/components/role-guard";
 import { getProfiles } from "@/services/profiles.service";
+import { ROLES } from "@/constants/roles";
 
 type TPageProps = {
   searchParams: Promise<{
@@ -19,7 +20,7 @@ export default async function UsersPage({ searchParams }: TPageProps) {
 
   return (
     <AppLayout>
-      <RoleGuard role="admin">
+      <RoleGuard role={ROLES.ADMIN}>
         <section className="flex flex-col gap-4 py-4 md:py-6">
           <UsersPageClient
             profiles={profiles}

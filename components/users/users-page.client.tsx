@@ -32,6 +32,7 @@ import {
   KeyRound,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ROLES } from "@/constants/roles";
 import { Profile } from "@/services/profiles.service";
 import { formatDate } from "@/lib/format";
 import CreateUserModal from "@/components/users/create-user-modal";
@@ -192,11 +193,11 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery }: TProps) 
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
                     <Chip
-                      color={user.role === "admin" ? "secondary" : "default"}
+                      color={user.role === ROLES.ADMIN ? "secondary" : "default"}
                       size="sm"
                       variant="flat"
                     >
-                      {user.role || "user"}
+                      {user.role || ROLES.USER}
                     </Chip>
                   </TableCell>
                   <TableCell>

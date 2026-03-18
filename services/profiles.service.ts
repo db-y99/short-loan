@@ -129,8 +129,26 @@ export async function deleteProfile(id: string): Promise<boolean> {
 }
 
 /**
- * Get all profiles with pagination and search
+ * Get profile role by user ID (server-side)
  */
+export async function getProfileRole(id: string): Promise<string | null> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", id)
+      .single();
+
+    if (error || !data) return null;
+    return data.role ?? null;
+  } catch (error) {
+    console.error("Error getting profile role:", error);
+    return null;
+  }
+}
+
+
 export async function getProfiles(page = 1, limit = 10, search = ""): Promise<{ profiles: Profile[]; total: number }> {
   try {
     const supabase = await createClient();

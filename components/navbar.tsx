@@ -19,6 +19,7 @@ import { User } from "@heroui/user";
 import { LogOut, Menu } from "lucide-react";
 
 import { siteConfig } from "@/config/site";
+import { ROLES } from "@/constants/roles";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { useAuth } from "@/lib/contexts/auth-context";
 
@@ -72,7 +73,7 @@ export default function Navbar({ onOpenSidebar }: Props) {
               Khách quá hạn
             </NextLink>
           </NavbarItem>
-          {profile?.role === "admin" && (
+          {profile?.role === ROLES.ADMIN && (
             <NavbarItem>
               <NextLink
                 className={`${pathname === "/users" ? "text-primary font-semibold" : "text-foreground"}`}
@@ -189,7 +190,7 @@ export default function Navbar({ onOpenSidebar }: Props) {
                 Khách quá hạn
               </Link>
             </NavbarMenuItem>
-            {profile?.role === "admin" && (
+            {profile?.role === ROLES.ADMIN && (
               <NavbarMenuItem>
                 <Link color={pathname === "/users" ? "primary" : "foreground"} href="/users" size="lg">
                   Quản lý người dùng

@@ -20,12 +20,19 @@ type TProps = {
   onSuccess: () => void;
 };
 
+import { ROLES } from "@/constants/roles";
+
 const CreateUserModal = ({ isOpen, onClose, onSuccess }: TProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    email: string;
+    password: string;
+    full_name: string;
+    role: typeof ROLES[keyof typeof ROLES];
+  }>({
     email: "",
     password: "",
     full_name: "",
-    role: "user",
+    role: ROLES.USER,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +80,7 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }: TProps) => {
           description: "Tạo người dùng mới thành công",
           color: "success",
         });
-        setFormData({ email: "", password: "", full_name: "", role: "user" });
+        setFormData({ email: "", password: "", full_name: "", role: ROLES.USER });
         onClose();
         onSuccess();
       } else {
@@ -89,7 +96,7 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }: TProps) => {
 
   const handleClose = () => {
     if (!isSubmitting) {
-      setFormData({ email: "", password: "", full_name: "", role: "user" });
+      setFormData({ email: "", password: "", full_name: "", role: ROLES.USER });
       setError(null);
       setShowPassword(false);
       onClose();
@@ -166,11 +173,11 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }: TProps) => {
             <Select
               label="Role"
               selectedKeys={[formData.role]}
-              onSelectionChange={(keys) => setFormData({ ...formData, role: Array.from(keys)[0] as string })}
+              onSelectionChange={(keys) => setFormData({ ...formData, role: Array.from(keys)[0] as typeof ROLES[keyof typeof ROLES] })}
               isDisabled={isSubmitting}
             >
-              <SelectItem key="user">User</SelectItem>
-              <SelectItem key="admin">Admin</SelectItem>
+              <SelectItem key={ROLES.USER}>User</SelectItem>
+              <SelectItem key={ROLES.ADMIN}>Admin</SelectItem>
             </Select>
           </div>
         </ModalBody>

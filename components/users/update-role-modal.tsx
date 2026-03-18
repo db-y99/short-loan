@@ -21,9 +21,11 @@ type TProps = {
   onSuccess: () => void;
 };
 
-const ROLES = [
-  { key: "admin", label: "Admin" },
-  { key: "user", label: "User" },
+import { ROLES } from "@/constants/roles";
+
+const ROLE_OPTIONS = [
+  { key: ROLES.ADMIN, label: "Admin" },
+  { key: ROLES.USER, label: "User" },
 ];
 
 const UpdateRoleModal = ({ isOpen, onClose, user, onSuccess }: TProps) => {
@@ -33,7 +35,7 @@ const UpdateRoleModal = ({ isOpen, onClose, user, onSuccess }: TProps) => {
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedRole(user.role || "user");
+      setSelectedRole(user.role || ROLES.USER);
       setError(null);
     }
   }, [isOpen, user]);
@@ -99,7 +101,7 @@ const UpdateRoleModal = ({ isOpen, onClose, user, onSuccess }: TProps) => {
 
           <div className="text-sm text-default-600 bg-default-50 dark:bg-default-100/10 p-3 rounded-lg space-y-1">
             <p><span className="font-medium">Người dùng:</span> {user.full_name}</p>
-            <p><span className="font-medium">Role hiện tại:</span> {user.role || "user"}</p>
+            <p><span className="font-medium">Role hiện tại:</span> {user.role || ROLES.USER}</p>
           </div>
 
           <Select
@@ -108,7 +110,7 @@ const UpdateRoleModal = ({ isOpen, onClose, user, onSuccess }: TProps) => {
             onSelectionChange={(keys) => setSelectedRole(Array.from(keys)[0] as string)}
             isDisabled={isSubmitting}
           >
-            {ROLES.map((role) => (
+            {ROLE_OPTIONS.map((role) => (
               <SelectItem key={role.key}>{role.label}</SelectItem>
             ))}
           </Select>
