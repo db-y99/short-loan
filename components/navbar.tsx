@@ -19,6 +19,7 @@ import { User } from "@heroui/user";
 import { LogOut, Menu } from "lucide-react";
 
 import { siteConfig } from "@/config/site";
+import { ROLES } from "@/constants/roles";
 import { ThemeSwitch } from "@/components/theme-switch";
 import { useAuth } from "@/lib/contexts/auth-context";
 
@@ -28,7 +29,7 @@ type Props = {
 
 export default function Navbar({ onOpenSidebar }: Props) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
@@ -72,6 +73,16 @@ export default function Navbar({ onOpenSidebar }: Props) {
               Khách quá hạn
             </NextLink>
           </NavbarItem>
+          {profile?.role === ROLES.ADMIN && (
+            <NavbarItem>
+              <NextLink
+                className={`${pathname === "/users" ? "text-primary font-semibold" : "text-foreground"}`}
+                href="/users"
+              >
+                Quản lý người dùng
+              </NextLink>
+            </NavbarItem>
+          )}
         </ul>
       </NavbarContent>
 
@@ -169,17 +180,23 @@ export default function Navbar({ onOpenSidebar }: Props) {
             </div>
           )}
           <div className="mx-4 mt-2 flex flex-col gap-2">
-            {siteConfig.navMenuItems.map((item, index) => (
-              <NavbarMenuItem key={`${item.href}-${index}`}>
-                <Link
-                  color={pathname === item.href ? "primary" : "foreground"}
-                  href={item.href}
-                  size="lg"
-                >
-                  {item.label}
+            <NavbarMenuItem>
+              <Link color={pathname === "/" ? "primary" : "foreground"} href="/" size="lg">
+                Khoản vay
+              </Link>
+            </NavbarMenuItem>
+            <NavbarMenuItem>
+              <Link color={pathname === "/overdue" ? "primary" : "foreground"} href="/overdue" size="lg">
+                Khách quá hạn
+              </Link>
+            </NavbarMenuItem>
+            {profile?.role === ROLES.ADMIN && (
+              <NavbarMenuItem>
+                <Link color={pathname === "/users" ? "primary" : "foreground"} href="/users" size="lg">
+                  Quản lý người dùng
                 </Link>
               </NavbarMenuItem>
-            ))}
+            )}
             {user && (
               <NavbarMenuItem>
                 <button

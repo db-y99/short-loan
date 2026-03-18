@@ -28,6 +28,7 @@ import EditBankModal from "@/components/loan-details/edit-bank-modal";
 import SimplePaymentModal from "@/components/loan-details/simple-payment-modal";
 import ConfirmModal from "@/components/confirm-modal";
 
+import { ROLES } from "@/constants/roles";
 import { useAuth } from "@/lib/contexts/auth-context";
 
 type TProps = {
@@ -47,7 +48,7 @@ const LoanDetailsModal = ({
   error = null,
   onRefresh,
 }: TProps) => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [isDisbursing, setIsDisbursing] = useState(false);
   const [isPayInterestOpen, setIsPayInterestOpen] = useState(false);
   const [isSimplePaymentOpen, setIsSimplePaymentOpen] = useState(false);
@@ -131,6 +132,7 @@ const LoanDetailsModal = ({
   if (!loanDetails && !isLoading && !error) return null;
 
   // Kiểm tra trạng thái
+  const isAdmin = profile?.role === ROLES.ADMIN;
   const isPending = loanDetails?.status === LOAN_STATUS.PENDING;
   const isSigned = loanDetails?.status === LOAN_STATUS.SIGNED;
   const isDisbursed = loanDetails?.status === LOAN_STATUS.DISBURSED;
@@ -342,7 +344,7 @@ const LoanDetailsModal = ({
           <Button variant="flat" onPress={onClose}>
             Đóng
           </Button>
-          {isPending && (
+          {isPending && isAdmin && (
             <Button
               color="primary"
               startContent={
@@ -358,7 +360,7 @@ const LoanDetailsModal = ({
               {isDisbursing ? "Đang xử lý..." : "Duyệt"}
             </Button>
           )}
-          {isSigned && (
+          {isSigned && isAdmin && (
             <Button
               color="success"
               startContent={

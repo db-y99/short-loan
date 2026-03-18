@@ -4,7 +4,7 @@ export interface Profile {
   id: string;
   email: string;
   full_name: string;
-  role_id?: string;
+  role?: string;
   status?: string;
   created_at?: string;
   updated_at?: string;
@@ -129,19 +129,44 @@ export async function deleteProfile(id: string): Promise<boolean> {
 }
 
 /**
- * Get all profiles with pagination
+ * Get profile role by user ID (server-side)
  */
-export async function getProfiles(page = 1, limit = 10): Promise<{ profiles: Profile[]; total: number }> {
+export async function getProfileRole(id: string): Promise<string | null> {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", id)
+      .single();
+
+    if (error || !data) return null;
+    return data.role ?? null;
+  } catch (error) {
+    console.error("Error getting profile role:", error);
+    return null;
+  }
+}
+
+
+export async function getProfiles(page = 1, limit = 10, search = ""): Promise<{ profiles: Profile[]; total: number }> {
   try {
     const supabase = await createClient();
     const from = (page - 1) * limit;
     const to = from + limit - 1;
 
-    const { data, error, count } = await supabase
+    let query = supabase
       .from('profiles')
       .select('*', { count: 'exact' })
       .range(from, to)
       .order('created_at', { ascending: false });
+
+    // Add search filter if provided
+    if (search.trim()) {
+      query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
+    }
+
+    const { data, error, count } = await query;
 
     if (error) {
       console.error('Error getting profiles:', error);

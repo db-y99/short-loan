@@ -47,6 +47,21 @@ export const formatDateTimeVN = (dateString: string | null): string => {
 };
 
 /**
+ * Format ngày vi-VN (ngày/tháng/năm giờ:phút)
+ */
+export const formatDate = (dateString: string | null): string => {
+  if (!dateString) return "—";
+
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(dateString));
+};
+
+/**
  * Format ngày ngắn vi-VN (ngày/tháng/năm)
  */
 export const formatDateShortVN = (dateString: string): string => {

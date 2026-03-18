@@ -34,6 +34,10 @@ export const siteConfig = {
       label: "Khách quá hạn",
       href: "/overdue",
     },
+    {
+      label: "Quản lý người dùng",
+      href: "/users",
+    },
   ],
   links: {
     github: "https://github.com/heroui-inc/heroui",
