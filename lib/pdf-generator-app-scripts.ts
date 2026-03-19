@@ -12,7 +12,9 @@ import {
   generateAssetDisposalHTML,
 } from "@/lib/contract-html-generators";
 
-const GAS_PDF_SERVICE_URL = process.env.PDF_SERVICE_URL;
+import { env } from "@/config/env";
+
+const GAS_PDF_SERVICE_URL = env.PDF_SERVICE_URL;
 
 /**
  * Generate PDF buffer từ HTML sử dụng Google Apps Script

@@ -6,6 +6,8 @@ const EnvSchema = z.object({
   NEXT_PUBLIC_SITE_URL: z.string().optional().default("http://localhost:3000"),
   GOOGLE_SERVICE_ACCOUNT_JSON: z.string().optional().default(""),
   SHORT_LOAN_GOOGLE_DRIVE_FOLDER_ID: z.string().optional().default(""),
+  CONVERT_PDF_TO_WORD_SERVICE_URL: z.string().optional().default(""),
+  PDF_SERVICE_URL: z.string().optional().default(""),
 });
 
 export const env = EnvSchema.parse({
@@ -15,4 +17,6 @@ export const env = EnvSchema.parse({
   GOOGLE_SERVICE_ACCOUNT_JSON: process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
   SHORT_LOAN_GOOGLE_DRIVE_FOLDER_ID:
     process.env.SHORT_LOAN_GOOGLE_DRIVE_FOLDER_ID,
+  CONVERT_PDF_TO_WORD_SERVICE_URL: process.env.CONVERT_PDF_TO_WORD_SERVICE_URL,
+  PDF_SERVICE_URL: process.env.PDF_SERVICE_URL,
 });

@@ -29,7 +29,9 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
     text: string;
   } | null>(null);
   const [selectedContract, setSelectedContract] = useState<TLoanFile | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isDownloadingAll, setIsDownloadingAll] = useState(false);
 
   // Sắp xếp contracts theo thứ tự mong muốn
   const sortedContracts = sortContractsByType(loanFiles);
@@ -96,9 +98,36 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
     }
   };
 
+  const handleDownloadAll = async () => {
+    if (sortedContracts.length === 0) return;
+    setIsDownloadingAll(true);
+    try {
+      await Promise.all(
+        sortedContracts.map(async (contract) => {
+          const response = await fetch(`/api/drive/download/${contract.fileId}`);
+          if (!response.ok) throw new Error(`Không thể tải: ${contract.name}`);
+          const blob = await response.blob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `${contract.name}.pdf`;
+          link.click();
+          URL.revokeObjectURL(url);
+        }),
+      );
+      addToast({ title: "Thành công", description: "Đã tải xuống tất cả hợp đồng", color: "success" });
+    } catch (error) {
+      addToast({ title: "Lỗi", description: error instanceof Error ? error.message : "Lỗi khi tải xuống", color: "danger" });
+    } finally {
+      setIsDownloadingAll(false);
+    }
+  };
+
   const handleViewContract = (contract: TLoanFile) => {
+    const index = sortedContracts.findIndex((c) => c.id === contract.id);
     setSelectedContract(contract);
     setIsPreviewOpen(true);
+    setSelectedIndex(index >= 0 ? index : 0);
   };
 
   const handleDownloadContract = async (contract: TLoanFile) => {
@@ -140,7 +169,24 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
             <FileText className="w-5 h-5 text-primary" />
             <h3 className="text-lg font-semibold">Hợp đồng</h3>
           </div>
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+            {loanFiles.length > 0 && (
+              <Button
+                size="sm"
+                variant="flat"
+                startContent={
+                  isDownloadingAll ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Download className="w-4 h-4" />
+                  )
+                }
+                isDisabled={isDownloadingAll}
+                onPress={handleDownloadAll}
+              >
+                {isDownloadingAll ? "Đang tải..." : "Tải tất cả"}
+              </Button>
+            )}
             {/* Chỉ hiển thị nút tạo/tạo lại hợp đồng khi loan đã được duyệt hoặc đã ký */}
             {(loanStatus === LOAN_STATUS.APPROVED || loanStatus === LOAN_STATUS.SIGNED) && (
               <>
@@ -301,7 +347,8 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
           setIsPreviewOpen(false);
           setSelectedContract(null);
         }}
-        contract={selectedContract}
+        contracts={sortedContracts}
+        initialIndex={selectedIndex}
         loanId={loanId}
       />
 
