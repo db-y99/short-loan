@@ -9,84 +9,115 @@ import {
   ModalFooter,
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
-import { Loader2, Download, X } from "lucide-react";
+import { Loader2, Download, X, ChevronLeft, ChevronRight } from "lucide-react";
 import type { TLoanFile } from "@/types/loan.types";
 
 type TProps = {
   isOpen: boolean;
   onClose: () => void;
-  contract: TLoanFile | null;
+  contracts: TLoanFile[];
+  initialIndex?: number;
   loanId: string;
 };
 
 const ContractPreviewModal = ({
   isOpen,
   onClose,
-  contract,
+  contracts,
+  initialIndex = 0,
   loanId,
 }: TProps) => {
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isLoading, setIsLoading] = useState(true);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isDownloadingWord, setIsDownloadingWord] = useState(false);
+
+  const contract = contracts[currentIndex] ?? null;
+  const hasPrev = currentIndex > 0;
+  const hasNext = currentIndex < contracts.length - 1;
+
+  useEffect(() => {
+    setCurrentIndex(initialIndex);
+  }, [initialIndex, isOpen]);
 
   useEffect(() => {
     if (isOpen && contract) {
       loadContractPDF();
     }
-
     return () => {
-      // Cleanup PDF URL
-      if (pdfUrl) {
-        URL.revokeObjectURL(pdfUrl);
-      }
+      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
     };
-  }, [isOpen, contract]);
+  }, [isOpen, currentIndex]);
 
   const loadContractPDF = async () => {
     if (!contract) return;
 
+    // Revoke URL cũ trước khi load mới
+    setPdfUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
     setIsLoading(true);
     setError(null);
 
     try {
-      // Fetch PDF từ Drive qua API
-      const response = await fetch(
-        `/api/drive/download/${contract.fileId}`,
-      );
-
-      if (!response.ok) {
-        throw new Error("Không thể tải file PDF");
-      }
+      const response = await fetch(`/api/drive/download/${contract.fileId}`);
+      if (!response.ok) throw new Error("Không thể tải file PDF");
 
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      setPdfUrl(url);
+      setPdfUrl(URL.createObjectURL(blob));
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Lỗi khi tải hợp đồng",
-      );
+      setError(err instanceof Error ? err.message : "Lỗi khi tải hợp đồng");
     } finally {
       setIsLoading(false);
     }
   };
 
+  const handlePrev = () => {
+    if (hasPrev) setCurrentIndex((i) => i - 1);
+  };
+
+  const handleNext = () => {
+    if (hasNext) setCurrentIndex((i) => i + 1);
+  };
+
   const handleDownload = async () => {
     if (!contract || !pdfUrl) return;
-
     setIsDownloading(true);
     try {
-      // Download file
       const link = document.createElement("a");
       link.href = pdfUrl;
       link.download = `${contract.name}.pdf`;
       link.click();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Lỗi khi tải xuống",
-      );
+      setError(err instanceof Error ? err.message : "Lỗi khi tải xuống");
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleDownloadWord = async () => {
+    if (!contract) return;
+    setIsDownloadingWord(true);
+    try {
+      const response = await fetch(`/api/drive/download/${contract.fileId}?format=docx`);
+      if (!response.ok) {
+        const msg = await response.text();
+        throw new Error(msg || "Không thể tải file Word");
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${contract.name}.docx`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Lỗi khi tải xuống Word");
+    } finally {
+      setIsDownloadingWord(false);
     }
   };
 
@@ -98,22 +129,46 @@ const ContractPreviewModal = ({
       onClose={onClose}
       size="5xl"
       scrollBehavior="inside"
-      classNames={{
-        base: "max-w-[1200px] h-[90vh]",
-      }}
+      classNames={{ base: "max-w-[1200px] h-[90vh]" }}
       hideCloseButton
     >
       <ModalContent>
         <ModalHeader className="flex items-center justify-between border-b border-default-200">
-          <h3 className="text-lg font-semibold">{contract.name}</h3>
-          <Button
-            isIconOnly
-            variant="light"
-            size="sm"
-            onPress={onClose}
-          >
-            <X className="w-4 h-4" />
-          </Button>
+          <div className="flex items-center gap-2 min-w-0">
+            {contracts.length > 1 && (
+              <span className="text-sm text-default-400 shrink-0">
+                {currentIndex + 1} / {contracts.length}
+              </span>
+            )}
+            <h3 className="text-lg font-semibold truncate">{contract.name}</h3>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            {contracts.length > 1 && (
+              <>
+                <Button
+                  isIconOnly
+                  variant="light"
+                  size="sm"
+                  onPress={handlePrev}
+                  isDisabled={!hasPrev || isLoading}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Button
+                  isIconOnly
+                  variant="light"
+                  size="sm"
+                  onPress={handleNext}
+                  isDisabled={!hasNext || isLoading}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </>
+            )}
+            <Button isIconOnly variant="light" size="sm" onPress={onClose}>
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
         </ModalHeader>
 
         <ModalBody className="p-0">
@@ -122,13 +177,11 @@ const ContractPreviewModal = ({
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
           )}
-
           {error && !isLoading && (
             <div className="rounded-lg bg-danger-50 px-4 py-6 text-danger text-center m-6">
               {error}
             </div>
           )}
-
           {pdfUrl && !isLoading && (
             <iframe
               src={pdfUrl}
@@ -142,6 +195,20 @@ const ContractPreviewModal = ({
           <Button variant="flat" onPress={onClose}>
             Đóng
           </Button>
+          {/* <Button
+            variant="flat"
+            startContent={
+              isDownloadingWord ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4" />
+              )
+            }
+            onPress={handleDownloadWord}
+            isDisabled={isDownloadingWord}
+          >
+            {isDownloadingWord ? "Đang tải..." : "Tải xuống Word"}
+          </Button> */}
           <Button
             color="primary"
             startContent={

@@ -12,7 +12,9 @@ import {
   generateAssetDisposalHTML,
 } from "@/lib/contract-html-generators";
 
-const PDF_SERVICE_URL = process.env.PDF_SERVICE_URL || "http://localhost:3001";
+import { env } from "@/config/env";
+
+const PDF_SERVICE_URL = env.PDF_SERVICE_URL || "http://localhost:3001";
 
 /**
  * Generate PDF buffer từ HTML
