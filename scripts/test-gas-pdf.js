@@ -1,6 +1,10 @@
 /**
  * Test Google Apps Script PDF Generator
  */
+import * as dotenv from "dotenv";
+
+// Load environment variables from .env.local
+dotenv.config({ path: ".env.local" });
 
 const GAS_URL = process.env.PDF_SERVICE_URL;
 

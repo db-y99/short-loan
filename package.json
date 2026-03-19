@@ -11,6 +11,7 @@
     "create-default-user": "tsx scripts/create-default-user.ts",
     "test-connection": "tsx scripts/test-connection.ts",
     "validate-env": "node scripts/validate-env.js",
+    "test-pdf": "tsx scripts/test-gas-pdf.js",
     "migrate-payment-cycles": "tsx scripts/migrate-payment-cycles.ts"
   },
   "dependencies": {
