@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Link, Button } from "@heroui/react";
 import { addToast } from "@heroui/toast";
-import { FileText, CheckCircle2, QrCode, PenTool } from "lucide-react";
+import { FileText, CheckCircle2, QrCode, PenTool, X } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import type { TLoanDetails } from "@/types/loan.types";
 import { LOAN_STATUS } from "@/constants/loan";
 import { formatDateTimeVN } from "@/lib/format";
@@ -108,13 +109,22 @@ const LoanProfileSection = ({ loanDetails, onRefresh }: TProps) => {
       {/* QR Code Display */}
       {showQR && isApproved && !isSigned && (
         <div className="mb-4 p-4 bg-white dark:bg-default-100 rounded-lg border-2 border-secondary text-center">
-          <p className="text-sm text-default-600 mb-3">Quét mã QR để khách hàng ký hợp đồng:</p>
-          <div className="flex justify-center items-center h-48 bg-default-100 dark:bg-default-200 rounded-lg">
-            <QrCode className="w-24 h-24 text-default-400" />
-            {/* TODO: Replace with actual QR code */}
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-medium text-default-700">Quét mã QR để khách hàng ký hợp đồng</p>
+            <Button isIconOnly size="sm" variant="light" onPress={() => setShowQR(false)}>
+              <X className="w-4 h-4" />
+            </Button>
           </div>
-          <p className="text-xs text-default-500 mt-3">
-            Link: {window.location.origin}/loans/{loanDetails.id}/sign
+          <div className="flex justify-center p-4 bg-white rounded-lg">
+            <QRCodeSVG
+              value={`${typeof window !== "undefined" ? window.location.origin : ""}/loans/${loanDetails.id}/sign`}
+              size={200}
+              level="M"
+              includeMargin
+            />
+          </div>
+          <p className="text-xs text-default-400 mt-3 break-all">
+            {window.location.origin}/loans/{loanDetails.id}/sign
           </p>
         </div>
       )}
