@@ -102,18 +102,19 @@ const ContractPreviewModal = ({
     if (!contract) return;
     setIsDownloadingWord(true);
     try {
-      const response = await fetch(`/api/drive/download/${contract.fileId}?format=docx`);
+      const url = `/api/drive/download-word/${contract.fileId}`;
+      const response = await fetch(url);
       if (!response.ok) {
         const msg = await response.text();
         throw new Error(msg || "Không thể tải file Word");
       }
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
+      const objectUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.href = url;
+      link.href = objectUrl;
       link.download = `${contract.name}.docx`;
       link.click();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(objectUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Lỗi khi tải xuống Word");
     } finally {
@@ -173,7 +174,7 @@ const ContractPreviewModal = ({
 
         <ModalBody className="p-0">
           {isLoading && (
-            <div className="flex items-center justify-center py-16">
+            <div className="flex items-center justify-center py-16 h-full">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
           )}
@@ -195,7 +196,7 @@ const ContractPreviewModal = ({
           <Button variant="flat" onPress={onClose}>
             Đóng
           </Button>
-          {/* <Button
+          <Button
             variant="flat"
             startContent={
               isDownloadingWord ? (
@@ -208,7 +209,7 @@ const ContractPreviewModal = ({
             isDisabled={isDownloadingWord}
           >
             {isDownloadingWord ? "Đang tải..." : "Tải xuống Word"}
-          </Button> */}
+          </Button>
           <Button
             color="primary"
             startContent={
