@@ -1,9 +1,11 @@
 import type { TAssetLeaseContractData } from "@/types/contract.types";
 
 export function generateAssetLeaseHTML(data: TAssetLeaseContractData): string {
-  const draftSignatureHTML = data.DRAFT_SIGNATURE 
-    ? `<img src="${data.DRAFT_SIGNATURE}" alt="Chữ ký nháy" style="max-width: 80px; max-height: 60px; vertical-align: middle; margin-left: 8px;" />` 
-    : '';
+const draftSignatureHTML = data.DRAFT_SIGNATURE
+  ? `<img src="${data.DRAFT_SIGNATURE}" 
+          alt="Chữ ký nháy" 
+          style="max-width: 100%; max-height: 35px; vertical-align: middle; margin-left: 8px; object-fit: contain;" />`
+  : '';
   
   const milestonesHTML = (data.MILESTONES ?? [])
     .map(
