@@ -188,7 +188,7 @@ export default function LoanSignPage() {
                   <div className="border-2 border-dashed border-primary/30 rounded-xl bg-primary/5 relative">
                     <SignatureCanvas
                       ref={draftSigRef}
-                      canvasProps={{ className: "w-full h-44 cursor-crosshair rounded-xl" }}
+                      canvasProps={{ className: "w-full h-56 cursor-crosshair rounded-xl" }}
                     />
                     <p className="absolute bottom-2 right-3 text-xs text-default-300 pointer-events-none select-none">Ký tại đây</p>
                   </div>
@@ -243,7 +243,7 @@ export default function LoanSignPage() {
                   <div className="border-2 border-dashed border-success/30 rounded-xl bg-success/5 relative">
                     <SignatureCanvas
                       ref={officialSigRef}
-                      canvasProps={{ className: "w-full h-44 cursor-crosshair rounded-xl" }}
+                      canvasProps={{ className: "w-full h-56 cursor-crosshair rounded-xl" }}
                     />
                     <p className="absolute bottom-2 right-3 text-xs text-default-300 pointer-events-none select-none">Ký tại đây</p>
                   </div>

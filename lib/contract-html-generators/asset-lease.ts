@@ -2,7 +2,7 @@ import type { TAssetLeaseContractData } from "@/types/contract.types";
 
 export function generateAssetLeaseHTML(data: TAssetLeaseContractData): string {
   const draftSignatureHTML = data.DRAFT_SIGNATURE 
-    ? `<img src="${data.DRAFT_SIGNATURE}" alt="Chữ ký nháy" style="max-width: 80px; max-height: 40px; vertical-align: middle; margin-left: 8px;" />` 
+    ? `<img src="${data.DRAFT_SIGNATURE}" alt="Chữ ký nháy" style="max-width: 80px; max-height: 60px; vertical-align: middle; margin-left: 8px;" />` 
     : '';
   
   const milestonesHTML = (data.MILESTONES ?? [])
@@ -16,6 +16,20 @@ export function generateAssetLeaseHTML(data: TAssetLeaseContractData): string {
     `,
     )
     .join("");
+
+
+    const tableHeader = `
+    <thead>
+      <tr>
+        <th>Mốc thanh toán</th>
+        <th>Thời điểm tất toán</th>
+        <th style="text-align:center;">
+          <div>Tổng tiền phải thanh toán</div>
+          <div>${draftSignatureHTML}</div>
+        </th>
+      </tr>
+    </thead>
+  `;
 
   return `
 <!DOCTYPE html>
@@ -173,13 +187,7 @@ export function generateAssetLeaseHTML(data: TAssetLeaseContractData): string {
           <li style="margin-bottom: 12px;">
             <strong>Giá thuê:</strong> cụ thể theo bảng sau:
             <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
-              <thead>
-                <tr>
-                  <th>Mốc thanh toán</th>
-                  <th>Thời điểm tất toán</th>
-                  <th>Tổng tiền phải thanh toán ${draftSignatureHTML}</th>
-                </tr>
-              </thead>
+               ${tableHeader}
               <tbody>${milestonesHTML}</tbody>
             </table>
           </li>
