@@ -6,6 +6,7 @@ export interface Profile {
   full_name: string;
   role?: string;
   status?: string;
+  deleted_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }

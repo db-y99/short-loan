@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { supabaseClient } from "@/lib/supabase/client";
 import { getProfileClientById, TProfileClient } from "@/services/profiles.client.service";
+import { USER_STATUS } from "@/lib/constants";
 
 type TProfile = TProfileClient;
 
@@ -54,8 +55,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!session?.user) {
         setProfile(null);
       } else {
-        // Re-fetch profile when auth state changes
-        getProfileClientById(session.user.id).then(setProfile);
+        getProfileClientById(session.user.id).then((data) => {
+          if (!data || data.deleted_at || data.status !== USER_STATUS.ACTIVE) {
+            supabaseClient.auth.signOut();
+            return;
+          }
+          setProfile(data);
+        });
       }
     });
 

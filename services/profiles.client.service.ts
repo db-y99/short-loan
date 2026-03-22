@@ -3,6 +3,8 @@ import { supabaseClient } from "@/lib/supabase/client";
 export type TProfileClient = {
   id: string;
   role?: string;
+  status?: string;
+  deleted_at?: string | null;
 };
 
 /**
@@ -12,7 +14,7 @@ export async function getProfileClientById(id: string): Promise<TProfileClient |
   try {
     const { data, error } = await supabaseClient
       .from("profiles")
-      .select("id, role")
+      .select("id, role, status, deleted_at")
       .eq("id", id)
       .single();
 

@@ -7,7 +7,7 @@ import {
   ModalFooter,
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
-import { AlertCircle, CreditCard, MessageSquare, ShoppingCart, CheckCircle, XCircle, DollarSign, Loader2, UserPlus, FileEdit, UserCog } from "lucide-react";
+import { AlertCircle, MessageSquare, ShoppingCart, CheckCircle, DollarSign, Loader2, UserCog } from "lucide-react";
 import { addToast } from "@heroui/toast";
 import type { TLoanDetails } from "@/types/loan.types";
 import { LOAN_STATUS } from "@/constants/loan";

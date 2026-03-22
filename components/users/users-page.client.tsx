@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ROLES } from "@/constants/roles";
+import { USER_STATUS } from "@/lib/constants";
 import { Profile } from "@/services/profiles.service";
 import { formatDate } from "@/lib/format";
 import CreateUserModal from "@/components/users/create-user-modal";
@@ -83,9 +84,9 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery }: TProps) 
 
   const getStatusColor = (status?: string) => {
     switch (status) {
-      case "active":
+      case USER_STATUS.ACTIVE:
         return "success";
-      case "inactive":
+      case USER_STATUS.INACTIVE:
         return "danger";
       case "pending":
         return "warning";
@@ -96,9 +97,9 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery }: TProps) 
 
   const getStatusLabel = (status?: string) => {
     switch (status) {
-      case "active":
+      case USER_STATUS.ACTIVE:
         return "Hoạt động";
-      case "inactive":
+      case USER_STATUS.INACTIVE:
         return "Không hoạt động";
       case "pending":
         return "Chờ duyệt";
@@ -112,7 +113,7 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery }: TProps) 
   };
 
   const handleToggleStatus = async (user: Profile) => {
-    const newStatus = user.status === "active" ? "inactive" : "active";
+    const newStatus = user.status === USER_STATUS.ACTIVE ? USER_STATUS.INACTIVE : USER_STATUS.ACTIVE;
     try {
       const response = await fetch(`/api/users/${user.id}/status`, {
         method: "PUT",
@@ -249,14 +250,14 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery }: TProps) 
                         <DropdownItem
                           key="toggle-status"
                           startContent={
-                            user.status === "active" ? 
+                            user.status === USER_STATUS.ACTIVE ? 
                             <UserX className="w-4 h-4" /> : 
                             <UserCheck className="w-4 h-4" />
                           }
-                          color={user.status === "active" ? "warning" : "success"}
+                          color={user.status === USER_STATUS.ACTIVE ? "warning" : "success"}
                           onPress={() => handleToggleStatus(user)}
                         >
-                          {user.status === "active" ? "Vô hiệu hóa" : "Kích hoạt"}
+                          {user.status === USER_STATUS.ACTIVE ? "Vô hiệu hóa" : "Kích hoạt"}
                         </DropdownItem>
                       </DropdownMenu>
                     </Dropdown>

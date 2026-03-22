@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient as createClient } from "@/lib/supabase/server";
+import { USER_STATUS } from "@/lib/constants";
 import { getProfileByEmail, getProfileById } from "@/services/profiles.service";
 import { ROUTES } from "@/constants/routes";
 import { env } from "@/config/env";
@@ -19,10 +20,26 @@ export async function signInWithEmailPassword(email: string, password: string) {
 
   if (error) {
     console.error("Error signing in with email and password:", error);
-    return { error: error.message };
+    return { error: "Email hoặc mật khẩu không đúng." };
   }
 
   if (data.user) {
+    const profile = await getProfileById(data.user.id);
+    if (!profile) {
+      await supabase.auth.signOut();
+      return { error: "Tài khoản chưa được cấp trong hệ thống. Vui lòng liên hệ Admin." };
+    }
+
+    if (profile.deleted_at) {
+      await supabase.auth.signOut();
+      return { error: "Tài khoản đã bị xóa. Vui lòng liên hệ Admin." };
+    }
+
+    if (profile.status !== USER_STATUS.ACTIVE) {
+      await supabase.auth.signOut();
+      return { error: "Tài khoản chưa được kích hoạt. Vui lòng liên hệ Admin." };
+    }
+
     return { success: true };
   }
 
@@ -137,6 +154,14 @@ export async function sendOtpToEmail(email: string) {
     };
   }
 
+  if (profile.deleted_at) {
+    return { error: "Tài khoản đã bị xóa. Vui lòng liên hệ Admin." };
+  }
+
+  if (profile.status !== USER_STATUS.ACTIVE) {
+    return { error: "Tài khoản chưa được kích hoạt. Vui lòng liên hệ Admin." };
+  }
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
     email: trimmedEmail,
@@ -204,6 +229,14 @@ export async function verifyEmailOtp(email: string, token: string) {
     return {
       error: "Tài khoản chưa được cấp trong hệ thống. Vui lòng liên hệ Admin.",
     };
+  }
+
+  if (profile.deleted_at) {
+    return { error: "Tài khoản đã bị xóa. Vui lòng liên hệ Admin." };
+  }
+
+  if (profile.status !== USER_STATUS.ACTIVE) {
+    return { error: "Tài khoản chưa được kích hoạt. Vui lòng liên hệ Admin." };
   }
 
   return { success: true };
