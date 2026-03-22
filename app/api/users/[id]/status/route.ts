@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { USER_STATUS } from "@/lib/constants";
 
 /**
  * PUT /api/users/[id]/status
@@ -20,7 +22,7 @@ export async function PUT(
 
     const { status } = await request.json();
 
-    if (!["active", "inactive"].includes(status)) {
+    if (!Object.values(USER_STATUS).includes(status)) {
       return NextResponse.json(
         { success: false, error: "Status không hợp lệ" },
         { status: 400 }
@@ -40,6 +42,12 @@ export async function PUT(
         { success: false, error: "Không thể cập nhật trạng thái" },
         { status: 500 }
       );
+    }
+
+    // Nếu chuyển sang inactive thì ép đăng xuất tất cả session của user đó
+    if (status === USER_STATUS.INACTIVE) {
+      const adminClient = createSupabaseAdminClient();
+      await adminClient.auth.admin.signOut(id, "others");
     }
 
     return NextResponse.json({ success: true, data });
