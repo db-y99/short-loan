@@ -1,5 +1,6 @@
 export type TBranch = {
   id: string;
+  code: string | null;
   name: string;
   address: string | null;
   phone: string | null;
@@ -9,6 +10,7 @@ export type TBranch = {
 };
 
 export type TBranchFormData = {
+  code?: string;
   name: string;
   address?: string;
   phone?: string;

@@ -197,6 +197,7 @@ export const createLoanService = async (
       bank_account_number: input.bank_account_number ?? null,
       notes: input.notes ?? null,
       drive_folder_id: input.drive_folder_id, // 🔥 bắt buộc vì NOT NULL
+      branch_id: input.branch_id ?? null,
       status: "pending",
     })
     .select("id, code")

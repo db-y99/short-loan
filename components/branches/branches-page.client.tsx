@@ -10,7 +10,7 @@ import {
 import {
   Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
 } from "@heroui/dropdown";
-import { GitBranch, Plus, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight, Star } from "lucide-react";
+import { GitBranch, Plus, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight, Star, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { addToast } from "@heroui/toast";
 import type { TBranch } from "@/types/branch.types";
@@ -22,8 +22,15 @@ export default function BranchesPageClient({ branches }: TProps) {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState<TBranch | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const refresh = () => router.refresh();
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    router.refresh();
+    setTimeout(() => setIsRefreshing(false), 800);
+  };
 
   const handleDelete = async (branch: TBranch) => {
     if (!confirm(`Xóa chi nhánh "${branch.name}"?`)) return;
@@ -67,19 +74,32 @@ export default function BranchesPageClient({ branches }: TProps) {
           </h1>
           <p className="text-default-600 mt-1">Tổng cộng {branches.length} chi nhánh</p>
         </div>
-        <Button
-          color="primary"
-          startContent={<Plus className="w-4 h-4" />}
-          onPress={() => { setEditingBranch(null); setIsModalOpen(true); }}
-        >
-          Thêm chi nhánh
-        </Button>
+        <div className="flex items-center gap-2">
+          
+          <Button
+            color="primary"
+            startContent={<Plus className="w-4 h-4" />}
+            onPress={() => { setEditingBranch(null); setIsModalOpen(true); }}
+          >
+            Thêm chi nhánh
+          </Button>
+          <Button
+            variant="flat"
+            isIconOnly
+            onPress={handleRefresh}
+            isLoading={isRefreshing}
+            aria-label="Làm mới dữ liệu"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
 
       <Card>
         <CardBody className="p-0">
           <Table aria-label="Branches table">
             <TableHeader>
+              <TableColumn>MÃ</TableColumn>
               <TableColumn>TÊN CHI NHÁNH</TableColumn>
               <TableColumn>ĐỊA CHỈ</TableColumn>
               <TableColumn>SỐ ĐIỆN THOẠI</TableColumn>
@@ -90,6 +110,11 @@ export default function BranchesPageClient({ branches }: TProps) {
             <TableBody emptyContent="Chưa có chi nhánh nào">
               {branches.map((branch) => (
                 <TableRow key={branch.id}>
+                  <TableCell>
+                    {branch.code ? (
+                      <span className="font-semibold text-sm text-default-600">{branch.code}</span>
+                    ) : "—"}
+                  </TableCell>
                   <TableCell>
                     <span className="font-medium">{branch.name}</span>
                   </TableCell>

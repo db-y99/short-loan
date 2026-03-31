@@ -18,14 +18,21 @@ import AttachmentsSection from "./attachments-section.client";
 import { createLoanAction } from "@/features/loans/actions/create-loan.action";
 import { saveLoanAttachmentsAction } from "@/features/loans/actions/save-loan-attachments.action";
 import type { TCreateLoanForm, TReference, TUploadFiles } from "@/types/loan.types";
+import type { TBranch } from "@/types/branch.types";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { PROVIDER_TYPES } from "@/constants/google-drive";
 import { LOAN_TYPES } from "@/constants/loan";
+import { Select, SelectItem } from "@heroui/select";
+import { Divider } from "@heroui/divider";
+import { Chip } from "@heroui/chip";
 
 type TProps = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  branches?: TBranch[];
+  isAdmin?: boolean;
+  userBranchName?: string | null;
 };
 
 const INITIAL_FORM: TCreateLoanForm = {
@@ -55,8 +62,9 @@ const INITIAL_FORM: TCreateLoanForm = {
   attachments: [],
 };
 
-const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
+const CreateContractModal = ({ isOpen, onClose, onSuccess, branches = [], isAdmin = false, userBranchName }: TProps) => {
   const [form, setForm] = useState<TCreateLoanForm>(INITIAL_FORM);
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string>("");
@@ -121,6 +129,7 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
 
   const handleClose = useCallback(() => {
     setForm(INITIAL_FORM);
+    setSelectedBranchId("");
     setError(null);
     setUploadProgress("");
     onClose();
@@ -157,6 +166,7 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
         loan_amount: form.loan_amount,
         loan_type: form.loan_type,
         notes: form.notes,
+        branch_id: isAdmin ? (selectedBranchId || null) : null,
         references: form.references.map((r) => ({
           full_name: r.full_name,
           phone: r.phone,
@@ -226,8 +236,11 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
       onClose={handleClose}
     >
       <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">
-          Tạo hợp đồng mới
+        <ModalHeader className="flex gap-2">
+          <div>Tạo hợp đồng mới</div>
+          <Chip variant="bordered" color={userBranchName ? "primary" : "default"}>
+            {userBranchName ?? "Chưa được gán chi nhánh"}
+          </Chip>
         </ModalHeader>
 
         <ModalBody className="flex flex-col gap-8" ref={setModalContentRef}>
@@ -236,6 +249,28 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess }: TProps) => {
               {error}
             </div>
           )}
+
+          {/* Chi nhánh */}
+            {isAdmin ? (
+              <div className="flex flex-col gap-4">
+            <h3 className="text-lg font-semibold">Chi nhánh</h3>
+            <Divider />
+              <Select
+                label="Chi nhánh"
+                placeholder="Chọn chi nhánh"
+                selectedKeys={selectedBranchId ? [selectedBranchId] : []}
+                onSelectionChange={(keys) => setSelectedBranchId(Array.from(keys)[0] as string || "")}
+                className="max-w-xs"
+              >
+                {branches.map((b) => (
+                  <SelectItem key={b.id}>{b.name}</SelectItem>
+                ))}
+              </Select>
+                </div>
+            ) : (
+              <></>
+            )}
+
           <CustomerInfoSection
             form={form}
             onChange={handleFieldChange}

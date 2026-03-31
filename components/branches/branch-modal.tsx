@@ -17,14 +17,14 @@ type TProps = {
 };
 
 export default function BranchModal({ isOpen, onClose, branch, onSuccess }: TProps) {
-  const [form, setForm] = useState({ name: "", address: "", phone: "", is_headquarters: false });
+  const [form, setForm] = useState({ code: "", name: "", address: "", phone: "", is_headquarters: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (branch) {
-      setForm({ name: branch.name, address: branch.address || "", phone: branch.phone || "", is_headquarters: branch.is_headquarters });
+      setForm({ code: branch.code || "", name: branch.name, address: branch.address || "", phone: branch.phone || "", is_headquarters: branch.is_headquarters });
     } else {
-      setForm({ name: "", address: "", phone: "", is_headquarters: false });
+      setForm({ code: "", name: "", address: "", phone: "", is_headquarters: false });
     }
   }, [branch, isOpen]);
 
@@ -68,6 +68,13 @@ export default function BranchModal({ isOpen, onClose, branch, onSuccess }: TPro
         </ModalHeader>
         <ModalBody>
           <div className="space-y-4">
+            <Input
+              label="Mã chi nhánh"
+              placeholder="VD: CT, BN"
+              value={form.code}
+              onValueChange={(v) => setForm({ ...form, code: v })}
+              isDisabled={isSubmitting}
+            />
             <Input
               label="Tên chi nhánh"
               placeholder="VD: Chi nhánh Hà Nội"

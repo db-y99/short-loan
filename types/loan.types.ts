@@ -205,6 +205,7 @@ export type TCreateLoanPayload = {
   loan_amount: string;
   loan_type: string;
   notes: string;
+  branch_id?: string | null;
   references: Array<{
     full_name: string;
     phone: string;
@@ -232,6 +233,7 @@ export type TCreateLoanInput = {
   bank_account_holder?: string | null;
   bank_account_number?: string | null;
   notes?: string | null;
+  branch_id?: string | null;
   references: {
     full_name: string;
     phone: string;
