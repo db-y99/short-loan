@@ -5,7 +5,7 @@ export const getBranchesService = async (): Promise<TBranch[]> => {
   const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from("branches")
-    .select("id, name, address, phone, status, is_headquarters, created_at")
+    .select("id, code, name, address, phone, status, is_headquarters, created_at")
     .is("deleted_at", null)
     .order("is_headquarters", { ascending: false })
     .order("name");

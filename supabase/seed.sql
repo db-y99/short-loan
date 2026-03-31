@@ -1,5 +1,5 @@
 -- Seed data: Chi nhánh
-insert into "public"."branches" (name, status, is_headquarters)
+insert into "public"."branches" (code, name, status, is_headquarters)
 values
-  ('Cần Thơ', 'active', true),
-  ('Bắc Ninh', 'active', false);
+  ('CT', 'Cần Thơ', 'active', true),
+  ('BN', 'Bắc Ninh', 'active', false);
