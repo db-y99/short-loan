@@ -19,6 +19,8 @@ import {
   saveDetailedPaymentPeriodsService,
 } from "@/services/payments/payment-periods.service";
 import { getCurrentUser } from "@/lib/actions/auth";
+import { getProfileById } from "@/services/profiles.service";
+import { ROLES } from "@/constants/roles";
 
 type TCreateLoanResult =
   | { success: true; data: { id: string; code: string; folderId: string } }
@@ -36,6 +38,12 @@ export const createLoanAction = async (
         error: "Bạn cần đăng nhập để tạo khoản vay",
       };
     }
+
+    // Lấy profile để biết role và branch_id
+    const profile = await getProfileById(currentUser.id);
+    const isAdmin = profile?.role === ROLES.ADMIN;
+    // Admin: dùng branch_id từ payload (có thể chọn), user thường: dùng branch_id của chính họ
+    const branchId = isAdmin ? (payload.branch_id ?? null) : (profile?.branch_id ?? null);
 
     const input = CreateLoanSchema.parse({
       ...payload,
@@ -91,6 +99,7 @@ export const createLoanAction = async (
       bank_account_holder: input.bank_account_holder || null,
       bank_account_number: input.bank_account_number || null,
       notes: input.notes || null,
+      branch_id: branchId,
       references: input.references.map((r) => ({
         full_name: r.full_name,
         phone: r.phone,
