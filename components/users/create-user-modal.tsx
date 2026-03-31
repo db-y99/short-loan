@@ -13,26 +13,30 @@ import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Loader2, UserPlus, XCircle, Eye, EyeOff, RefreshCw } from "lucide-react";
 import { addToast } from "@heroui/toast";
+import type { TBranch } from "@/types/branch.types";
 
 type TProps = {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  branches?: TBranch[];
 };
 
 import { ROLES } from "@/constants/roles";
 
-const CreateUserModal = ({ isOpen, onClose, onSuccess }: TProps) => {
+const CreateUserModal = ({ isOpen, onClose, onSuccess, branches = [] }: TProps) => {
   const [formData, setFormData] = useState<{
     email: string;
     password: string;
     full_name: string;
     role: typeof ROLES[keyof typeof ROLES];
+    branch_id: string;
   }>({
     email: "",
     password: "",
     full_name: "",
     role: ROLES.USER,
+    branch_id: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +84,7 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }: TProps) => {
           description: "Tạo người dùng mới thành công",
           color: "success",
         });
-        setFormData({ email: "", password: "", full_name: "", role: ROLES.USER });
+        setFormData({ email: "", password: "", full_name: "", role: ROLES.USER, branch_id: "" });
         onClose();
         onSuccess();
       } else {
@@ -96,7 +100,7 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }: TProps) => {
 
   const handleClose = () => {
     if (!isSubmitting) {
-      setFormData({ email: "", password: "", full_name: "", role: ROLES.USER });
+      setFormData({ email: "", password: "", full_name: "", role: ROLES.USER, branch_id: "" });
       setError(null);
       setShowPassword(false);
       onClose();
@@ -179,6 +183,20 @@ const CreateUserModal = ({ isOpen, onClose, onSuccess }: TProps) => {
               <SelectItem key={ROLES.USER}>User</SelectItem>
               <SelectItem key={ROLES.ADMIN}>Admin</SelectItem>
             </Select>
+
+            {branches.length > 0 && (
+              <Select
+                label="Chi nhánh"
+                placeholder="Chọn chi nhánh"
+                selectedKeys={formData.branch_id ? [formData.branch_id] : []}
+                onSelectionChange={(keys) => setFormData({ ...formData, branch_id: Array.from(keys)[0] as string || "" })}
+                isDisabled={isSubmitting}
+              >
+                {branches.map((b) => (
+                  <SelectItem key={b.id}>{b.name}</SelectItem>
+                ))}
+              </Select>
+            )}
           </div>
         </ModalBody>
         <ModalFooter>

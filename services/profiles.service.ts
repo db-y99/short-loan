@@ -6,6 +6,7 @@ export interface Profile {
   full_name: string;
   role?: string;
   status?: string;
+  branch_id?: string | null;
   deleted_at?: string | null;
   created_at?: string;
   updated_at?: string;
@@ -150,7 +151,7 @@ export async function getProfileRole(id: string): Promise<string | null> {
 }
 
 
-export async function getProfiles(page = 1, limit = 10, search = ""): Promise<{ profiles: Profile[]; total: number }> {
+export async function getProfiles(page = 1, limit = 10, search = "", branchId = ""): Promise<{ profiles: Profile[]; total: number }> {
   try {
     const supabase = await createClient();
     const from = (page - 1) * limit;
@@ -162,9 +163,12 @@ export async function getProfiles(page = 1, limit = 10, search = ""): Promise<{ 
       .range(from, to)
       .order('created_at', { ascending: false });
 
-    // Add search filter if provided
     if (search.trim()) {
       query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%`);
+    }
+
+    if (branchId.trim()) {
+      query = query.eq('branch_id', branchId);
     }
 
     const { data, error, count } = await query;

@@ -7,13 +7,16 @@ import LoansTable from "@/components/loan-table.client";
 import { getLoanDetailsAction } from "@/features/loans/actions/get-loan-details.action";
 
 import type { TLoan, TLoanDetails } from "@/types/loan.types";
+import type { TBranch } from "@/types/branch.types";
 import LoanDetailsModal from "@/components/loan-details/loan-details-modal.client";
 
 type TProps = {
   loans: TLoan[];
+  branches?: TBranch[];
+  selectedBranch?: string;
 };
 
-const LoansPageClient = ({ loans }: TProps) => {
+const LoansPageClient = ({ loans, branches = [], selectedBranch = "" }: TProps) => {
   const router = useRouter();
   const [selectedLoan, setSelectedLoan] = useState<TLoanDetails | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,6 +68,8 @@ const LoansPageClient = ({ loans }: TProps) => {
         loans={loans}
         onRefresh={handleRefresh}
         onRowClick={handleRowClick}
+        branches={branches}
+        selectedBranch={selectedBranch}
       />
 
       {isModalOpen && (

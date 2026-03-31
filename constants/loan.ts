@@ -119,6 +119,7 @@ export const LOANS_TABLE_COLUMNS = [
   { key: "asset", label: "Tài sản" },
   { key: "amount", label: "Số tiền" },
   { key: "loan_package", label: "Gói vay" },
+  { key: "branch", label: "Chi nhánh" },
   { key: "created_at", label: "Thời gian tạo" },
   { key: "approved_at", label: "Thời gian duyệt" },
   { key: "status", label: "Trạng thái" },

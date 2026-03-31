@@ -28,6 +28,7 @@ export type TLoanFilters = {
   status?: string;
   loanType?: string;
   creator?: string;
+  branch?: string;
 };
 
 /** Lấy danh sách loans với thông tin customer (full_name) */
@@ -55,6 +56,9 @@ export const getLoansService = async (
       profiles!inner (
         full_name,
         email
+      ),
+      branches (
+        name
       )
     `,
     )
@@ -67,6 +71,10 @@ export const getLoansService = async (
 
   if (filters?.loanType && filters.loanType !== "all") {
     query = query.eq("loan_type", filters.loanType);
+  }
+
+  if (filters?.branch && filters.branch !== "all") {
+    query = query.eq("branch_id", filters.branch);
   }
 
   const { data, error } = await query;
@@ -108,6 +116,9 @@ export const getLoansService = async (
         | null;
       const profile = Array.isArray(prof) ? prof[0] : prof;
 
+      const branch = row.branches as { name: string } | { name: string }[] | null;
+      const branchName = (Array.isArray(branch) ? branch[0] : branch)?.name ?? null;
+
       const loanTypeKey = row.loan_type as TLoanType;
       const creator = profile?.full_name ?? profile?.email ?? "—";
 
@@ -132,6 +143,7 @@ export const getLoansService = async (
         created_at: row.created_at,
         approved_at: row.approved_at,
         status: row.status as TLoanStatus,
+        branch: branchName,
       } satisfies TLoan;
     })
     .filter((loan): loan is TLoan => loan !== null);

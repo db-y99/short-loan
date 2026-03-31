@@ -5,6 +5,8 @@ export type TProfileClient = {
   role?: string;
   status?: string;
   deleted_at?: string | null;
+  branch_id?: string | null;
+  branch_name?: string | null;
 };
 
 /**
@@ -14,12 +16,23 @@ export async function getProfileClientById(id: string): Promise<TProfileClient |
   try {
     const { data, error } = await supabaseClient
       .from("profiles")
-      .select("id, role, status, deleted_at")
+      .select("id, role, status, deleted_at, branch_id, branches(name)")
       .eq("id", id)
       .single();
 
     if (error || !data) return null;
-    return data as TProfileClient;
+
+    const branch = data.branches as { name: string } | { name: string }[] | null;
+    const branchName = (Array.isArray(branch) ? branch[0] : branch)?.name ?? null;
+
+    return {
+      id: data.id,
+      role: data.role,
+      status: data.status,
+      deleted_at: data.deleted_at,
+      branch_id: data.branch_id ?? null,
+      branch_name: branchName,
+    };
   } catch (error) {
     console.error("Error getting profile:", error);
     return null;

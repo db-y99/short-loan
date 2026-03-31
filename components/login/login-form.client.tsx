@@ -170,9 +170,6 @@ export default function LoginForm() {
           <h1 className="text-4xl font-bold text-primary text-center">
             {siteConfig.name}
           </h1>
-          <p className="text-sm text-default-500 text-center">
-            {siteConfig.description}
-          </p>
         </div>
 
         <Card className="w-full shadow-xl">

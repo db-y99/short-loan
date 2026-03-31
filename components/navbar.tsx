@@ -16,7 +16,7 @@ import { useState } from "react";
 import { Avatar } from "@heroui/avatar";
 import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection } from "@heroui/dropdown";
 import { User } from "@heroui/user";
-import { LogOut, Menu } from "lucide-react";
+import { LogOut, Menu, GitBranch, MapPin } from "lucide-react";
 
 import { siteConfig } from "@/config/site";
 import { ROLES } from "@/constants/roles";
@@ -83,6 +83,16 @@ export default function Navbar({ onOpenSidebar }: Props) {
               </NextLink>
             </NavbarItem>
           )}
+          {profile?.role === ROLES.ADMIN && (
+            <NavbarItem>
+              <NextLink
+                className={`${pathname === "/branches" ? "text-primary font-semibold" : "text-foreground"}`}
+                href="/branches"
+              >
+                Chi nhánh
+              </NextLink>
+            </NavbarItem>
+          )}
         </ul>
       </NavbarContent>
 
@@ -91,8 +101,15 @@ export default function Navbar({ onOpenSidebar }: Props) {
           <ThemeSwitch />
         </NavbarItem>
         {user && (
-          <NavbarItem>
-            <Dropdown placement="bottom-end">
+          <>
+            {profile?.branch_name && (
+              <NavbarItem className="hidden sm:flex items-center gap-1 text-sm text-default-500">
+                <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>{profile.branch_name}</span>
+              </NavbarItem>
+            )}
+            <NavbarItem>
+              <Dropdown placement="bottom-end">
               <DropdownTrigger>
                 <Avatar
                   isBordered
@@ -136,7 +153,8 @@ export default function Navbar({ onOpenSidebar }: Props) {
                 </DropdownItem>
               </DropdownMenu>
             </Dropdown>
-          </NavbarItem>
+            </NavbarItem>
+          </>
         )}
       </NavbarContent>
 
@@ -194,6 +212,13 @@ export default function Navbar({ onOpenSidebar }: Props) {
               <NavbarMenuItem>
                 <Link color={pathname === "/users" ? "primary" : "foreground"} href="/users" size="lg">
                   Quản lý người dùng
+                </Link>
+              </NavbarMenuItem>
+            )}
+            {profile?.role === ROLES.ADMIN && (
+              <NavbarMenuItem>
+                <Link color={pathname === "/branches" ? "primary" : "foreground"} href="/branches" size="lg">
+                  Chi nhánh
                 </Link>
               </NavbarMenuItem>
             )}

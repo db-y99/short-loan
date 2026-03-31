@@ -3,4 +3,5 @@ export const ROUTES = {
   LOGIN: "/login",
   APPROVE: "/",
   LOANS: "/loans",
+  BRANCHES: "/branches",
 } as const;

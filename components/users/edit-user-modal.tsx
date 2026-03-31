@@ -10,21 +10,25 @@ import {
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
+import { Select, SelectItem } from "@heroui/select";
 import { Loader2, Edit, CheckCircle, XCircle } from "lucide-react";
 import { addToast } from "@heroui/toast";
 import { Profile } from "@/services/profiles.service";
+import type { TBranch } from "@/types/branch.types";
 
 type TProps = {
   isOpen: boolean;
   onClose: () => void;
   user: Profile;
   onSuccess: () => void;
+  branches?: TBranch[];
 };
 
-const EditUserModal = ({ isOpen, onClose, user, onSuccess }: TProps) => {
+const EditUserModal = ({ isOpen, onClose, user, onSuccess, branches = [] }: TProps) => {
   const [formData, setFormData] = useState({
     email: "",
     full_name: "",
+    branch_id: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<{
@@ -32,12 +36,12 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess }: TProps) => {
     text: string;
   } | null>(null);
 
-  // Initialize form data when user changes
   useEffect(() => {
     if (user) {
       setFormData({
         email: user.email || "",
         full_name: user.full_name || "",
+        branch_id: user.branch_id || "",
       });
       setMessage(null);
     }
@@ -140,6 +144,23 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess }: TProps) => {
               isRequired
               isDisabled={isSubmitting}
             />
+
+            {branches.length > 0 && (
+              <Select
+                label="Chi nhánh"
+                placeholder="Chọn chi nhánh"
+                selectedKeys={formData.branch_id ? [formData.branch_id] : []}
+                onSelectionChange={(keys) => {
+                  const val = Array.from(keys)[0] as string || "";
+                  setFormData({ ...formData, branch_id: val });
+                }}
+                isDisabled={isSubmitting}
+              >
+                {branches.map((b) => (
+                  <SelectItem key={b.id}>{b.name}</SelectItem>
+                ))}
+              </Select>
+            )}
           </div>
 
           <div className="text-xs text-default-500 bg-default-50 p-3 rounded-lg">
