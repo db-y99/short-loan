@@ -77,7 +77,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { email, full_name, status } = body;
+    const { email, full_name, status, branch_id } = body;
 
     // Validation
     if (!email?.trim() || !full_name?.trim()) {
@@ -118,6 +118,7 @@ export async function PUT(
       email: email.trim(),
       full_name: full_name.trim(),
       status,
+      branch_id: branch_id ?? undefined,
       updated_at: new Date().toISOString(),
     });
 

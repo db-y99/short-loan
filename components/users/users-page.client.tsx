@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Card, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Pagination } from "@heroui/pagination";
+import { Select, SelectItem } from "@heroui/select";
 import { 
   Table, 
   TableHeader, 
@@ -36,6 +37,7 @@ import { ROLES } from "@/constants/roles";
 import { USER_STATUS } from "@/lib/constants";
 import { Profile } from "@/services/profiles.service";
 import { formatDate } from "@/lib/format";
+import type { TBranch } from "@/types/branch.types";
 import CreateUserModal from "@/components/users/create-user-modal";
 import EditUserModal from "@/components/users/edit-user-modal";
 import UpdateRoleModal from "@/components/users/update-role-modal";
@@ -46,14 +48,19 @@ type TProps = {
   total: number;
   currentPage: number;
   searchQuery: string;
+  branches: TBranch[];
+  selectedBranch: string;
 };
 
-const UsersPageClient = ({ profiles, total, currentPage, searchQuery }: TProps) => {
+const UsersPageClient = ({ profiles, total, currentPage, searchQuery, branches, selectedBranch }: TProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchQuery);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => { setIsClient(true); }, []);
   const [updatingRoleUser, setUpdatingRoleUser] = useState<Profile | null>(null);
   const [resettingPasswordUser, setResettingPasswordUser] = useState<Profile | null>(null);
 
@@ -66,7 +73,18 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery }: TProps) 
     } else {
       params.delete("search");
     }
-    params.delete("page"); // Reset to first page
+    params.delete("page");
+    router.push(`/users?${params.toString()}`);
+  };
+
+  const handleBranchFilter = (branchId: string) => {
+    const params = new URLSearchParams(searchParams);
+    if (branchId) {
+      params.set("branch", branchId);
+    } else {
+      params.delete("branch");
+    }
+    params.delete("page");
     router.push(`/users?${params.toString()}`);
   };
 
@@ -77,9 +95,12 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery }: TProps) 
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
+    if (e.key === "Enter") handleSearch();
+  };
+
+  const getBranchName = (branchId?: string | null) => {
+    if (!branchId) return "—";
+    return branches.find((b) => b.id === branchId)?.name || "—";
   };
 
   const getStatusColor = (status?: string) => {
@@ -154,15 +175,31 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery }: TProps) 
       {/* Search */}
       <Card>
         <CardBody>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Input
               placeholder="Tìm kiếm theo tên hoặc email..."
               value={search}
               onValueChange={setSearch}
               onKeyPress={handleKeyPress}
               startContent={<Search className="w-4 h-4 text-default-400" />}
-              className="flex-1"
+              className="flex-1 min-w-[200px]"
             />
+            {isClient && branches.length > 0 && (
+              <Select
+                placeholder="Tất cả chi nhánh"
+                selectedKeys={selectedBranch ? [selectedBranch] : []}
+                onSelectionChange={(keys) => {
+                  const val = Array.from(keys)[0] as string || "";
+                  handleBranchFilter(val);
+                }}
+                className="w-48"
+                aria-label="Lọc theo chi nhánh"
+              >
+                {branches.map((b) => (
+                  <SelectItem key={b.id}>{b.name}</SelectItem>
+                ))}
+              </Select>
+            )}
             <Button color="primary" onPress={handleSearch}>
               Tìm kiếm
             </Button>
@@ -177,6 +214,7 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery }: TProps) 
             <TableHeader>
               <TableColumn>TÊN</TableColumn>
               <TableColumn>EMAIL</TableColumn>
+              <TableColumn>CHI NHÁNH</TableColumn>
               <TableColumn>ROLE</TableColumn>
               <TableColumn>TRẠNG THÁI</TableColumn>
               <TableColumn>NGÀY TẠO</TableColumn>
@@ -192,6 +230,7 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery }: TProps) 
                     </div>
                   </TableCell>
                   <TableCell>{user.email}</TableCell>
+                  <TableCell>{getBranchName(user.branch_id)}</TableCell>
                   <TableCell>
                     <Chip
                       color={user.role === ROLES.ADMIN ? "secondary" : "default"}
@@ -287,6 +326,7 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery }: TProps) 
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={refreshData}
+        branches={branches}
       />
 
       {editingUser && (
@@ -295,6 +335,7 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery }: TProps) 
           onClose={() => setEditingUser(null)}
           user={editingUser}
           onSuccess={refreshData}
+          branches={branches}
         />
       )}
 

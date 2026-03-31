@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const { email, password, full_name, role = ROLES.USER } = await request.json();
+    const { email, password, full_name, role = ROLES.USER, branch_id } = await request.json();
 
     if (!email?.trim() || !full_name?.trim() || !password?.trim()) {
       return NextResponse.json(
@@ -92,10 +92,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update profile role (profile auto-created by Supabase trigger)
+    // Update profile role + branch (profile auto-created by Supabase trigger)
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .update({ role })
+      .update({ role, ...(branch_id ? { branch_id } : {}) })
       .eq("id", authData.user.id)
       .select()
       .single();

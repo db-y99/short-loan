@@ -20,6 +20,7 @@ export type TLoan = {
   created_at: string;
   approved_at: string | null;
   status: TLoanStatus;
+  branch: string | null;
 };
 
 export type TReference = {

@@ -19,6 +19,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useDebounceValue } from "usehooks-ts";
 
 import type { TLoan, TLoanStatus } from "@/types/loan.types";
+import type { TBranch } from "@/types/branch.types";
 import {
   LOANS_TABLE_COLUMNS,
   LOAN_STATUS_LABEL,
@@ -34,6 +35,8 @@ type TProps = {
   loans: TLoan[];
   onRefresh?: () => void;
   onRowClick?: (loan: TLoan) => void;
+  branches?: TBranch[];
+  selectedBranch?: string;
 };
 
 const ALL_FILTER_VALUE = "all";
@@ -55,7 +58,7 @@ const LOAN_TYPE_OPTIONS = [
 ];
 
 
-const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
+const LoansTable = ({ loans, onRefresh, onRowClick, branches = [], selectedBranch = "" }: TProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -71,6 +74,9 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
   );
   const [creatorFilter, setCreatorFilter] = useState(
     searchParams.get("creator") ?? ALL_FILTER_VALUE,
+  );
+  const [branchFilter, setBranchFilter] = useState(
+    searchParams.get("branch") ?? ALL_FILTER_VALUE,
   );
 
   useEffect(() => {
@@ -159,6 +165,20 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
     [updateFilters],
   );
 
+  const handleBranchChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const value = e.target.value || ALL_FILTER_VALUE;
+      setBranchFilter(value);
+      updateFilters({ branch: value });
+    },
+    [updateFilters],
+  );
+
+  const branchOptions = useMemo(() => [
+    { key: ALL_FILTER_VALUE, label: "Tất cả chi nhánh" },
+    ...branches.map((b) => ({ key: b.id, label: b.name })),
+  ], [branches]);
+
   const renderCell = useCallback(
     (loan: TLoan, columnKey: string): React.ReactNode => {
       switch (columnKey) {
@@ -172,6 +192,8 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
           return formatDateTimeVN(loan.created_at);
         case "approved_at":
           return formatDateTimeVN(loan.approved_at);
+        case "branch":
+          return loan.branch ?? <span className="text-default-400">—</span>;
         case "status":
           return (
             <Chip
@@ -254,6 +276,21 @@ const LoansTable = ({ loans, onRefresh, onRowClick }: TProps) => {
                 <SelectItem key={option.key}>{option.label}</SelectItem>
               ))}
             </Select>
+
+            {branches.length > 0 && (
+              <Select
+                className="w-full sm:max-w-[180px]"
+                selectedKeys={[branchFilter]}
+                label="Chi nhánh"
+                labelPlacement="outside"
+                onChange={handleBranchChange}
+                isDisabled={isPending}
+              >
+                {branchOptions.map((option) => (
+                  <SelectItem key={option.key}>{option.label}</SelectItem>
+                ))}
+              </Select>
+            )}
           </>
         ) : (
           <>
