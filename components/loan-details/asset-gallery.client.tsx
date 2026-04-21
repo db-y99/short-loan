@@ -85,6 +85,10 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
     setPreviewImages([]);
   };
 
+  const handlePickImages = () => {
+    fileInputRef.current?.click();
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -189,15 +193,6 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
         >
           Thêm ảnh
         </Button>
-        <input
-          ref={fileInputRef}
-          id="asset-file-input"
-          type="file"
-          accept="image/*"
-          multiple
-          className="hidden"
-          onChange={handleFileChange}
-        />
       </div>
 
       {!displayImages.length && (
@@ -262,6 +257,14 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
                 </div>
               </ModalHeader>
               <ModalBody>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
                 {message && (
                   <div
                     className={`flex items-center gap-2 p-3 rounded-lg mb-3 ${
@@ -281,8 +284,9 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
 
                 {previewImages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-default-400">
-                    <label
-                      htmlFor="asset-file-input"
+                    <button
+                      type="button"
+                      onClick={handlePickImages}
                       className="flex flex-col items-center justify-center w-full max-w-xl p-12 border-2 border-dashed border-default-300 rounded-xl hover:border-primary hover:bg-default-50 transition-all cursor-pointer"
                     >
                       <Upload className="w-16 h-16 mb-4 text-default-400" />
@@ -292,7 +296,7 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
                       <p className="text-sm text-default-400">
                         Hỗ trợ nhiều ảnh cùng lúc
                       </p>
-                    </label>
+                    </button>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -326,13 +330,14 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
                       ))}
                     </div>
                     {!isUploading && (
-                      <label
-                        htmlFor="asset-file-input"
+                      <button
+                        type="button"
+                        onClick={handlePickImages}
                         className="flex items-center justify-center gap-2 w-full py-2 px-4 border border-default-300 rounded-xl hover:border-primary hover:bg-default-50 transition-all cursor-pointer text-sm font-medium"
                       >
                         <Upload className="w-4 h-4" />
                         Thêm ảnh khác
-                      </label>
+                      </button>
                     )}
                   </div>
                 )}
