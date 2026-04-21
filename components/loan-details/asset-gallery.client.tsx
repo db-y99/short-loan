@@ -374,52 +374,54 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
           onClick={handleClose}
           style={{ position: 'fixed' }}
         >
-          <div
-            className="relative max-w-7xl max-h-[90vh] w-full mx-4 bg-content1 rounded-2xl shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-divider bg-content1">
-              <h3 className="text-lg font-semibold">
-                Ảnh tài sản ({selectedIndex + 1}/{displayImages.length})
-              </h3>
-              <button
-                type="button"
-                className="p-2 rounded-lg hover:bg-default-100 transition-colors"
-                onClick={handleClose}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Image Container */}
-            <div className="flex items-center justify-center p-6 bg-content2" style={{ maxHeight: 'calc(90vh - 140px)' }}>
-              <img
-                alt="Ảnh tài sản"
-                className="max-w-full max-h-full object-contain"
-                src={selectedImage}
-              />
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-divider bg-content1">
-              <Button
-                color="primary"
-                variant="flat"
-                onPress={handleDownloadImage}
-                startContent={<Download size={16} />}
-              >
-                Tải xuống
-              </Button>
-              <Button 
-                color="danger" 
-                variant="light" 
-                onPress={handleClose}
-              >
-                Đóng
-              </Button>
-            </div>
+        <div
+          className="relative max-w-7xl w-full mx-4 bg-content1 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+          style={{ maxHeight: '90vh' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-divider bg-content1 flex-shrink-0">
+            <h3 className="text-lg font-semibold">
+              Ảnh tài sản ({selectedIndex + 1}/{displayImages.length})
+            </h3>
+            <button
+              type="button"
+              className="p-2 rounded-lg hover:bg-default-100 transition-colors"
+              onClick={handleClose}
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
+
+          {/* Image Container - scrollable */}
+          <div className="flex-1 overflow-auto flex items-center justify-center p-6 bg-content2 min-h-0">
+            <img
+              alt="Ảnh tài sản"
+              className="max-w-full object-contain"
+              style={{ maxHeight: 'calc(90vh - 140px)' }}
+              src={selectedImage}
+            />
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-divider bg-content1 flex-shrink-0">
+            <Button
+              color="primary"
+              variant="flat"
+              onPress={handleDownloadImage}
+              startContent={<Download size={16} />}
+            >
+              Tải xuống
+            </Button>
+            <Button
+              color="danger"
+              variant="light"
+              onPress={handleClose}
+            >
+              Đóng
+            </Button>
+          </div>
+        </div>
         </div>
       )}
     </>
