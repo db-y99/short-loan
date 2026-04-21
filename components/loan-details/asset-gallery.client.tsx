@@ -2,11 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Button,
   Image,
 } from "@heroui/react";
@@ -230,148 +225,142 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
         </div>
       )}
 
-      {/* Upload Modal - Chọn ảnh, preview và upload */}
-      <Modal
-        isOpen={isUploadModalOpen}
-        scrollBehavior="inside"
-        size="4xl"
-        isDismissable={false}
-        isKeyboardDismissDisabled={isUploading}
-        hideCloseButton={isUploading}
-        onClose={handleCancelUpload}
-      >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="flex flex-col gap-1">
-                <div className="flex items-center justify-between w-full">
-                  <span>
-                    {isUploading
-                      ? "Đang upload ảnh..."
-                      : `Chọn ảnh để upload (${previewImages.length} ảnh)`}
-                  </span>
-                  {!isUploading && previewImages.length > 0 && (
-                    <p className="text-sm text-default-500 font-normal">
-                      Nhấn vào dấu X để xóa ảnh không muốn upload
-                    </p>
+      {/* Upload Overlay - custom để tránh conflict nested modal trên production */}
+      {isUploadModalOpen && (
+        <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60 p-4">
+          <div
+            className="w-full max-w-5xl max-h-[90vh] bg-content1 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-divider">
+              <span className="font-semibold">
+                {isUploading
+                  ? "Đang upload ảnh..."
+                  : `Chọn ảnh để upload (${previewImages.length} ảnh)`}
+              </span>
+              <button
+                type="button"
+                className="p-2 rounded-lg hover:bg-default-100 transition-colors"
+                onClick={handleCancelUpload}
+                disabled={isUploading}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 overflow-auto flex-1">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              {message && (
+                <div
+                  className={`flex items-center gap-2 p-3 rounded-lg mb-3 ${
+                    message.type === "success"
+                      ? "bg-success-50 text-success-700 dark:bg-success-900/20 dark:text-success-400"
+                      : "bg-danger-50 text-danger-700 dark:bg-danger-900/20 dark:text-danger-400"
+                  }`}
+                >
+                  {message.type === "success" ? (
+                    <CheckCircle className="w-5 h-5" />
+                  ) : (
+                    <XCircle className="w-5 h-5" />
                   )}
+                  <p className="text-sm font-medium">{message.text}</p>
                 </div>
-              </ModalHeader>
-              <ModalBody>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-                {message && (
-                  <div
-                    className={`flex items-center gap-2 p-3 rounded-lg mb-3 ${
-                      message.type === "success"
-                        ? "bg-success-50 text-success-700 dark:bg-success-900/20 dark:text-success-400"
-                        : "bg-danger-50 text-danger-700 dark:bg-danger-900/20 dark:text-danger-400"
-                    }`}
-                  >
-                    {message.type === "success" ? (
-                      <CheckCircle className="w-5 h-5" />
-                    ) : (
-                      <XCircle className="w-5 h-5" />
-                    )}
-                    <p className="text-sm font-medium">{message.text}</p>
-                  </div>
-                )}
+              )}
 
-                {previewImages.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 text-default-400">
+              {previewImages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-default-400">
+                  <button
+                    type="button"
+                    onClick={handlePickImages}
+                    className="flex flex-col items-center justify-center w-full max-w-xl p-12 border-2 border-dashed border-default-300 rounded-xl hover:border-primary hover:bg-default-50 transition-all cursor-pointer"
+                  >
+                    <Upload className="w-16 h-16 mb-4 text-default-400" />
+                    <p className="text-lg font-medium mb-2">
+                      Click để chọn ảnh
+                    </p>
+                    <p className="text-sm text-default-400">
+                      Hỗ trợ nhiều ảnh cùng lúc
+                    </p>
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    {previewImages.map((img, index) => (
+                      <div
+                        key={index}
+                        className="relative aspect-square rounded-lg overflow-hidden border-2 border-default-200 group hover:border-primary transition-colors"
+                      >
+                        <img
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          src={img.preview}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all pointer-events-none" />
+                        
+                        {!isUploading && (
+                          <button
+                            type="button"
+                            className="absolute top-2 right-2 p-1.5 rounded-full bg-danger text-white hover:bg-danger-600 transition-all opacity-0 group-hover:opacity-100 shadow-lg z-10"
+                            onClick={() => handleRemovePreviewImage(index)}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                        
+                        <div className="absolute bottom-2 left-2 text-xs bg-black/70 text-white px-2 py-1 rounded max-w-[calc(100%-1rem)] truncate z-10">
+                          {img.file.name}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {!isUploading && (
                     <button
                       type="button"
                       onClick={handlePickImages}
-                      className="flex flex-col items-center justify-center w-full max-w-xl p-12 border-2 border-dashed border-default-300 rounded-xl hover:border-primary hover:bg-default-50 transition-all cursor-pointer"
+                      className="flex items-center justify-center gap-2 w-full py-2 px-4 border border-default-300 rounded-xl hover:border-primary hover:bg-default-50 transition-all cursor-pointer text-sm font-medium"
                     >
-                      <Upload className="w-16 h-16 mb-4 text-default-400" />
-                      <p className="text-lg font-medium mb-2">
-                        Click để chọn ảnh
-                      </p>
-                      <p className="text-sm text-default-400">
-                        Hỗ trợ nhiều ảnh cùng lúc
-                      </p>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
-                      {previewImages.map((img, index) => (
-                        <div
-                          key={index}
-                          className="relative aspect-square rounded-lg overflow-hidden border-2 border-default-200 group hover:border-primary transition-colors"
-                        >
-                          <img
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-full object-cover"
-                            src={img.preview}
-                          />
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all pointer-events-none" />
-                          
-                          {!isUploading && (
-                            <button
-                              type="button"
-                              className="absolute top-2 right-2 p-1.5 rounded-full bg-danger text-white hover:bg-danger-600 transition-all opacity-0 group-hover:opacity-100 shadow-lg z-10"
-                              onClick={() => handleRemovePreviewImage(index)}
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          )}
-                          
-                          <div className="absolute bottom-2 left-2 text-xs bg-black/70 text-white px-2 py-1 rounded max-w-[calc(100%-1rem)] truncate z-10">
-                            {img.file.name}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {!isUploading && (
-                      <button
-                        type="button"
-                        onClick={handlePickImages}
-                        className="flex items-center justify-center gap-2 w-full py-2 px-4 border border-default-300 rounded-xl hover:border-primary hover:bg-default-50 transition-all cursor-pointer text-sm font-medium"
-                      >
-                        <Upload className="w-4 h-4" />
-                        Thêm ảnh khác
-                      </button>
-                    )}
-                  </div>
-                )}
-              </ModalBody>
-              <ModalFooter>
-                <Button
-                  variant="flat"
-                  onPress={handleCancelUpload}
-                  isDisabled={isUploading}
-                >
-                  {isUploading ? "Đang upload..." : "Hủy"}
-                </Button>
-                <Button
-                  color="primary"
-                  isDisabled={previewImages.length === 0 || isUploading}
-                  onPress={handleConfirmUpload}
-                  startContent={
-                    isUploading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
                       <Upload className="w-4 h-4" />
-                    )
-                  }
-                >
-                  {isUploading
-                    ? `Đang upload ${previewImages.length} ảnh...`
-                    : `Upload ${previewImages.length} ảnh`}
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+                      Thêm ảnh khác
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center justify-end gap-2 p-4 border-t border-divider">
+              <Button
+                variant="flat"
+                onPress={handleCancelUpload}
+                isDisabled={isUploading}
+              >
+                {isUploading ? "Đang upload..." : "Hủy"}
+              </Button>
+              <Button
+                color="primary"
+                isDisabled={previewImages.length === 0 || isUploading}
+                onPress={handleConfirmUpload}
+                startContent={
+                  isUploading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Upload className="w-4 h-4" />
+                  )
+                }
+              >
+                {isUploading
+                  ? `Đang upload ${previewImages.length} ảnh...`
+                  : `Upload ${previewImages.length} ảnh`}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Image View Overlay - Custom implementation để tránh conflict với parent modal */}
       {selectedImage && (

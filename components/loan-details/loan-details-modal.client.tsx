@@ -191,6 +191,8 @@ const LoanDetailsModal = ({
       isOpen={isOpen}
       scrollBehavior="inside"
       size="5xl"
+      isDismissable={false}
+      isKeyboardDismissDisabled
       hideCloseButton
       className="max-w-[1400px]"
       onClose={onClose}
