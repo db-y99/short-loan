@@ -235,7 +235,8 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
         isOpen={isUploadModalOpen}
         scrollBehavior="inside"
         size="4xl"
-        isDismissable={!isUploading}
+        isDismissable={false}
+        isKeyboardDismissDisabled={isUploading}
         hideCloseButton={isUploading}
         onClose={handleCancelUpload}
       >
