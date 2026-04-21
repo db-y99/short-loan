@@ -80,15 +80,9 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
   };
 
   const handleUploadClick = () => {
-    // Mở modal trước, không trigger file input ngay
     setIsUploadModalOpen(true);
     setMessage(null);
     setPreviewImages([]);
-  };
-
-  const handleSelectFiles = () => {
-    // Trigger file input khi click vào vùng chọn ảnh trong modal
-    fileInputRef.current?.click();
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,6 +191,7 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
         </Button>
         <input
           ref={fileInputRef}
+          id="asset-file-input"
           type="file"
           accept="image/*"
           multiple
@@ -286,11 +281,9 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
 
                 {previewImages.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 text-default-400">
-                    <button
-                      type="button"
-                      onClick={handleSelectFiles}
-                      disabled={isUploading}
-                      className="flex flex-col items-center justify-center w-full max-w-xl p-12 border-2 border-dashed border-default-300 rounded-xl hover:border-primary hover:bg-default-50 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    <label
+                      htmlFor="asset-file-input"
+                      className="flex flex-col items-center justify-center w-full max-w-xl p-12 border-2 border-dashed border-default-300 rounded-xl hover:border-primary hover:bg-default-50 transition-all cursor-pointer"
                     >
                       <Upload className="w-16 h-16 mb-4 text-default-400" />
                       <p className="text-lg font-medium mb-2">
@@ -299,7 +292,7 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
                       <p className="text-sm text-default-400">
                         Hỗ trợ nhiều ảnh cùng lúc
                       </p>
-                    </button>
+                    </label>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -314,10 +307,8 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
                             className="w-full h-full object-cover"
                             src={img.preview}
                           />
-                          {/* Overlay khi hover */}
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all pointer-events-none" />
                           
-                          {/* Nút xóa - hiện khi hover */}
                           {!isUploading && (
                             <button
                               type="button"
@@ -328,7 +319,6 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
                             </button>
                           )}
                           
-                          {/* Tên file */}
                           <div className="absolute bottom-2 left-2 text-xs bg-black/70 text-white px-2 py-1 rounded max-w-[calc(100%-1rem)] truncate z-10">
                             {img.file.name}
                           </div>
@@ -336,14 +326,13 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
                       ))}
                     </div>
                     {!isUploading && (
-                      <Button
-                        variant="bordered"
-                        className="w-full"
-                        startContent={<Upload className="w-4 h-4" />}
-                        onPress={handleSelectFiles}
+                      <label
+                        htmlFor="asset-file-input"
+                        className="flex items-center justify-center gap-2 w-full py-2 px-4 border border-default-300 rounded-xl hover:border-primary hover:bg-default-50 transition-all cursor-pointer text-sm font-medium"
                       >
+                        <Upload className="w-4 h-4" />
                         Thêm ảnh khác
-                      </Button>
+                      </label>
                     )}
                   </div>
                 )}
@@ -385,52 +374,54 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
           onClick={handleClose}
           style={{ position: 'fixed' }}
         >
-          <div
-            className="relative max-w-7xl max-h-[90vh] w-full mx-4 bg-content1 rounded-2xl shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-divider bg-content1">
-              <h3 className="text-lg font-semibold">
-                Ảnh tài sản ({selectedIndex + 1}/{displayImages.length})
-              </h3>
-              <button
-                type="button"
-                className="p-2 rounded-lg hover:bg-default-100 transition-colors"
-                onClick={handleClose}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Image Container */}
-            <div className="flex items-center justify-center p-6 bg-content2" style={{ maxHeight: 'calc(90vh - 140px)' }}>
-              <img
-                alt="Ảnh tài sản"
-                className="max-w-full max-h-full object-contain"
-                src={selectedImage}
-              />
-            </div>
-
-            {/* Footer */}
-            <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-divider bg-content1">
-              <Button
-                color="primary"
-                variant="flat"
-                onPress={handleDownloadImage}
-                startContent={<Download size={16} />}
-              >
-                Tải xuống
-              </Button>
-              <Button 
-                color="danger" 
-                variant="light" 
-                onPress={handleClose}
-              >
-                Đóng
-              </Button>
-            </div>
+        <div
+          className="relative max-w-7xl w-full mx-4 bg-content1 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+          style={{ maxHeight: '90vh' }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-divider bg-content1 flex-shrink-0">
+            <h3 className="text-lg font-semibold">
+              Ảnh tài sản ({selectedIndex + 1}/{displayImages.length})
+            </h3>
+            <button
+              type="button"
+              className="p-2 rounded-lg hover:bg-default-100 transition-colors"
+              onClick={handleClose}
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
+
+          {/* Image Container - scrollable */}
+          <div className="flex-1 overflow-auto flex items-center justify-center p-6 bg-content2 min-h-0">
+            <img
+              alt="Ảnh tài sản"
+              className="max-w-full object-contain"
+              style={{ maxHeight: 'calc(90vh - 140px)' }}
+              src={selectedImage}
+            />
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-divider bg-content1 flex-shrink-0">
+            <Button
+              color="primary"
+              variant="flat"
+              onPress={handleDownloadImage}
+              startContent={<Download size={16} />}
+            >
+              Tải xuống
+            </Button>
+            <Button
+              color="danger"
+              variant="light"
+              onPress={handleClose}
+            >
+              Đóng
+            </Button>
+          </div>
+        </div>
         </div>
       )}
     </>
