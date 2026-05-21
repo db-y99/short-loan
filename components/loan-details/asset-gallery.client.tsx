@@ -5,7 +5,17 @@ import {
   Button,
   Image,
 } from "@heroui/react";
-import { Download, ImageIcon, Upload, Loader2, CheckCircle, XCircle, X } from "lucide-react";
+import {
+  Download,
+  ImageIcon,
+  Upload,
+  Loader2,
+  CheckCircle,
+  XCircle,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { addToast } from "@heroui/toast";
 import { TAssetImage } from "@/types/loan.types";
 
@@ -33,6 +43,8 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const displayImages = localImages.map((image) => image.fileId);
+
   const handleOpenPreview = (image: string, index: number) => {
     setSelectedImage(image);
     setSelectedIndex(index);
@@ -42,25 +54,52 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
     setSelectedImage(null);
   };
 
-  // Handle ESC key and prevent body scroll when image viewer is open
+  const hasPrev = selectedIndex > 0;
+  const hasNext = selectedIndex < displayImages.length - 1;
+
+  const goToImage = (index: number) => {
+    const fileId = displayImages[index];
+    if (!fileId) return;
+    setSelectedIndex(index);
+    setSelectedImage(`/api/drive/image/${fileId}`);
+  };
+
+  const handlePrev = () => {
+    if (hasPrev) goToImage(selectedIndex - 1);
+  };
+
+  const handleNext = () => {
+    if (hasNext) goToImage(selectedIndex + 1);
+  };
+
+  // Handle keyboard + prevent body scroll when image viewer is open
   useEffect(() => {
     if (!selectedImage) return;
 
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
         handleClose();
+        return;
+      }
+      if (displayImages.length <= 1) return;
+      if (e.key === "ArrowLeft" && selectedIndex > 0) {
+        e.preventDefault();
+        goToImage(selectedIndex - 1);
+      }
+      if (e.key === "ArrowRight" && selectedIndex < displayImages.length - 1) {
+        e.preventDefault();
+        goToImage(selectedIndex + 1);
       }
     };
 
-    // Prevent body scroll
-    document.body.style.overflow = 'hidden';
-    document.addEventListener('keydown', handleEscape);
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      document.body.style.overflow = '';
-      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [selectedImage]);
+  }, [selectedImage, selectedIndex, displayImages]);
 
   const handleDownloadImage = () => {
     if (!selectedImage) return;
@@ -170,8 +209,6 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
       setIsUploading(false);
     }
   };
-
-  const displayImages = localImages.map((image) => image.fileId);
 
   return (
     <>
@@ -376,45 +413,98 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-divider bg-content1 flex-shrink-0">
-            <h3 className="text-lg font-semibold">
-              Ảnh tài sản ({selectedIndex + 1}/{displayImages.length})
-            </h3>
+            <div className="flex items-center gap-2">
+              {displayImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    className="p-2 rounded-lg hover:bg-default-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    onClick={handlePrev}
+                    disabled={!hasPrev}
+                    aria-label="Ảnh trước"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    type="button"
+                    className="p-2 rounded-lg hover:bg-default-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    onClick={handleNext}
+                    disabled={!hasNext}
+                    aria-label="Ảnh sau"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+              <h3 className="text-lg font-semibold">
+                Ảnh tài sản ({selectedIndex + 1}/{displayImages.length})
+              </h3>
+            </div>
             <button
               type="button"
               className="p-2 rounded-lg hover:bg-default-100 transition-colors"
               onClick={handleClose}
+              aria-label="Đóng"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Image Container - scrollable */}
-          <div className="flex-1 overflow-auto flex items-center justify-center p-6 bg-content2 min-h-0">
+          <div className="relative flex-1 overflow-auto flex items-center justify-center p-6 bg-content2 min-h-0">
+            {displayImages.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  onClick={handlePrev}
+                  disabled={!hasPrev}
+                  aria-label="Ảnh trước"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  onClick={handleNext}
+                  disabled={!hasNext}
+                  aria-label="Ảnh sau"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
             <img
-              alt="Ảnh tài sản"
+              key={selectedImage}
+              alt={`Ảnh tài sản ${selectedIndex + 1}`}
               className="max-w-full object-contain"
-              style={{ maxHeight: 'calc(90vh - 140px)' }}
+              style={{ maxHeight: "calc(90vh - 140px)" }}
               src={selectedImage}
             />
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-divider bg-content1 flex-shrink-0">
-            <Button
-              color="primary"
-              variant="flat"
-              onPress={handleDownloadImage}
-              startContent={<Download size={16} />}
-            >
-              Tải xuống
-            </Button>
-            <Button
-              color="danger"
-              variant="light"
-              onPress={handleClose}
-            >
-              Đóng
-            </Button>
+          <div className="flex items-center justify-between gap-2 px-6 py-4 border-t border-divider bg-content1 flex-shrink-0">
+            {displayImages.length > 1 ? (
+              <p className="text-xs text-default-500">
+                Dùng ← → hoặc nút mũi tên để chuyển ảnh
+              </p>
+            ) : (
+              <span />
+            )}
+            <div className="flex items-center gap-2">
+              <Button
+                color="primary"
+                variant="flat"
+                onPress={handleDownloadImage}
+                startContent={<Download size={16} />}
+              >
+                Tải xuống
+              </Button>
+              <Button color="danger" variant="light" onPress={handleClose}>
+                Đóng
+              </Button>
+            </div>
           </div>
         </div>
         </div>

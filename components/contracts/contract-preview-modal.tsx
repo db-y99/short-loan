@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import {
   Modal,
   ModalContent,
@@ -25,7 +25,7 @@ const ContractPreviewModal = ({
   onClose,
   contracts,
   initialIndex = 0,
-  loanId,
+  loanId: _loanId,
 }: TProps) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,47 +33,82 @@ const ContractPreviewModal = ({
   const [error, setError] = useState<string | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isDownloadingWord, setIsDownloadingWord] = useState(false);
+  const pdfUrlRef = useRef<string | null>(null);
 
   const contract = contracts[currentIndex] ?? null;
   const hasPrev = currentIndex > 0;
   const hasNext = currentIndex < contracts.length - 1;
 
-  useEffect(() => {
-    setCurrentIndex(initialIndex);
-  }, [initialIndex, isOpen]);
-
-  useEffect(() => {
-    if (isOpen && contract) {
-      loadContractPDF();
+  const revokePdfUrl = () => {
+    if (pdfUrlRef.current) {
+      URL.revokeObjectURL(pdfUrlRef.current);
+      pdfUrlRef.current = null;
     }
-    return () => {
-      if (pdfUrl) URL.revokeObjectURL(pdfUrl);
-    };
-  }, [isOpen, currentIndex]);
+    setPdfUrl(null);
+  };
 
-  const loadContractPDF = async () => {
-    if (!contract) return;
+  // Đồng bộ index trước khi paint để tránh tải PDF theo index cũ
+  useLayoutEffect(() => {
+    if (isOpen) {
+      const safeIndex = Math.min(
+        Math.max(initialIndex, 0),
+        Math.max(contracts.length - 1, 0),
+      );
+      setCurrentIndex(safeIndex);
+    }
+  }, [isOpen, initialIndex, contracts.length]);
 
-    // Revoke URL cũ trước khi load mới
-    setPdfUrl((prev) => {
-      if (prev) URL.revokeObjectURL(prev);
-      return null;
-    });
+  // Reset khi đóng modal
+  useEffect(() => {
+    if (!isOpen) {
+      revokePdfUrl();
+      setError(null);
+      setIsLoading(true);
+    }
+  }, [isOpen]);
+
+  // Tải PDF theo fileId — hủy request cũ khi đổi hợp đồng
+  useEffect(() => {
+    if (!isOpen || !contract?.fileId) {
+      return;
+    }
+
+    const fileId = contract.fileId;
+    const abortController = new AbortController();
+
+    revokePdfUrl();
     setIsLoading(true);
     setError(null);
 
-    try {
-      const response = await fetch(`/api/drive/download/${contract.fileId}`);
-      if (!response.ok) throw new Error("Không thể tải file PDF");
+    const loadContractPDF = async () => {
+      try {
+        const response = await fetch(`/api/drive/download/${fileId}`, {
+          signal: abortController.signal,
+        });
+        if (!response.ok) throw new Error("Không thể tải file PDF");
 
-      const blob = await response.blob();
-      setPdfUrl(URL.createObjectURL(blob));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Lỗi khi tải hợp đồng");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        const blob = await response.blob();
+        if (abortController.signal.aborted) return;
+
+        const objectUrl = URL.createObjectURL(blob);
+        pdfUrlRef.current = objectUrl;
+        setPdfUrl(objectUrl);
+      } catch (err) {
+        if (abortController.signal.aborted) return;
+        setError(err instanceof Error ? err.message : "Lỗi khi tải hợp đồng");
+      } finally {
+        if (!abortController.signal.aborted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void loadContractPDF();
+
+    return () => {
+      abortController.abort();
+    };
+  }, [isOpen, contract?.fileId]);
 
   const handlePrev = () => {
     if (hasPrev) setCurrentIndex((i) => i - 1);
@@ -185,6 +220,7 @@ const ContractPreviewModal = ({
           )}
           {pdfUrl && !isLoading && (
             <iframe
+              key={contract.fileId}
               src={pdfUrl}
               className="w-full h-full min-h-[600px]"
               title={contract.name}

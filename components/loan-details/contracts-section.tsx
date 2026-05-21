@@ -8,8 +8,9 @@ import { addToast } from "@heroui/toast";
 import type { TLoanFile, TLoanStatus } from "@/types/loan.types";
 import { generateContractsAction, regenerateContractsAction } from "@/features/contracts/actions/generate-contracts.action";
 import ContractPreviewModal from "@/components/contracts/contract-preview-modal";
-import RegenerateConfirmModal from "@/components/contracts/regenerate-confirm-modal";
+import ContractSelectionModal from "@/components/contracts/contract-selection-modal";
 import ContractErrorDetails from "@/components/contracts/contract-error-details";
+import type { TContractType } from "@/types/contract.types";
 import { sortContractsByType } from "@/lib/contract-utils";
 import { LOAN_STATUS, LOAN_STATUS_LABEL } from "@/constants/loan";
 
@@ -23,7 +24,9 @@ type TProps = {
 const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [selectionModalMode, setSelectionModalMode] = useState<
+    "create" | "regenerate" | null
+  >(null);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -36,25 +39,25 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
   // Sắp xếp contracts theo thứ tự mong muốn
   const sortedContracts = sortContractsByType(loanFiles);
 
-  const handleGenerateContracts = async () => {
+  const handleGenerateContracts = async (selectedTypes: TContractType[]) => {
     setIsGenerating(true);
     setMessage(null);
     try {
-      const result = await generateContractsAction(loanId);
+      const result = await generateContractsAction(loanId, selectedTypes);
 
       if (result.success) {
         addToast({
           title: "Thành công",
-          description: "Tạo hợp đồng thành công!",
+          description: `Đã tạo ${result.data.length} hợp đồng thành công!`,
           color: "success",
         });
-        
-        // Call refresh callback to update parent data
+
         if (onRefresh) {
           onRefresh();
         }
-        
+
         setMessage(null);
+        setSelectionModalMode(null);
       } else {
         setMessage({ type: "error", text: result.error });
       }
@@ -66,27 +69,26 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
     }
   };
 
-  const handleRegenerateContracts = async () => {
+  const handleRegenerateContracts = async (selectedTypes: TContractType[]) => {
     setIsRegenerating(true);
     setMessage(null);
-    setIsConfirmOpen(false);
-    
+
     try {
-      const result = await regenerateContractsAction(loanId);
+      const result = await regenerateContractsAction(loanId, selectedTypes);
 
       if (result.success) {
         addToast({
           title: "Thành công",
-          description: "Tạo lại hợp đồng thành công!",
+          description: `Đã tạo lại ${result.data.length} hợp đồng thành công!`,
           color: "success",
         });
-        
-        // Call refresh callback to update parent data
+
         if (onRefresh) {
           onRefresh();
         }
-        
+
         setMessage(null);
+        setSelectionModalMode(null);
       } else {
         setMessage({ type: "error", text: result.error });
       }
@@ -95,6 +97,14 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
       console.error(error);
     } finally {
       setIsRegenerating(false);
+    }
+  };
+
+  const handleSelectionConfirm = (selectedTypes: TContractType[]) => {
+    if (selectionModalMode === "regenerate") {
+      void handleRegenerateContracts(selectedTypes);
+    } else {
+      void handleGenerateContracts(selectedTypes);
     }
   };
 
@@ -202,7 +212,7 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
                       )
                     }
                     isDisabled={isGenerating}
-                    onPress={handleGenerateContracts}
+                    onPress={() => setSelectionModalMode("create")}
                   >
                     {isGenerating ? "Đang tạo..." : "Tạo hợp đồng"}
                   </Button>
@@ -219,7 +229,7 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
                       )
                     }
                     isDisabled={isRegenerating}
-                    onPress={() => setIsConfirmOpen(true)}
+                    onPress={() => setSelectionModalMode("regenerate")}
                   >
                     {isRegenerating ? "Đang tạo lại..." : "Tạo lại"}
                   </Button>
@@ -342,6 +352,7 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
 
       {/* Contract Preview Modal */}
       <ContractPreviewModal
+        key={selectedContract?.id ?? "preview-closed"}
         isOpen={isPreviewOpen}
         onClose={() => {
           setIsPreviewOpen(false);
@@ -352,12 +363,13 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
         loanId={loanId}
       />
 
-      {/* Regenerate Confirmation Modal */}
-      <RegenerateConfirmModal
-        isOpen={isConfirmOpen}
-        onClose={() => setIsConfirmOpen(false)}
-        onConfirm={handleRegenerateContracts}
-        isLoading={isRegenerating}
+      {/* Contract Selection Modal */}
+      <ContractSelectionModal
+        isOpen={selectionModalMode !== null}
+        onClose={() => setSelectionModalMode(null)}
+        onConfirm={handleSelectionConfirm}
+        isLoading={isGenerating || isRegenerating}
+        mode={selectionModalMode ?? "create"}
       />
     </>
   );

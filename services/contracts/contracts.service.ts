@@ -4,7 +4,13 @@
  */
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { CONTRACT_TYPE, type TContractFile } from "@/types/contract.types";
+import {
+  CONTRACT_TYPE,
+  type TContractData,
+  type TContractFile,
+  type TContractType,
+} from "@/types/contract.types";
+import { GENERATABLE_CONTRACT_TYPES } from "@/constants/contracts";
 import {
   buildAssetPledgeContractData,
   buildAssetLeaseContractData,
@@ -12,15 +18,58 @@ import {
   buildAssetDisposalAuthorizationData,
 } from "@/lib/contract-data";
 
+type TContractDataItem = {
+  type: TContractType;
+  name: string;
+  fileName: string;
+  data: TContractData;
+};
+
+function buildAllContractsData(
+  loan: Awaited<
+    ReturnType<
+      typeof import("@/services/loans/loans.service").getLoanDetailsService
+    >
+  >,
+  folderId: string,
+  versionSuffix: string,
+): TContractDataItem[] {
+  if (!loan) return [];
+
+  return [
+    {
+      type: CONTRACT_TYPE.ASSET_PLEDGE,
+      name: "HĐ Cầm Cố Tài Sản",
+      fileName: `HD-CamCo-${loan.code}${versionSuffix}.pdf`,
+      data: buildAssetPledgeContractData(loan, folderId),
+    },
+    {
+      type: CONTRACT_TYPE.ASSET_LEASE,
+      name: "HĐ Thuê Tài Sản",
+      fileName: `HD-Thue-${loan.code}${versionSuffix}.pdf`,
+      data: buildAssetLeaseContractData(loan, folderId),
+    },
+    {
+      type: CONTRACT_TYPE.FULL_PAYMENT,
+      name: "XN Đã Nhận Đủ Tiền",
+      fileName: `XN-NhanTien-${loan.code}${versionSuffix}.pdf`,
+      data: buildFullPaymentConfirmationData(loan, folderId),
+    },
+    {
+      type: CONTRACT_TYPE.ASSET_DISPOSAL,
+      name: "UQ Xử Lý Tài Sản",
+      fileName: `UQ-XuLy-${loan.code}${versionSuffix}.pdf`,
+      data: buildAssetDisposalAuthorizationData(loan, folderId),
+    },
+  ];
+}
+
 /**
- * Tạo 4 hợp đồng cho loan
- * 1. Hợp đồng cầm cố tài sản
- * 2. Hợp đồng thuê tài sản
- * 3. Xác nhận đã nhận đủ tiền
- * 4. Giấy ủy quyền xử lý tài sản
+ * Tạo hợp đồng cho loan (có thể chọn loại cần tạo)
  */
 export async function generateContractsService(
   loanId: string,
+  contractTypes: TContractType[] = [...GENERATABLE_CONTRACT_TYPES],
 ): Promise<{
   success: boolean;
   contracts?: TContractFile[];
@@ -76,35 +125,31 @@ export async function generateContractsService(
     // Tạo version suffix cho tên file (chỉ thêm suffix từ v2 trở đi)
     const versionSuffix = newVersion > 1 ? `-v${newVersion}` : "";
 
-    // Build contract data
-    const contractsData = [
-      {
-        type: CONTRACT_TYPE.ASSET_PLEDGE,
-        name: "HĐ Cầm Cố Tài Sản",
-        fileName: `HD-CamCo-${loan.code}${versionSuffix}.pdf`,
-        data: buildAssetPledgeContractData(loan, folderId),
-      },
-      {
-        type: CONTRACT_TYPE.ASSET_LEASE,
-        name: "HĐ Thuê Tài Sản",
-        fileName: `HD-Thue-${loan.code}${versionSuffix}.pdf`,
-        data: buildAssetLeaseContractData(loan, folderId),
-      },
-      {
-        type: CONTRACT_TYPE.FULL_PAYMENT,
-        name: "XN Đã Nhận Đủ Tiền",
-        fileName: `XN-NhanTien-${loan.code}${versionSuffix}.pdf`,
-        data: buildFullPaymentConfirmationData(loan, folderId),
-      },
-      {
-        type: CONTRACT_TYPE.ASSET_DISPOSAL,
-        name: "UQ Xử Lý Tài Sản",
-        fileName: `UQ-XuLy-${loan.code}${versionSuffix}.pdf`,
-        data: buildAssetDisposalAuthorizationData(loan, folderId),
-      },
-    ];
+    if (contractTypes.length === 0) {
+      return {
+        success: false,
+        error: "Vui lòng chọn ít nhất một loại hợp đồng",
+      };
+    }
 
-    console.log(buildAssetDisposalAuthorizationData(loan, folderId))
+    const selectedSet = new Set(contractTypes);
+    const contractsData = buildAllContractsData(
+      loan,
+      folderId,
+      versionSuffix,
+    ).filter((contract) => selectedSet.has(contract.type));
+
+    if (contractsData.length === 0) {
+      return {
+        success: false,
+        error: "Không có loại hợp đồng hợp lệ được chọn",
+      };
+    }
+
+    console.log(
+      `[GENERATE_CONTRACTS] Creating ${contractsData.length} contract(s):`,
+      contractsData.map((c) => c.type).join(", "),
+    );
 
     // BƯỚC 1: Generate PDF song song (parallel) với Google Apps Script
     // Google Apps Script có thể handle multiple requests tốt hơn PDF service local
@@ -295,6 +340,7 @@ export async function deleteContractService(contractId: string) {
  */
 export async function regenerateContractsService(
   loanId: string,
+  contractTypes: TContractType[] = [...GENERATABLE_CONTRACT_TYPES],
 ): Promise<{
   success: boolean;
   contracts?: TContractFile[];
@@ -320,12 +366,23 @@ export async function regenerateContractsService(
 
     console.log(`[REGENERATE_CONTRACTS] Current loan status: ${currentLoan.status} (${currentLoan.code})`);
 
-    // Xóa tất cả hợp đồng cũ trong DB (giữ file trên Drive)
-    console.log(`[REGENERATE_CONTRACTS] Deleting old contracts...`);
+    if (contractTypes.length === 0) {
+      return {
+        success: false,
+        error: "Vui lòng chọn ít nhất một loại hợp đồng",
+      };
+    }
+
+    // Xóa hợp đồng cũ theo loại đã chọn (giữ file trên Drive)
+    console.log(
+      `[REGENERATE_CONTRACTS] Deleting old contracts for types:`,
+      contractTypes.join(", "),
+    );
     const { error: deleteError } = await supabase
       .from("loan_files")
       .delete()
-      .eq("loan_id", loanId);
+      .eq("loan_id", loanId)
+      .in("type", contractTypes);
 
     if (deleteError) {
       console.error("[DELETE_OLD_CONTRACTS_ERROR]", deleteError);
@@ -335,30 +392,35 @@ export async function regenerateContractsService(
       };
     }
 
-    // Reset loan status về approved và xóa chữ ký để có thể ký lại
-    console.log(`[REGENERATE_CONTRACTS] Resetting loan status to approved...`);
-    const { error: updateError } = await supabase
-      .from("loans")
-      .update({
-        status: "approved",
-        signed_at: null,
-        draft_signature_file_id: null,
-        official_signature_file_id: null,
-      })
-      .eq("id", loanId);
+    const regeneratingAllTypes =
+      contractTypes.length === GENERATABLE_CONTRACT_TYPES.length;
 
-    if (updateError) {
-      console.error("[RESET_LOAN_STATUS_ERROR]", updateError);
-      return {
-        success: false,
-        error: "Không thể reset trạng thái khoản vay",
-      };
+    // Chỉ reset trạng thái khi tạo lại toàn bộ hợp đồng
+    if (regeneratingAllTypes && currentLoan.status === "signed") {
+      console.log(`[REGENERATE_CONTRACTS] Resetting loan status to approved...`);
+      const { error: updateError } = await supabase
+        .from("loans")
+        .update({
+          status: "approved",
+          signed_at: null,
+          draft_signature_file_id: null,
+          official_signature_file_id: null,
+        })
+        .eq("id", loanId);
+
+      if (updateError) {
+        console.error("[RESET_LOAN_STATUS_ERROR]", updateError);
+        return {
+          success: false,
+          error: "Không thể reset trạng thái khoản vay",
+        };
+      }
     }
 
     console.log(`[REGENERATE_CONTRACTS] Status reset successful. Generating new contracts...`);
 
     // Tạo hợp đồng mới (version sẽ tự động tăng trong generateContractsService)
-    return await generateContractsService(loanId);
+    return await generateContractsService(loanId, contractTypes);
   } catch (error) {
     console.error("[REGENERATE_CONTRACTS_ERROR]", error);
     return {

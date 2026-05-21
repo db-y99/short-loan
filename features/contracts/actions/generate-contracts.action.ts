@@ -1,7 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { generateContractsService, regenerateContractsService } from "@/services/contracts/contracts.service";
+import { ZodError } from "zod";
+import {
+  generateContractsService,
+  regenerateContractsService,
+} from "@/services/contracts/contracts.service";
+import { GenerateContractsSchema } from "./generate-contracts.schema";
 
 type TGenerateContractsResult =
   | {
@@ -18,9 +23,14 @@ type TGenerateContractsResult =
 
 export async function generateContractsAction(
   loanId: string,
+  contractTypes: string[],
 ): Promise<TGenerateContractsResult> {
   try {
-    const result = await generateContractsService(loanId);
+    const input = GenerateContractsSchema.parse({ loanId, contractTypes });
+    const result = await generateContractsService(
+      input.loanId,
+      input.contractTypes,
+    );
 
     if (!result.success) {
       return { success: false, error: result.error ?? "Lỗi không xác định" };
@@ -29,6 +39,12 @@ export async function generateContractsAction(
     revalidatePath(`/`);
     return { success: true, data: result.contracts ?? [] };
   } catch (error) {
+    if (error instanceof ZodError) {
+      return {
+        success: false,
+        error: error.issues.map((issue) => issue.message).join(", "),
+      };
+    }
     console.error("[GENERATE_CONTRACTS_ACTION_ERROR]", error);
     return {
       success: false,
@@ -42,9 +58,14 @@ export async function generateContractsAction(
  */
 export async function regenerateContractsAction(
   loanId: string,
+  contractTypes: string[],
 ): Promise<TGenerateContractsResult> {
   try {
-    const result = await regenerateContractsService(loanId);
+    const input = GenerateContractsSchema.parse({ loanId, contractTypes });
+    const result = await regenerateContractsService(
+      input.loanId,
+      input.contractTypes,
+    );
 
     if (!result.success) {
       return { success: false, error: result.error ?? "Lỗi không xác định" };
@@ -53,6 +74,12 @@ export async function regenerateContractsAction(
     revalidatePath(`/`);
     return { success: true, data: result.contracts ?? [] };
   } catch (error) {
+    if (error instanceof ZodError) {
+      return {
+        success: false,
+        error: error.issues.map((issue) => issue.message).join(", "),
+      };
+    }
     console.error("[REGENERATE_CONTRACTS_ACTION_ERROR]", error);
     return {
       success: false,
