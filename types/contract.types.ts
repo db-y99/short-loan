@@ -155,6 +155,8 @@ export const CONTRACT_TYPE = {
   ASSET_DISPOSAL: "asset_disposal_authorization",
 } as const;
 
+export type TContractType = (typeof CONTRACT_TYPE)[keyof typeof CONTRACT_TYPE];
+
 /** Contract file info từ DB */
 export type TContractFile = {
   id: string;
