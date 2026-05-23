@@ -25,6 +25,7 @@ import { LOAN_TYPES } from "@/constants/loan";
 import { Select, SelectItem } from "@heroui/select";
 import { Divider } from "@heroui/divider";
 import { Chip } from "@heroui/chip";
+import ConfirmModal from "@/components/confirm-modal";
 
 type TProps = {
   isOpen: boolean;
@@ -62,12 +63,54 @@ const INITIAL_FORM: TCreateLoanForm = {
   attachments: [],
 };
 
+const FORM_TEXT_FIELDS = [
+  "full_name",
+  "cccd",
+  "phone",
+  "cccd_issue_date",
+  "cccd_issue_place",
+  "address",
+  "facebook_link",
+  "job",
+  "income",
+  "bank_name",
+  "bank_account_holder",
+  "bank_account_number",
+  "asset_type",
+  "asset_name",
+  "chassis_number",
+  "engine_number",
+  "imei",
+  "serial",
+  "asset_condition",
+  "loan_amount",
+  "notes",
+] as const satisfies readonly (keyof TCreateLoanForm)[];
+
+const isCreateLoanFormDirty = (
+  form: TCreateLoanForm,
+  selectedBranchId: string,
+  isAdmin: boolean,
+): boolean => {
+  if (isAdmin && selectedBranchId.trim() !== "") return true;
+  if (form.attachments.length > 0) return true;
+  if (form.loan_type !== INITIAL_FORM.loan_type) return true;
+
+  for (const field of FORM_TEXT_FIELDS) {
+    const value = form[field];
+    if (typeof value === "string" && value.trim() !== "") return true;
+  }
+
+  return form.references.length > 0;
+};
+
 const CreateContractModal = ({ isOpen, onClose, onSuccess, branches = [], isAdmin = false, userBranchName }: TProps) => {
   const [form, setForm] = useState<TCreateLoanForm>(INITIAL_FORM);
   const [selectedBranchId, setSelectedBranchId] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string>("");
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   const { uploadFiles, isUploading } = useFileUpload();
 
@@ -128,12 +171,24 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess, branches = [], isAdmi
   }, []);
 
   const handleClose = useCallback(() => {
+    setShowDiscardConfirm(false);
     setForm(INITIAL_FORM);
     setSelectedBranchId("");
     setError(null);
     setUploadProgress("");
     onClose();
   }, [onClose]);
+
+  const handleRequestClose = useCallback(() => {
+    if (isSubmitting || isUploading) return;
+
+    if (isCreateLoanFormDirty(form, selectedBranchId, isAdmin)) {
+      setShowDiscardConfirm(true);
+      return;
+    }
+
+    handleClose();
+  }, [form, selectedBranchId, isAdmin, isSubmitting, isUploading, handleClose]);
 
   const handleSubmit = useCallback(async () => {
     setError(null);
@@ -229,11 +284,14 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess, branches = [], isAdmi
   }, []);
 
   return (
+    <>
     <Modal
       isOpen={isOpen}
       scrollBehavior="inside"
       size="4xl"
-      onClose={handleClose}
+      isDismissable={false}
+      isKeyboardDismissDisabled
+      onClose={handleRequestClose}
     >
       <ModalContent>
         <ModalHeader className="flex gap-2">
@@ -294,7 +352,7 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess, branches = [], isAdmi
         <ModalFooter>
           <Button
             variant="flat"
-            onPress={handleClose}
+            onPress={handleRequestClose}
             isDisabled={isLoading}
           >
             Hủy
@@ -310,6 +368,18 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess, branches = [], isAdmi
         </ModalFooter>
       </ModalContent>
     </Modal>
+
+    <ConfirmModal
+      isOpen={showDiscardConfirm}
+      onClose={() => setShowDiscardConfirm(false)}
+      onConfirm={handleClose}
+      title="Hủy tạo hợp đồng?"
+      message="Bạn đã nhập dữ liệu. Nếu thoát, mọi thông tin sẽ bị mất và không thể khôi phục."
+      confirmText="Thoát và xóa dữ liệu"
+      cancelText="Tiếp tục nhập"
+      confirmColor="danger"
+    />
+    </>
   );
 };
 
