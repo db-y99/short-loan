@@ -50,19 +50,12 @@ export type TLoanCalculationResult = {
 
 /**
  * Tính phí thẩm định (thu 1 lần đầu)
- * - Gói 1 & 2: Áp dụng cho khoản vay >= 5.000.000đ (5%)
- * - Gói 3: Không có phí thẩm định
+ * - Gói 1, 2 & 3: Áp dụng cho khoản vay >= 5.000.000đ (5%)
  */
 export function calculateAppraisalFee(
   loanAmount: number,
-  loanType: TLoanType,
+  _loanType: TLoanType,
 ): number {
-  // Gói 3 không có phí thẩm định
-  if (loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD) {
-    return 0;
-  }
-
-  // Gói 1 & 2: Chỉ áp dụng cho khoản vay >= 5 triệu
   if (loanAmount < APPRAISAL_FEE_THRESHOLD) {
     return 0;
   }
