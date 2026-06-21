@@ -35,13 +35,12 @@ describe("Loan Calculation Library", () => {
       expect(fee2).toBe(500_000); // 10M × 5% = 500K
     });
 
-    it("should return 0 for non-Gói 3 loan types", () => {
-      // Gói 3 không có phí thẩm định
+    it("should calculate 5% for Gói 3 with amount >= 5,000,000", () => {
       const fee = calculateAppraisalFee(
         10_000_000,
         LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD,
       );
-      expect(fee).toBe(0);
+      expect(fee).toBe(500_000); // 10M × 5% = 500K
     });
 
     it("should calculate 5% for Gói 2 with amount >= 5,000,000", () => {
@@ -277,14 +276,14 @@ describe("Loan Calculation Library", () => {
       expect(result.installments).toBeUndefined();
     });
 
-    it("should calculate Gói 3 without appraisal fee", () => {
+    it("should calculate Gói 3 with appraisal fee", () => {
       const result = calculateLoan(
         10_000_000,
         LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD,
       );
 
-      expect(result.appraisalFee).toBe(0);
-      expect(result.netAmount).toBe(10_000_000);
+      expect(result.appraisalFee).toBe(500_000);
+      expect(result.netAmount).toBe(9_500_000);
       expect(result.bulletPayments).toBeDefined();
       expect(result.bulletPayments).toHaveLength(3);
       expect(result.installments).toBeUndefined();

@@ -10,7 +10,8 @@ import type {
 import { formatDateShortVN } from "@/lib/format";
 import { COMPANY_INFO } from "@/constants/company";
 import { getLoanInterestRateDescription, DAILY_INTEREST_RATE } from "@/lib/loan-constants";
-import { LOAN_TYPES, ASSET_TYPES } from "@/constants/loan";
+import { LOAN_TYPES, ASSET_TYPES, type TLoanType } from "@/constants/loan";
+import { calculateAppraisalFee } from "@/lib/loan-calculation";
 
 /** Format số tiền VND */
 function formatVND(n: number): string {
@@ -299,7 +300,12 @@ export function buildFullPaymentConfirmationData(
 
    const assetInfo = buildAssetIdentityInfo(loan);
 
-   const assets = `${loan.asset.type}, ${assetInfo.chiTiet}`
+   const assets = `${loan.asset.type}, ${assetInfo.chiTiet}`;
+
+  const loanType = loan.loanType as TLoanType;
+  const appraisalFee =
+    loan.appraisalFee ?? calculateAppraisalFee(loan.loanAmount, loanType);
+  const actualAmount = loan.loanAmount - appraisalFee;
 
   return {
     MA_HD: loan.code,
@@ -320,7 +326,7 @@ export function buildFullPaymentConfirmationData(
     DIA_CHI: loan.customer.address,
     SDT: loan.customer.phone,
     TAI_SAN: assets ?? "",
-    SO_TIEN: formatVND(loan.loanAmount),
+    SO_TIEN: formatVND(actualAmount),
     NGAN_HANG: loan.bank.name ?? "—",
     SO_TAI_KHOAN: loan.bank.accountNumber ?? "—",
     TEN_TAI_KHOAN: loan.bank.accountHolder ?? "—",
