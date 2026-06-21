@@ -15,13 +15,16 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Trash2,
 } from "lucide-react";
 import { addToast } from "@heroui/toast";
 import { TAssetImage } from "@/types/loan.types";
+import ConfirmModal from "@/components/confirm-modal";
 
 type TProps = {
   assetImages: TAssetImage[];
   loanId: string;
+  onRefresh?: () => void;
 };
 
 type TPreviewImage = {
@@ -29,12 +32,14 @@ type TPreviewImage = {
   preview: string;
 };
 
-const AssetGallery = ({ assetImages, loanId }: TProps) => {
-  const images = assetImages.map((image) => image.fileId);
+const AssetGallery = ({ assetImages, loanId, onRefresh }: TProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [localImages, setLocalImages] = useState<TAssetImage[]>(assetImages);
+  const [deleteTarget, setDeleteTarget] = useState<TAssetImage | null>(null);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
@@ -42,6 +47,10 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
   const [previewImages, setPreviewImages] = useState<TPreviewImage[]>([]);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setLocalImages(assetImages);
+  }, [assetImages]);
 
   const displayImages = localImages.map((image) => image.fileId);
 
@@ -113,6 +122,65 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
     link.remove();
   };
 
+  const handleRequestDelete = (image: TAssetImage, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setDeleteTarget(image);
+    setIsDeleteConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+
+    setIsDeleting(true);
+
+    try {
+      const response = await fetch(`/api/assets/${deleteTarget.id}`, {
+        method: "DELETE",
+      });
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        const deletedIndex = localImages.findIndex((img) => img.id === deleteTarget.id);
+        const newImages = localImages.filter((img) => img.id !== deleteTarget.id);
+
+        setLocalImages(newImages);
+
+        addToast({
+          title: "Đã xóa",
+          description: "Ảnh đã được gỡ khỏi danh sách. File trên Drive vẫn được giữ.",
+          color: "success",
+        });
+
+        if (selectedImage) {
+          if (newImages.length === 0) {
+            handleClose();
+          } else {
+            const nextIndex = Math.min(deletedIndex, newImages.length - 1);
+            goToImage(nextIndex);
+          }
+        }
+
+        onRefresh?.();
+      } else {
+        addToast({
+          title: "Lỗi",
+          description: result.error || "Không thể xóa ảnh",
+          color: "danger",
+        });
+      }
+    } catch (error) {
+      addToast({
+        title: "Lỗi",
+        description: "Không thể xóa ảnh",
+        color: "danger",
+      });
+      console.error(error);
+    } finally {
+      setIsDeleting(false);
+      setDeleteTarget(null);
+    }
+  };
+
   const handleUploadClick = () => {
     setIsUploadModalOpen(true);
     setMessage(null);
@@ -127,18 +195,15 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    // Tạo preview cho các ảnh mới và CỘNG THÊM vào danh sách hiện tại
     const newPreviews: TPreviewImage[] = [];
     Array.from(files).forEach((file) => {
       const preview = URL.createObjectURL(file);
       newPreviews.push({ file, preview });
     });
 
-    // Cộng thêm vào danh sách cũ thay vì reset
     setPreviewImages([...previewImages, ...newPreviews]);
     setMessage(null);
 
-    // Reset input
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -146,16 +211,14 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
 
   const handleRemovePreviewImage = (index: number) => {
     const newPreviews = [...previewImages];
-    // Revoke URL để giải phóng memory
     URL.revokeObjectURL(newPreviews[index].preview);
     newPreviews.splice(index, 1);
     setPreviewImages(newPreviews);
   };
 
   const handleCancelUpload = () => {
-    if (isUploading) return; // Không cho đóng khi đang upload
-    
-    // Revoke tất cả URLs
+    if (isUploading) return;
+
     previewImages.forEach((img) => URL.revokeObjectURL(img.preview));
     setPreviewImages([]);
     setIsUploadModalOpen(false);
@@ -169,14 +232,12 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
     setMessage(null);
 
     try {
-      // Tạo FormData với tất cả files
       const formData = new FormData();
       formData.append("loanId", loanId);
       previewImages.forEach((img, index) => {
         formData.append(`file_${index}`, img.file);
       });
 
-      // Gọi API route
       const response = await fetch("/api/assets/upload-images", {
         method: "POST",
         body: formData,
@@ -190,15 +251,14 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
           description: `Đã upload ${result.data.length} ảnh thành công!`,
           color: "success",
         });
-        
-        // Cập nhật local state
+
         setLocalImages([...localImages, ...result.data]);
-        
-        // Close modal immediately
+
         previewImages.forEach((img) => URL.revokeObjectURL(img.preview));
         setPreviewImages([]);
         setIsUploadModalOpen(false);
         setMessage(null);
+        onRefresh?.();
       } else {
         setMessage({ type: "error", text: result.error || "Lỗi khi upload ảnh" });
       }
@@ -235,34 +295,45 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
       )}
       {displayImages.length > 0 && (
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-          {displayImages.map((image, index) => (
-            <button
-              key={index}
-              type="button"
-              className="relative aspect-square rounded-lg overflow-hidden border border-default-200 hover:border-primary transition-colors cursor-pointer group"
-              onClick={() =>
-                handleOpenPreview(`/api/drive/image/${image}`, index)
-              }
+          {localImages.map((image, index) => (
+            <div
+              key={image.id}
+              className="relative aspect-square rounded-lg overflow-hidden border border-default-200 hover:border-primary transition-colors group"
             >
-              <Image
-                alt={`Ảnh ${index + 1}`}
-                classNames={{
-                  wrapper: "!max-w-full h-full",
-                  img: "w-full h-full object-cover",
-                }}
-                src={`/api/drive/image/${image}`}
-              />
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+              <button
+                type="button"
+                className="absolute inset-0 w-full h-full cursor-pointer"
+                onClick={() =>
+                  handleOpenPreview(`/api/drive/image/${image.fileId}`, index)
+                }
+              >
+                <Image
+                  alt={`Ảnh ${index + 1}`}
+                  classNames={{
+                    wrapper: "!max-w-full h-full",
+                    img: "w-full h-full object-cover",
+                  }}
+                  src={`/api/drive/image/${image.fileId}`}
+                />
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                 <span className="absolute bottom-1 right-1 text-xs bg-black/60 text-white px-1.5 py-0.5 rounded">
                   Ảnh {index + 1}
                 </span>
-              </div>
-            </button>
+              </button>
+              <button
+                type="button"
+                className="absolute top-1.5 right-1.5 p-1 rounded-full bg-danger text-white hover:bg-danger-600 transition-all opacity-0 group-hover:opacity-100 shadow-lg z-10"
+                onClick={(e) => handleRequestDelete(image, e)}
+                aria-label={`Xóa ảnh ${index + 1}`}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
           ))}
         </div>
       )}
 
-      {/* Upload Overlay - custom để tránh conflict nested modal trên production */}
+      {/* Upload Overlay */}
       {isUploadModalOpen && (
         <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60 p-4">
           <div
@@ -340,7 +411,7 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
                           src={img.preview}
                         />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all pointer-events-none" />
-                        
+
                         {!isUploading && (
                           <button
                             type="button"
@@ -350,7 +421,7 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
                             <X className="w-4 h-4" />
                           </button>
                         )}
-                        
+
                         <div className="absolute bottom-2 left-2 text-xs bg-black/70 text-white px-2 py-1 rounded max-w-[calc(100%-1rem)] truncate z-10">
                           {img.file.name}
                         </div>
@@ -399,116 +470,146 @@ const AssetGallery = ({ assetImages, loanId }: TProps) => {
         </div>
       )}
 
-      {/* Image View Overlay - Custom implementation để tránh conflict với parent modal */}
+      {/* Image View Overlay */}
       {selectedImage && (
         <div
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
           onClick={handleClose}
-          style={{ position: 'fixed' }}
+          style={{ position: "fixed" }}
         >
-        <div
-          className="relative max-w-7xl w-full mx-4 bg-content1 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
-          style={{ maxHeight: '90vh' }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-divider bg-content1 flex-shrink-0">
-            <div className="flex items-center gap-2">
+          <div
+            className="relative max-w-7xl w-full mx-4 bg-content1 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+            style={{ maxHeight: "90vh" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-divider bg-content1 flex-shrink-0">
+              <div className="flex items-center gap-2">
+                {displayImages.length > 1 && (
+                  <>
+                    <button
+                      type="button"
+                      className="p-2 rounded-lg hover:bg-default-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      onClick={handlePrev}
+                      disabled={!hasPrev}
+                      aria-label="Ảnh trước"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                      type="button"
+                      className="p-2 rounded-lg hover:bg-default-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      onClick={handleNext}
+                      disabled={!hasNext}
+                      aria-label="Ảnh sau"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </>
+                )}
+                <h3 className="text-lg font-semibold">
+                  Ảnh tài sản ({selectedIndex + 1}/{displayImages.length})
+                </h3>
+              </div>
+              <button
+                type="button"
+                className="p-2 rounded-lg hover:bg-default-100 transition-colors"
+                onClick={handleClose}
+                aria-label="Đóng"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="relative flex-1 overflow-auto flex items-center justify-center p-6 bg-content2 min-h-0">
               {displayImages.length > 1 && (
                 <>
                   <button
                     type="button"
-                    className="p-2 rounded-lg hover:bg-default-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     onClick={handlePrev}
                     disabled={!hasPrev}
                     aria-label="Ảnh trước"
                   >
-                    <ChevronLeft className="w-5 h-5" />
+                    <ChevronLeft className="w-6 h-6" />
                   </button>
                   <button
                     type="button"
-                    className="p-2 rounded-lg hover:bg-default-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                     onClick={handleNext}
                     disabled={!hasNext}
                     aria-label="Ảnh sau"
                   >
-                    <ChevronRight className="w-5 h-5" />
+                    <ChevronRight className="w-6 h-6" />
                   </button>
                 </>
               )}
-              <h3 className="text-lg font-semibold">
-                Ảnh tài sản ({selectedIndex + 1}/{displayImages.length})
-              </h3>
+              <img
+                key={selectedImage}
+                alt={`Ảnh tài sản ${selectedIndex + 1}`}
+                className="max-w-full object-contain"
+                style={{ maxHeight: "calc(90vh - 140px)" }}
+                src={selectedImage}
+              />
             </div>
-            <button
-              type="button"
-              className="p-2 rounded-lg hover:bg-default-100 transition-colors"
-              onClick={handleClose}
-              aria-label="Đóng"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
 
-          {/* Image Container - scrollable */}
-          <div className="relative flex-1 overflow-auto flex items-center justify-center p-6 bg-content2 min-h-0">
-            {displayImages.length > 1 && (
-              <>
-                <button
-                  type="button"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  onClick={handlePrev}
-                  disabled={!hasPrev}
-                  aria-label="Ảnh trước"
+            <div className="flex items-center justify-between gap-2 px-6 py-4 border-t border-divider bg-content1 flex-shrink-0">
+              {displayImages.length > 1 ? (
+                <p className="text-xs text-default-500">
+                  Dùng ← → hoặc nút mũi tên để chuyển ảnh
+                </p>
+              ) : (
+                <span />
+              )}
+              <div className="flex items-center gap-2">
+                <Button
+                  color="primary"
+                  variant="flat"
+                  onPress={handleDownloadImage}
+                  startContent={<Download size={16} />}
                 >
-                  <ChevronLeft className="w-6 h-6" />
-                </button>
-                <button
-                  type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                  onClick={handleNext}
-                  disabled={!hasNext}
-                  aria-label="Ảnh sau"
+                  Tải xuống
+                </Button>
+                <Button
+                  color="danger"
+                  variant="flat"
+                  isDisabled={isDeleting}
+                  onPress={() => handleRequestDelete(localImages[selectedIndex])}
+                  startContent={
+                    isDeleting ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Trash2 size={16} />
+                    )
+                  }
                 >
-                  <ChevronRight className="w-6 h-6" />
-                </button>
-              </>
-            )}
-            <img
-              key={selectedImage}
-              alt={`Ảnh tài sản ${selectedIndex + 1}`}
-              className="max-w-full object-contain"
-              style={{ maxHeight: "calc(90vh - 140px)" }}
-              src={selectedImage}
-            />
-          </div>
-
-          {/* Footer */}
-          <div className="flex items-center justify-between gap-2 px-6 py-4 border-t border-divider bg-content1 flex-shrink-0">
-            {displayImages.length > 1 ? (
-              <p className="text-xs text-default-500">
-                Dùng ← → hoặc nút mũi tên để chuyển ảnh
-              </p>
-            ) : (
-              <span />
-            )}
-            <div className="flex items-center gap-2">
-              <Button
-                color="primary"
-                variant="flat"
-                onPress={handleDownloadImage}
-                startContent={<Download size={16} />}
-              >
-                Tải xuống
-              </Button>
-              <Button color="danger" variant="light" onPress={handleClose}>
-                Đóng
-              </Button>
+                  Xóa ảnh
+                </Button>
+                <Button color="danger" variant="light" onPress={handleClose}>
+                  Đóng
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={isDeleteConfirmOpen}
+        onClose={() => {
+          if (!isDeleting) {
+            setIsDeleteConfirmOpen(false);
+            setDeleteTarget(null);
+          }
+        }}
+        title="Xóa ảnh tài sản"
+        message={
+          "Bạn có chắc muốn xóa ảnh này?\n\nẢnh sẽ được gỡ khỏi danh sách nhưng file trên Drive vẫn được giữ lại."
+        }
+        confirmText="Xóa"
+        confirmColor="danger"
+        isLoading={isDeleting}
+        onConfirm={handleConfirmDelete}
+      />
     </>
   );
 };

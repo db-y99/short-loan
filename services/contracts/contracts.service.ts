@@ -10,7 +10,10 @@ import {
   type TContractFile,
   type TContractType,
 } from "@/types/contract.types";
-import { GENERATABLE_CONTRACT_TYPES } from "@/constants/contracts";
+import {
+  GENERATABLE_CONTRACT_TYPES,
+  getGeneratableContractTypesForLoan,
+} from "@/constants/contracts";
 import {
   buildAssetPledgeContractData,
   buildAssetLeaseContractData,
@@ -36,7 +39,11 @@ function buildAllContractsData(
 ): TContractDataItem[] {
   if (!loan) return [];
 
-  return [
+  const allowedTypes = new Set(
+    getGeneratableContractTypesForLoan(loan.loanType),
+  );
+
+  const allContracts: TContractDataItem[] = [
     {
       type: CONTRACT_TYPE.ASSET_PLEDGE,
       name: "HĐ Cầm Cố Tài Sản",
@@ -62,6 +69,8 @@ function buildAllContractsData(
       data: buildAssetDisposalAuthorizationData(loan, folderId),
     },
   ];
+
+  return allContracts.filter((contract) => allowedTypes.has(contract.type));
 }
 
 /**
@@ -132,7 +141,18 @@ export async function generateContractsService(
       };
     }
 
-    const selectedSet = new Set(contractTypes);
+    const allowedTypes = getGeneratableContractTypesForLoan(loan.loanType);
+    const selectedSet = new Set(
+      contractTypes.filter((type) => allowedTypes.includes(type)),
+    );
+
+    if (selectedSet.size === 0) {
+      return {
+        success: false,
+        error: "Không có loại hợp đồng hợp lệ được chọn cho gói vay này",
+      };
+    }
+
     const contractsData = buildAllContractsData(
       loan,
       folderId,
@@ -353,7 +373,7 @@ export async function regenerateContractsService(
     // Kiểm tra loan tồn tại và lấy trạng thái hiện tại
     const { data: currentLoan } = await supabase
       .from("loans")
-      .select("id, status, code")
+      .select("id, status, code, loan_type")
       .eq("id", loanId)
       .single();
 
@@ -392,8 +412,12 @@ export async function regenerateContractsService(
       };
     }
 
+    const applicableTypes = getGeneratableContractTypesForLoan(
+      currentLoan.loan_type,
+    );
     const regeneratingAllTypes =
-      contractTypes.length === GENERATABLE_CONTRACT_TYPES.length;
+      contractTypes.length === applicableTypes.length &&
+      applicableTypes.every((type) => contractTypes.includes(type));
 
     // Chỉ reset trạng thái khi tạo lại toàn bộ hợp đồng
     if (regeneratingAllTypes && currentLoan.status === "signed") {
@@ -518,49 +542,46 @@ export async function generateSignedContractsService(
     const newVersion = 1;
     const versionSuffix = ""; // No suffix for version 1
 
-    // Build contract data with signatures
-    const contractsData = [
-      {
-        type: CONTRACT_TYPE.ASSET_PLEDGE,
+    const signedContractMeta: Partial<
+      Record<TContractType, { name: string; fileName: string }>
+    > = {
+      [CONTRACT_TYPE.ASSET_PLEDGE]: {
         name: "HĐ Cầm Cố Tài Sản (Đã ký)",
         fileName: `HD-CamCo-DaKy-${loan.code}${versionSuffix}.pdf`,
-        data: {
-          ...buildAssetPledgeContractData(loan, folderId),
-          DRAFT_SIGNATURE: draftSignatureBase64,
-          OFFICIAL_SIGNATURE: officialSignatureBase64,
-        },
       },
-      {
-        type: CONTRACT_TYPE.ASSET_LEASE,
+      [CONTRACT_TYPE.ASSET_LEASE]: {
         name: "HĐ Thuê Tài Sản (Đã ký)",
         fileName: `HD-Thue-DaKy-${loan.code}${versionSuffix}.pdf`,
-        data: {
-          ...buildAssetLeaseContractData(loan, folderId),
-          DRAFT_SIGNATURE: draftSignatureBase64,
-          OFFICIAL_SIGNATURE: officialSignatureBase64,
-        },
       },
-      {
-        type: CONTRACT_TYPE.FULL_PAYMENT,
+      [CONTRACT_TYPE.FULL_PAYMENT]: {
         name: "XN Đã Nhận Đủ Tiền (Đã ký)",
         fileName: `XN-NhanTien-DaKy-${loan.code}${versionSuffix}.pdf`,
-        data: {
-          ...buildFullPaymentConfirmationData(loan, folderId),
-          DRAFT_SIGNATURE: draftSignatureBase64,
-          OFFICIAL_SIGNATURE: officialSignatureBase64,
-        },
       },
-      {
-        type: CONTRACT_TYPE.ASSET_DISPOSAL,
+      [CONTRACT_TYPE.ASSET_DISPOSAL]: {
         name: "UQ Xử Lý Tài Sản (Đã ký)",
         fileName: `UQ-XuLy-DaKy-${loan.code}${versionSuffix}.pdf`,
-        data: {
-          ...buildAssetDisposalAuthorizationData(loan, folderId),
-          DRAFT_SIGNATURE: draftSignatureBase64,
-          OFFICIAL_SIGNATURE: officialSignatureBase64,
-        },
       },
-    ];
+    };
+
+    const contractsData = buildAllContractsData(loan, folderId, versionSuffix)
+      .map((contract) => {
+        const meta = signedContractMeta[contract.type];
+        if (!meta) return null;
+
+        return {
+          type: contract.type,
+          name: meta.name,
+          fileName: meta.fileName,
+          data: {
+            ...contract.data,
+            DRAFT_SIGNATURE: draftSignatureBase64,
+            OFFICIAL_SIGNATURE: officialSignatureBase64,
+          },
+        };
+      })
+      .filter((contract): contract is NonNullable<typeof contract> =>
+        contract !== null,
+      );
 
     // Generate all PDFs in parallel
     console.time("Generate Signed PDFs");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Modal,
   ModalContent,
@@ -18,6 +18,10 @@ import { AssetPledgeContractView } from "@/components/contracts/asset-pledge-con
 import { AssetLeaseContractView } from "@/components/contracts/asset-lease-contract-view.client";
 import { FullPaymentConfirmationView } from "@/components/contracts/full-payment-confirmation-view.client";
 import { AssetDisposalAuthorizationView } from "@/components/contracts/asset-disposal-authorization-view.client";
+import {
+  getSignPageContractTabsForLoan,
+  type TSignPageContractTabKey,
+} from "@/constants/contracts";
 
 const CONTRACT_TYPE = {
   ASSET_PLEDGE: "asset_pledge",
@@ -26,7 +30,7 @@ const CONTRACT_TYPE = {
   ASSET_DISPOSAL: "asset_disposal",
 } as const;
 
-type ContractType = typeof CONTRACT_TYPE[keyof typeof CONTRACT_TYPE];
+type ContractType = TSignPageContractTabKey;
 
 type TProps = {
   isOpen: boolean;
@@ -68,6 +72,12 @@ const ContractSigningModal = ({
       console.log({ result });
       if (result.success) {
         setContractData(result.data);
+        const tabs = getSignPageContractTabsForLoan(result.data.loanType ?? "");
+        if (tabs.length > 0) {
+          setSelectedContractType((current) =>
+            tabs.some((tab) => tab.key === current) ? current : tabs[0].key,
+          );
+        }
       }
     } catch (error) {
       console.error("Error fetching contract data:", error);
@@ -76,12 +86,21 @@ const ContractSigningModal = ({
     }
   };
 
-  const contractTypes = [
-    { key: CONTRACT_TYPE.ASSET_PLEDGE, label: "HĐ Cầm Cố Tài Sản" },
-    { key: CONTRACT_TYPE.ASSET_LEASE, label: "HĐ Thuê Tài Sản" },
-    { key: CONTRACT_TYPE.FULL_PAYMENT, label: "XN Đã Nhận Đủ Tiền" },
-    { key: CONTRACT_TYPE.ASSET_DISPOSAL, label: "Ủy Quyền Xử Lý TS" },
-  ];
+  const contractTypes = useMemo(() => {
+    if (!contractData?.loanType) return [];
+
+    return getSignPageContractTabsForLoan(contractData.loanType).map((tab) => ({
+      key: tab.key,
+      label:
+        tab.key === "asset_pledge"
+          ? "HĐ Cầm Cố Tài Sản"
+          : tab.key === "asset_lease"
+            ? "HĐ Thuê Tài Sản"
+            : tab.key === "full_payment"
+              ? "XN Đã Nhận Đủ Tiền"
+              : "Ủy Quyền Xử Lý TS",
+    }));
+  }, [contractData?.loanType]);
 
   const handleSign = async () => {
     if (!isAgreed) {

@@ -112,19 +112,26 @@ export async function uploadAssetImagesService(
 }
 
 /**
- * Xóa ảnh tài sản
+ * Xóa mềm ảnh tài sản — chỉ gỡ khỏi DB, giữ file trên Drive
  */
 export async function deleteAssetImageService(imageId: string) {
   try {
     const supabase = await createSupabaseServerClient();
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("loan_assets")
-      .delete()
-      .eq("id", imageId);
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", imageId)
+      .is("deleted_at", null)
+      .select("id")
+      .single();
 
     if (error) {
-      throw new Error(error.message);
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: false, error: "Không tìm thấy ảnh" };
     }
 
     return { success: true };

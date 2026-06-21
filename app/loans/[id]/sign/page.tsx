@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
@@ -15,6 +15,10 @@ import { AssetPledgeContractView } from "@/components/contracts/asset-pledge-con
 import { AssetLeaseContractView } from "@/components/contracts/asset-lease-contract-view.client";
 import { FullPaymentConfirmationView } from "@/components/contracts/full-payment-confirmation-view.client";
 import { AssetDisposalAuthorizationView } from "@/components/contracts/asset-disposal-authorization-view.client";
+import {
+  getSignPageContractTabsForLoan,
+  type TSignPageContractTabKey,
+} from "@/constants/contracts";
 
 const CONTRACT_TYPE = {
   ASSET_PLEDGE: "asset_pledge",
@@ -23,14 +27,7 @@ const CONTRACT_TYPE = {
   ASSET_DISPOSAL: "asset_disposal",
 } as const;
 
-type ContractType = typeof CONTRACT_TYPE[keyof typeof CONTRACT_TYPE];
-
-const CONTRACT_TABS = [
-  { key: CONTRACT_TYPE.ASSET_PLEDGE, label: "HĐ Cầm Cố", short: "1" },
-  { key: CONTRACT_TYPE.ASSET_LEASE, label: "HĐ Thuê TS", short: "2" },
-  { key: CONTRACT_TYPE.FULL_PAYMENT, label: "XN Nhận Tiền", short: "3" },
-  { key: CONTRACT_TYPE.ASSET_DISPOSAL, label: "Ủy Quyền TS", short: "4" },
-] as const;
+type ContractType = TSignPageContractTabKey;
 
 type Step = "review" | "sign" | "done";
 
@@ -60,7 +57,15 @@ export default function LoanSignPage() {
     try {
       const res = await fetch(`/api/loans/${loanId}/contract-data`);
       const result = await res.json();
-      if (result.success) setContractData(result.data);
+      if (result.success) {
+        setContractData(result.data);
+        const tabs = getSignPageContractTabsForLoan(result.data.loanType ?? "");
+        if (tabs.length > 0) {
+          setSelectedContractType((current) =>
+            tabs.some((tab) => tab.key === current) ? current : tabs[0].key,
+          );
+        }
+      }
     } catch (err) {
       console.error("Error fetching contract data:", err);
     } finally {
@@ -115,7 +120,17 @@ export default function LoanSignPage() {
     }
   };
 
-  const currentTabIndex = CONTRACT_TABS.findIndex(t => t.key === selectedContractType);
+  const contractTabs = useMemo(
+    () =>
+      contractData?.loanType
+        ? getSignPageContractTabsForLoan(contractData.loanType)
+        : [],
+    [contractData?.loanType],
+  );
+
+  const currentTabIndex = contractTabs.findIndex(
+    (t) => t.key === selectedContractType,
+  );
 
   // ── DONE ────────────────────────────────────────────────────────────────────
   if (step === "done") {
@@ -278,7 +293,7 @@ export default function LoanSignPage() {
           <div className="bg-content1 rounded-2xl border border-default-200 px-4 py-3">
             <Checkbox isSelected={isAgreed} onValueChange={setIsAgreed} size="sm" color="primary">
               <span className="text-sm text-default-700">
-                Tôi đã đọc, hiểu và đồng ý với tất cả <span className="text-primary font-medium">4 hợp đồng</span> và các điều khoản liên quan
+                Tôi đã đọc, hiểu và đồng ý với tất cả <span className="text-primary font-medium">{contractTabs.length} hợp đồng</span> và các điều khoản liên quan
               </span>
             </Checkbox>
           </div>
@@ -329,7 +344,7 @@ export default function LoanSignPage() {
 
         {/* Tab bar */}
         <div className="flex gap-1.5">
-          {CONTRACT_TABS.map((t) => {
+          {contractTabs.map((t) => {
             const isActive = t.key === selectedContractType;
             return (
               <button
@@ -363,7 +378,7 @@ export default function LoanSignPage() {
                 {currentTabIndex + 1}
               </span>
               <p className="text-xs font-medium text-default-600">
-                {CONTRACT_TABS[currentTabIndex]?.label}
+                {contractTabs[currentTabIndex]?.label}
               </p>
             </div>
             <div className="p-4 flex justify-center overflow-x-auto">
@@ -396,18 +411,18 @@ export default function LoanSignPage() {
           <Button
             size="sm" variant="flat"
             isDisabled={currentTabIndex === 0}
-            onPress={() => setSelectedContractType(CONTRACT_TABS[currentTabIndex - 1].key)}
+            onPress={() => setSelectedContractType(contractTabs[currentTabIndex - 1].key)}
             startContent={<ChevronLeft className="w-3.5 h-3.5" />}
           >
             Trước
           </Button>
           <p className="text-xs text-default-400">
-            {currentTabIndex + 1} / {CONTRACT_TABS.length} hợp đồng
+            {currentTabIndex + 1} / {contractTabs.length} hợp đồng
           </p>
           <Button
             size="sm" variant="flat"
-            isDisabled={currentTabIndex === CONTRACT_TABS.length - 1}
-            onPress={() => setSelectedContractType(CONTRACT_TABS[currentTabIndex + 1].key)}
+            isDisabled={currentTabIndex === contractTabs.length - 1}
+            onPress={() => setSelectedContractType(contractTabs[currentTabIndex + 1].key)}
             endContent={<ChevronRight className="w-3.5 h-3.5" />}
           >
             Tiếp

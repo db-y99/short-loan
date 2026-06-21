@@ -16,12 +16,13 @@ import { LOAN_STATUS, LOAN_STATUS_LABEL } from "@/constants/loan";
 
 type TProps = {
   loanId: string;
-  loanStatus: TLoanStatus; // Thêm loan status
-  loanFiles?: TLoanFile[]; // All loan files from DB
-  onRefresh?: () => void; // Thêm callback để refresh data
+  loanStatus: TLoanStatus;
+  loanType: string;
+  loanFiles?: TLoanFile[];
+  onRefresh?: () => void;
 };
 
-const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TProps) => {
+const ContractsSection = ({ loanId, loanStatus, loanType, loanFiles = [], onRefresh }: TProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [selectionModalMode, setSelectionModalMode] = useState<
@@ -370,6 +371,7 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
         onConfirm={handleSelectionConfirm}
         isLoading={isGenerating || isRegenerating}
         mode={selectionModalMode ?? "create"}
+        loanType={loanType}
       />
     </>
   );

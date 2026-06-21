@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Progress } from "@heroui/progress";
@@ -18,14 +18,12 @@ import {
   type TAssetLeaseContractData,
   type TFullPaymentConfirmationData,
   type TAssetDisposalAuthorizationData,
+  type TContractType,
 } from "@/types/contract.types";
-
-const CONTRACT_TABS = [
-  { key: CONTRACT_TYPE.ASSET_PLEDGE, label: "HĐ Cầm cố" },
-  { key: CONTRACT_TYPE.ASSET_LEASE, label: "HĐ Thuê tài sản" },
-  { key: CONTRACT_TYPE.FULL_PAYMENT, label: "XN Nhận đủ tiền" },
-  { key: CONTRACT_TYPE.ASSET_DISPOSAL, label: "Ủy quyền xử lý TS" },
-] as const;
+import {
+  CONTRACT_TYPE_LABEL,
+  getGeneratableContractTypesForLoan,
+} from "@/constants/contracts";
 
 function getFileName(type: string, data: TContractData): string {
   const code =
@@ -47,11 +45,42 @@ export default function ContractPage() {
   const router = useRouter();
   const loanId = params.id as string;
   const [activeType, setActiveType] = useState<string>(CONTRACT_TYPE.ASSET_PLEDGE);
+  const [loanType, setLoanType] = useState("");
   const [contractData, setContractData] = useState<TContractData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { generating, progress, downloadPDF, uploadPDFToDrive } =
     usePdfGenerator();
+
+  const contractTabs = useMemo(
+    () =>
+      loanType
+        ? getGeneratableContractTypesForLoan(loanType).map((type) => ({
+            key: type,
+            label: CONTRACT_TYPE_LABEL[type],
+          }))
+        : [],
+    [loanType],
+  );
+
+  useEffect(() => {
+    if (!loanId) return;
+
+    fetch(`/api/loans/${loanId}/contract-data`)
+      .then((res) => res.json())
+      .then((result) => {
+        if (!result.success) return;
+        const nextLoanType = result.data.loanType ?? "";
+        setLoanType(nextLoanType);
+        const applicableTypes = getGeneratableContractTypesForLoan(nextLoanType);
+        setActiveType((current) =>
+          applicableTypes.includes(current as TContractType)
+            ? current
+            : applicableTypes[0] ?? CONTRACT_TYPE.ASSET_PLEDGE,
+        );
+      })
+      .catch(() => {});
+  }, [loanId]);
 
   useEffect(() => {
     if (!loanId) return;
@@ -149,7 +178,7 @@ export default function ContractPage() {
         onSelectionChange={(k) => setActiveType(k as string)}
         className="mb-4"
       >
-        {CONTRACT_TABS.map((tab) => (
+        {contractTabs.map((tab) => (
           <Tab key={tab.key} title={tab.label} />
         ))}
       </Tabs>

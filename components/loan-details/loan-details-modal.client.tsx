@@ -261,6 +261,7 @@ const LoanDetailsModal = ({
                         onAddReference={() => setIsAddReferenceOpen(true)}
                         onUpdateAssetCondition={() => setIsUpdateConditionOpen(true)}
                         onEditBank={() => setIsEditBankOpen(true)}
+                        onRefresh={onRefresh}
                       />
                     </div>
                     <LoanAmountSummary loanDetails={loanDetails} />
@@ -272,6 +273,7 @@ const LoanDetailsModal = ({
                     <ContractsSection
                       loanId={loanDetails.id}
                       loanStatus={loanDetails.status}
+                      loanType={loanDetails.loanType}
                       loanFiles={loanDetails.originalFiles}
                       onRefresh={onRefresh}
                     />

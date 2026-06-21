@@ -31,6 +31,7 @@ type TProps = {
   onAddReference?: () => void;
   onUpdateAssetCondition?: () => void;
   onEditBank?: () => void;
+  onRefresh?: () => void;
 };
 
 const LoanInfoCards = ({
@@ -39,6 +40,7 @@ const LoanInfoCards = ({
   onAddReference,
   onUpdateAssetCondition,
   onEditBank,
+  onRefresh,
 }: TProps) => {
   // Xác định loại tài sản để hiển thị đúng thông tin định danh
   // So sánh với cả label tiếng Việt và key tiếng Anh
@@ -299,7 +301,11 @@ const LoanInfoCards = ({
             </div>
           </div>
           {showAssetGallery && (
-            <AssetGallery assetImages={loanDetails.asset.images} loanId={loanDetails.id} />
+            <AssetGallery
+              assetImages={loanDetails.asset.images}
+              loanId={loanDetails.id}
+              onRefresh={onRefresh}
+            />
           )}
         </CardBody>
       </Card>

@@ -6,6 +6,10 @@ import {
   buildFullPaymentConfirmationData,
   buildAssetDisposalAuthorizationData,
 } from "@/lib/contract-data";
+import { CONTRACT_TYPE } from "@/types/contract.types";
+import {
+  getGeneratableContractTypesForLoan,
+} from "@/constants/contracts";
 
 /**
  * GET /api/loans/[id]/contract-data
@@ -48,9 +52,17 @@ export async function GET(
 
     // Build contract data using the same functions as contract generation
     const pledgeData = buildAssetPledgeContractData(loanDetails);
-    const leaseData = buildAssetLeaseContractData(loanDetails);
     const paymentData = buildFullPaymentConfirmationData(loanDetails);
     const disposalData = buildAssetDisposalAuthorizationData(loanDetails);
+    const applicableContractTypes = getGeneratableContractTypesForLoan(
+      loanDetails.loanType,
+    );
+    const includeLeaseContract = applicableContractTypes.includes(
+      CONTRACT_TYPE.ASSET_LEASE,
+    );
+    const leaseData = includeLeaseContract
+      ? buildAssetLeaseContractData(loanDetails)
+      : null;
 
     // Get signed date
     const signedDate = loanDetails.signedAt ? new Date(loanDetails.signedAt) : new Date();
@@ -61,6 +73,8 @@ export async function GET(
 
     // Return separate contract data objects with proper typing
     const contractData = {
+      loanType: loanDetails.loanType,
+      applicableContractTypes,
       // Asset Pledge Contract Data
       pledgeContract: {
         ...pledgeData,
@@ -71,17 +85,19 @@ export async function GET(
         DRAFT_SIGNATURE: null,
         OFFICIAL_SIGNATURE: null,
       },
-      
-      // Asset Lease Contract Data  
-      leaseContract: {
-        ...leaseData,
-        NGAY: ngay,
-        THANG: thang,
-        NAM: nam,
-        SIGNED_DATE: signedDateStr,
-        DRAFT_SIGNATURE: null,
-        OFFICIAL_SIGNATURE: null,
-      },
+
+      // Asset Lease Contract Data (Gói 3 giữ TS: không có HĐ thuê)
+      leaseContract: leaseData
+        ? {
+            ...leaseData,
+            NGAY: ngay,
+            THANG: thang,
+            NAM: nam,
+            SIGNED_DATE: signedDateStr,
+            DRAFT_SIGNATURE: null,
+            OFFICIAL_SIGNATURE: null,
+          }
+        : null,
       
       // Payment Confirmation Data
       paymentConfirmation: {
@@ -116,6 +132,12 @@ export async function GET(
           specificContract = contractData.pledgeContract;
           break;
         case 'asset_lease_contract':
+          if (!contractData.leaseContract) {
+            return NextResponse.json(
+              { success: false, error: "Gói vay này không có hợp đồng thuê tài sản" },
+              { status: 404 },
+            );
+          }
           specificContract = contractData.leaseContract;
           break;
         case 'full_payment_confirmation':

@@ -371,6 +371,7 @@ export const getLoanDetailsService = async (
       .from("loan_assets")
       .select("id, file_id, provider, name")
       .eq("loan_id", loanId)
+      .is("deleted_at", null)
       .order("position", { ascending: true }),
 
     supabase
