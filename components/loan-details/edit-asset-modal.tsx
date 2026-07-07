@@ -1,0 +1,191 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
+import { Button } from "@heroui/button";
+import { Input } from "@heroui/input";
+import { addToast } from "@heroui/toast";
+import { Loader2, Smartphone } from "lucide-react";
+
+type TProps = {
+  isOpen: boolean;
+  onClose: () => void;
+  loanId: string;
+  assetData: {
+    type: string;
+    name: string;
+    imei?: string;
+    serial?: string;
+    chassisNumber?: string;
+    engineNumber?: string;
+  };
+  onSuccess?: () => void;
+};
+
+const EditAssetModal = ({ isOpen, onClose, loanId, assetData, onSuccess }: TProps) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    assetType: "",
+    assetName: "",
+    imei: "",
+    serial: "",
+    chassisNumber: "",
+    engineNumber: "",
+  });
+
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        assetType: assetData.type || "",
+        assetName: assetData.name || "",
+        imei: assetData.imei || "",
+        serial: assetData.serial || "",
+        chassisNumber: assetData.chassisNumber || "",
+        engineNumber: assetData.engineNumber || "",
+      });
+    }
+  }, [isOpen, assetData]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.assetType.trim() || !formData.assetName.trim()) {
+      addToast({
+        title: "Lỗi",
+        description: "Vui lòng nhập loại tài sản và tên tài sản",
+        color: "danger",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await fetch(`/api/loans/${loanId}/asset`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        addToast({
+          title: "Lỗi",
+          description: result.error || "Không thể cập nhật thông tin tài sản",
+          color: "danger",
+        });
+        return;
+      }
+
+      addToast({
+        title: "Thành công",
+        description: "Đã cập nhật thông tin tài sản",
+        color: "success",
+      });
+      onSuccess?.();
+      onClose();
+    } catch (error) {
+      console.error("[EDIT_ASSET_ERROR]", error);
+      addToast({
+        title: "Lỗi",
+        description: "Có lỗi xảy ra khi cập nhật tài sản",
+        color: "danger",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
+      <ModalContent>
+        <form onSubmit={handleSubmit}>
+          <ModalHeader className="flex items-center gap-2">
+            <Smartphone className="w-5 h-5 text-primary" />
+            <span>Sửa thông tin tài sản</span>
+          </ModalHeader>
+          <ModalBody className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Loại tài sản"
+              value={formData.assetType}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, assetType: value }))
+              }
+              isRequired
+              isDisabled={isSubmitting}
+            />
+            <Input
+              label="Tên tài sản"
+              value={formData.assetName}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, assetName: value }))
+              }
+              isRequired
+              isDisabled={isSubmitting}
+            />
+            <Input
+              label="IMEI"
+              value={formData.imei}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, imei: value }))
+              }
+              isDisabled={isSubmitting}
+            />
+            <Input
+              label="Serial"
+              value={formData.serial}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, serial: value }))
+              }
+              isDisabled={isSubmitting}
+            />
+            <Input
+              label="Số khung"
+              value={formData.chassisNumber}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, chassisNumber: value }))
+              }
+              isDisabled={isSubmitting}
+            />
+            <Input
+              label="Số máy"
+              value={formData.engineNumber}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, engineNumber: value }))
+              }
+              isDisabled={isSubmitting}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={onClose} isDisabled={isSubmitting}>
+              Hủy
+            </Button>
+            <Button
+              color="primary"
+              type="submit"
+              isDisabled={isSubmitting}
+              startContent={
+                isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Smartphone className="w-4 h-4" />
+                )
+              }
+            >
+              {isSubmitting ? "Đang cập nhật..." : "Cập nhật"}
+            </Button>
+          </ModalFooter>
+        </form>
+      </ModalContent>
+    </Modal>
+  );
+};
+
+export default EditAssetModal;

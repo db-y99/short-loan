@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { LOAN_STATUS } from "@/constants/loan";
 
 /**
  * PATCH /api/loans/[id]/update-asset-condition
@@ -32,6 +33,29 @@ export async function PATCH(
     if (!asset_condition || typeof asset_condition !== "string") {
       return NextResponse.json(
         { success: false, error: "Tình trạng tài sản không hợp lệ" },
+        { status: 400 }
+      );
+    }
+
+    const { data: loan, error: loanError } = await supabase
+      .from("loans")
+      .select("id, status")
+      .eq("id", loanId)
+      .single();
+
+    if (loanError || !loan) {
+      return NextResponse.json(
+        { success: false, error: "Không tìm thấy khoản vay" },
+        { status: 404 }
+      );
+    }
+
+    if (loan.status !== LOAN_STATUS.PENDING) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Chỉ được cập nhật tình trạng tài sản khi khoản vay ở trạng thái chờ duyệt",
+        },
         { status: 400 }
       );
     }

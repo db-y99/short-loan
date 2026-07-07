@@ -25,6 +25,9 @@ import AddReferenceModal from "@/components/loan-details/add-reference-modal";
 import UpdateAssetConditionModal from "@/components/loan-details/update-asset-condition-modal";
 import EditCustomerModal from "@/components/loan-details/edit-customer-modal";
 import EditBankModal from "@/components/loan-details/edit-bank-modal";
+import EditLoanAmountModal from "@/components/loan-details/edit-loan-amount-modal";
+import EditReferenceModal from "@/components/loan-details/edit-reference-modal";
+import EditAssetModal from "@/components/loan-details/edit-asset-modal";
 import SimplePaymentModal from "@/components/loan-details/simple-payment-modal";
 import ConfirmModal from "@/components/confirm-modal";
 
@@ -55,9 +58,12 @@ const LoanDetailsModal = ({
   const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
   const [isRedeemOpen, setIsRedeemOpen] = useState(false);
   const [isAddReferenceOpen, setIsAddReferenceOpen] = useState(false);
+  const [isEditReferenceOpen, setIsEditReferenceOpen] = useState(false);
   const [isUpdateConditionOpen, setIsUpdateConditionOpen] = useState(false);
+  const [isEditAssetOpen, setIsEditAssetOpen] = useState(false);
   const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
   const [isEditBankOpen, setIsEditBankOpen] = useState(false);
+  const [isEditLoanAmountOpen, setIsEditLoanAmountOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState<{
     title: string;
@@ -66,6 +72,7 @@ const LoanDetailsModal = ({
     confirmColor?: "primary" | "success" | "warning" | "danger";
   } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0); // Thêm state để force refresh
+  const [selectedReferenceId, setSelectedReferenceId] = useState<string | null>(null);
 
   const handleDisburse = async () => {
     if (!loanDetails) return;
@@ -136,6 +143,7 @@ const LoanDetailsModal = ({
   const isPending = loanDetails?.status === LOAN_STATUS.PENDING;
   const isSigned = loanDetails?.status === LOAN_STATUS.SIGNED;
   const isDisbursed = loanDetails?.status === LOAN_STATUS.DISBURSED;
+  const canEditLoanDetails = isAdmin && isPending;
 
   const handlePayInterestSuccess = () => {
     // Tăng refreshKey để force refresh PaymentPeriods
@@ -156,6 +164,12 @@ const LoanDetailsModal = ({
   };
 
   const handleAddReferenceSuccess = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  const handleEditReferenceSuccess = () => {
     if (onRefresh) {
       onRefresh();
     }
@@ -184,6 +198,77 @@ const LoanDetailsModal = ({
     if (onRefresh) {
       onRefresh();
     }
+  };
+
+  const handleEditLoanAmountSuccess = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  const handleEditAssetSuccess = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  const handleOpenEditReference = (referenceId: string) => {
+    setSelectedReferenceId(referenceId);
+    setIsEditReferenceOpen(true);
+  };
+
+  const handleCloseEditReference = () => {
+    setIsEditReferenceOpen(false);
+    setSelectedReferenceId(null);
+  };
+
+  const handleDeleteReference = async (referenceId: string) => {
+    if (!loanDetails) return;
+
+    setConfirmConfig({
+      title: "Xóa tham chiếu",
+      message: "Bạn có chắc muốn xóa người tham chiếu này?",
+      confirmColor: "danger",
+      onConfirm: async () => {
+        setIsDisbursing(true);
+        try {
+          const response = await fetch(
+            `/api/loans/${loanDetails.id}/references/${referenceId}`,
+            { method: "DELETE" },
+          );
+          const result = await response.json();
+
+          if (!result.success) {
+            addToast({
+              title: "Lỗi",
+              description: result.error || "Không thể xóa tham chiếu",
+              color: "danger",
+            });
+            return;
+          }
+
+          addToast({
+            title: "Thành công",
+            description: "Đã xóa tham chiếu",
+            color: "success",
+          });
+
+          if (onRefresh) {
+            onRefresh();
+          }
+        } catch (error) {
+          console.error("[DELETE_REFERENCE_ERROR]", error);
+          addToast({
+            title: "Lỗi",
+            description: "Có lỗi xảy ra khi xóa tham chiếu",
+            color: "danger",
+          });
+        } finally {
+          setIsDisbursing(false);
+        }
+      },
+    });
+    setIsConfirmOpen(true);
   };
 
   return (
@@ -233,15 +318,30 @@ const LoanDetailsModal = ({
 
                   {/* Edit Customer Button */}
                   <div className="mb-4">
-                    <Button
-                      color="default"
-                      variant="bordered"
-                      size="sm"
-                      startContent={<UserCog className="w-4 h-4" />}
-                      onPress={() => setIsEditCustomerOpen(true)}
-                    >
-                      Sửa thông tin khách hàng
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {canEditLoanDetails && (
+                        <Button
+                          color="default"
+                          variant="bordered"
+                          size="sm"
+                          startContent={<UserCog className="w-4 h-4" />}
+                          onPress={() => setIsEditCustomerOpen(true)}
+                        >
+                          Sửa thông tin khách hàng
+                        </Button>
+                      )}
+                      {canEditLoanDetails && (
+                        <Button
+                          color="primary"
+                          variant="bordered"
+                          size="sm"
+                          startContent={<DollarSign className="w-4 h-4" />}
+                          onPress={() => setIsEditLoanAmountOpen(true)}
+                        >
+                          Sửa số tiền vay
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   {loanDetails.notes && (
@@ -258,9 +358,32 @@ const LoanDetailsModal = ({
                       <LoanInfoCards
                         loanDetails={loanDetails}
                         showAssetGallery
-                        onAddReference={() => setIsAddReferenceOpen(true)}
-                        onUpdateAssetCondition={() => setIsUpdateConditionOpen(true)}
-                        onEditBank={() => setIsEditBankOpen(true)}
+                        onAddReference={
+                          canEditLoanDetails
+                            ? () => setIsAddReferenceOpen(true)
+                            : undefined
+                        }
+                        onUpdateAssetCondition={
+                          canEditLoanDetails
+                            ? () => setIsUpdateConditionOpen(true)
+                            : undefined
+                        }
+                        onEditAsset={
+                          canEditLoanDetails
+                            ? () => setIsEditAssetOpen(true)
+                            : undefined
+                        }
+                        onEditBank={
+                          canEditLoanDetails
+                            ? () => setIsEditBankOpen(true)
+                            : undefined
+                        }
+                        onEditReference={
+                          canEditLoanDetails ? handleOpenEditReference : undefined
+                        }
+                        onDeleteReference={
+                          canEditLoanDetails ? handleDeleteReference : undefined
+                        }
                         onRefresh={onRefresh}
                       />
                     </div>
@@ -424,12 +547,49 @@ const LoanDetailsModal = ({
             onSuccess={handleAddReferenceSuccess}
           />
 
+          {selectedReferenceId && (
+            <EditReferenceModal
+              isOpen={isEditReferenceOpen}
+              onClose={handleCloseEditReference}
+              loanId={loanDetails.id}
+              referenceId={selectedReferenceId}
+              fullName={
+                loanDetails.references.find((ref) => ref.id === selectedReferenceId)
+                  ?.full_name ?? ""
+              }
+              phone={
+                loanDetails.references.find((ref) => ref.id === selectedReferenceId)
+                  ?.phone ?? ""
+              }
+              relationship={
+                loanDetails.references.find((ref) => ref.id === selectedReferenceId)
+                  ?.relationship ?? ""
+              }
+              onSuccess={handleEditReferenceSuccess}
+            />
+          )}
+
           <UpdateAssetConditionModal
             isOpen={isUpdateConditionOpen}
             onClose={() => setIsUpdateConditionOpen(false)}
             loanId={loanDetails.id}
             currentCondition={loanDetails.assetCondition}
             onSuccess={handleUpdateConditionSuccess}
+          />
+
+          <EditAssetModal
+            isOpen={isEditAssetOpen}
+            onClose={() => setIsEditAssetOpen(false)}
+            loanId={loanDetails.id}
+            assetData={{
+              type: loanDetails.asset.type,
+              name: loanDetails.asset.name,
+              imei: loanDetails.asset.imei,
+              serial: loanDetails.asset.serial,
+              chassisNumber: loanDetails.asset.chassisNumber,
+              engineNumber: loanDetails.asset.engineNumber,
+            }}
+            onSuccess={handleEditAssetSuccess}
           />
 
           <EditCustomerModal
@@ -460,6 +620,14 @@ const LoanDetailsModal = ({
               accountHolder: loanDetails.bank.accountHolder,
             }}
             onSuccess={handleEditBankSuccess}
+          />
+
+          <EditLoanAmountModal
+            isOpen={isEditLoanAmountOpen}
+            onClose={() => setIsEditLoanAmountOpen(false)}
+            loanId={loanDetails.id}
+            loanAmount={loanDetails.loanAmount}
+            onSuccess={handleEditLoanAmountSuccess}
           />
         </>
       )}

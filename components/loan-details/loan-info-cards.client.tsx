@@ -15,6 +15,7 @@ import {
   Calendar,
   UserPlus,
   Edit,
+  Trash2,
 } from "lucide-react";
 
 import type { TLoanDetails } from "@/types/loan.types";
@@ -30,7 +31,10 @@ type TProps = {
   showAssetGallery?: boolean;
   onAddReference?: () => void;
   onUpdateAssetCondition?: () => void;
+  onEditAsset?: () => void;
   onEditBank?: () => void;
+  onEditReference?: (referenceId: string) => void;
+  onDeleteReference?: (referenceId: string) => void;
   onRefresh?: () => void;
 };
 
@@ -39,7 +43,10 @@ const LoanInfoCards = ({
   showAssetGallery = false,
   onAddReference,
   onUpdateAssetCondition,
+  onEditAsset,
   onEditBank,
+  onEditReference,
+  onDeleteReference,
   onRefresh,
 }: TProps) => {
   // Xác định loại tài sản để hiển thị đúng thông tin định danh
@@ -179,6 +186,11 @@ const LoanInfoCards = ({
                     <th className="text-left py-2 px-2 font-semibold text-default-600">
                       Quan hệ
                     </th>
+                    {(onEditReference || onDeleteReference) && (
+                      <th className="text-right py-2 px-2 font-semibold text-default-600">
+                        Thao tác
+                      </th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
@@ -198,6 +210,33 @@ const LoanInfoCards = ({
                           {ref.relationship}
                         </Chip>
                       </td>
+                      {(onEditReference || onDeleteReference) && (
+                        <td className="py-2 px-2">
+                          <div className="flex items-center justify-end gap-1">
+                            {onEditReference && (
+                              <Button
+                                size="sm"
+                                variant="light"
+                                isIconOnly
+                                onPress={() => onEditReference(ref.id)}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {onDeleteReference && (
+                              <Button
+                                size="sm"
+                                variant="light"
+                                color="danger"
+                                isIconOnly
+                                onPress={() => onDeleteReference(ref.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -217,15 +256,30 @@ const LoanInfoCards = ({
             <SectionHeader icon={Smartphone} title="Tài sản" />
             <Chip size="sm" variant="flat">{loanDetails.asset.type}</Chip>
           </div>
-            <Button
-              color="secondary"
-              variant="light"
-              size="sm"
-              startContent={<UserPlus className="w-4 h-4" />}
-              onPress={onUpdateAssetCondition}
-            >
-              Cập nhật tình trạng
-            </Button>
+          <div className="flex items-center gap-1">
+            {onEditAsset && (
+              <Button
+                color="primary"
+                variant="light"
+                size="sm"
+                startContent={<Edit className="w-4 h-4" />}
+                onPress={onEditAsset}
+              >
+                Sửa tài sản
+              </Button>
+            )}
+            {onUpdateAssetCondition && (
+              <Button
+                color="secondary"
+                variant="light"
+                size="sm"
+                startContent={<UserPlus className="w-4 h-4" />}
+                onPress={onUpdateAssetCondition}
+              >
+                Cập nhật tình trạng
+              </Button>
+            )}
+          </div>
         </CardHeader>
         <CardBody className="pt-0">
           <div className="bg-default-50 rounded-lg p-2 mb-3 flex flex-col gap-1">

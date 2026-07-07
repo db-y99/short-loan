@@ -234,7 +234,24 @@ export async function generateContractsService(
       };
     }
 
-    // BƯỚC 3: Insert tất cả records vào DB song song
+    // BƯỚC 3: Xóa bản ghi cũ cùng loại trước khi insert để tránh trùng lặp
+    // (file cũ vẫn giữ trên Drive, chỉ thay record trong DB)
+    const typesToReplace = successfulUploads.map((contract) => contract.type);
+    const { error: cleanupError } = await supabase
+      .from("loan_files")
+      .delete()
+      .eq("loan_id", loanId)
+      .in("type", typesToReplace);
+
+    if (cleanupError) {
+      console.error("[CLEANUP_OLD_CONTRACTS_ERROR]", cleanupError);
+      return {
+        success: false,
+        error: "Không thể thay thế hợp đồng cũ. Vui lòng thử lại.",
+      };
+    }
+
+    // BƯỚC 4: Insert tất cả records vào DB song song
     console.time("Insert to DB");
 
     const dbPromises = successfulUploads.map(async (contract) => {
