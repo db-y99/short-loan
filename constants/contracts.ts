@@ -4,23 +4,29 @@ import type { TContractType } from "@/types/contract.types";
 
 export { CONTRACT_TYPE };
 
-/** Gói 3 (giữ tài sản tại cửa hàng) — không có HĐ thuê tài sản */
+/** Gói 3 (giữ tài sản tại cửa hàng) */
 export const isCollateralHoldLoanType = (loanType: string): boolean =>
   loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD ||
   loanType.includes("Giữ TS");
 
-/** Loại hợp đồng áp dụng theo gói vay */
-export const getGeneratableContractTypesForLoan = (
-  loanType: string,
-): TContractType[] => {
-  if (isCollateralHoldLoanType(loanType)) {
-    return GENERATABLE_CONTRACT_TYPES.filter(
-      (type) => type !== CONTRACT_TYPE.ASSET_LEASE,
-    );
-  }
+/** Danh sách loại hợp đồng có thể tạo (theo thứ tự hiển thị) */
+export const GENERATABLE_CONTRACT_TYPES: TContractType[] = [
+  CONTRACT_TYPE.ASSET_PLEDGE,
+  CONTRACT_TYPE.ASSET_LEASE,
+  CONTRACT_TYPE.FULL_PAYMENT,
+  CONTRACT_TYPE.ASSET_DISPOSAL,
+];
 
-  return [...GENERATABLE_CONTRACT_TYPES];
-};
+/** Loại hợp đồng có thể tạo (luôn đủ 4 loại) */
+export const getGeneratableContractTypesForLoan = (
+  _loanType?: string,
+): TContractType[] => [...GENERATABLE_CONTRACT_TYPES];
+
+/** Mặc định chọn khi tạo hợp đồng — HĐ Thuê TS ít dùng nên không chọn sẵn */
+export const DEFAULT_SELECTED_CONTRACT_TYPES: TContractType[] =
+  GENERATABLE_CONTRACT_TYPES.filter(
+    (type) => type !== CONTRACT_TYPE.ASSET_LEASE,
+  );
 
 /** Tab ký hợp đồng (trang /loans/[id]/sign) */
 export const SIGN_PAGE_CONTRACT_TABS = [
@@ -59,13 +65,14 @@ export const getSignPageContractTabsForLoan = (loanType: string) => {
   return SIGN_PAGE_CONTRACT_TABS.filter((tab) => allowed.has(tab.type));
 };
 
-/** Danh sách loại hợp đồng có thể tạo (theo thứ tự hiển thị) */
-export const GENERATABLE_CONTRACT_TYPES: TContractType[] = [
-  CONTRACT_TYPE.ASSET_PLEDGE,
-  CONTRACT_TYPE.ASSET_LEASE,
-  CONTRACT_TYPE.FULL_PAYMENT,
-  CONTRACT_TYPE.ASSET_DISPOSAL,
-];
+/** Tab ký hợp đồng theo các loại đã tạo (từ loan_files) */
+export const getSignPageContractTabsForCreatedTypes = (
+  createdTypes: TContractType[],
+) => {
+  const allowed = new Set(createdTypes);
+
+  return SIGN_PAGE_CONTRACT_TABS.filter((tab) => allowed.has(tab.type));
+};
 
 export const CONTRACT_TYPE_LABEL: Record<TContractType, string> = {
   [CONTRACT_TYPE.ASSET_PLEDGE]: "HĐ Cầm Cố Tài Sản",

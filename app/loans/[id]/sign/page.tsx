@@ -11,12 +11,13 @@ import {
   ChevronLeft, ChevronRight, Shield, ScrollText,
 } from "lucide-react";
 import SignatureCanvas from "react-signature-canvas";
+import SignaturePad from "@/components/signature-pad.client";
 import { AssetPledgeContractView } from "@/components/contracts/asset-pledge-contract-view.client";
 import { AssetLeaseContractView } from "@/components/contracts/asset-lease-contract-view.client";
 import { FullPaymentConfirmationView } from "@/components/contracts/full-payment-confirmation-view.client";
 import { AssetDisposalAuthorizationView } from "@/components/contracts/asset-disposal-authorization-view.client";
 import {
-  getSignPageContractTabsForLoan,
+  getSignPageContractTabsForCreatedTypes,
   type TSignPageContractTabKey,
 } from "@/constants/contracts";
 
@@ -59,7 +60,11 @@ export default function LoanSignPage() {
       const result = await res.json();
       if (result.success) {
         setContractData(result.data);
-        const tabs = getSignPageContractTabsForLoan(result.data.loanType ?? "");
+        const createdTypes =
+          result.data.createdContractTypes ??
+          result.data.applicableContractTypes ??
+          [];
+        const tabs = getSignPageContractTabsForCreatedTypes(createdTypes);
         if (tabs.length > 0) {
           setSelectedContractType((current) =>
             tabs.some((tab) => tab.key === current) ? current : tabs[0].key,
@@ -110,7 +115,11 @@ export default function LoanSignPage() {
         addToast({ title: "Lỗi khi ký hợp đồng", description: signResult.error || "Có lỗi xảy ra", color: "danger" });
         return;
       }
-      fetch(`/api/loans/${loanId}/generate-signed-contracts`, { method: "POST" }).catch(() => {});
+      addToast({
+        title: "Hoàn tất!",
+        description: signResult.message || "Hợp đồng đã được ký và tạo PDF thành công",
+        color: "success",
+      });
       setStep("done");
     } catch (err) {
       console.error("Error signing:", err);
@@ -120,13 +129,15 @@ export default function LoanSignPage() {
     }
   };
 
-  const contractTabs = useMemo(
-    () =>
-      contractData?.loanType
-        ? getSignPageContractTabsForLoan(contractData.loanType)
-        : [],
-    [contractData?.loanType],
-  );
+  const contractTabs = useMemo(() => {
+    const createdTypes =
+      contractData?.createdContractTypes ??
+      contractData?.applicableContractTypes ??
+      [];
+    if (createdTypes.length === 0) return [];
+
+    return getSignPageContractTabsForCreatedTypes(createdTypes);
+  }, [contractData?.createdContractTypes, contractData?.applicableContractTypes]);
 
   const currentTabIndex = contractTabs.findIndex(
     (t) => t.key === selectedContractType,
@@ -200,12 +211,9 @@ export default function LoanSignPage() {
             <div className="p-4">
               {!draftSignature ? (
                 <>
-                  <div className="border-2 border-dashed border-primary/30 rounded-xl bg-primary/5 relative">
-                    <SignatureCanvas
-                      ref={draftSigRef}
-                      canvasProps={{ className: "w-full h-56 cursor-crosshair rounded-xl" }}
-                    />
-                    <p className="absolute bottom-2 right-3 text-xs text-default-300 pointer-events-none select-none">Ký tại đây</p>
+                  <div className="relative">
+                    <SignaturePad ref={draftSigRef} heightClass="h-56" className="rounded-xl" />
+                    <p className="absolute bottom-2 right-3 text-xs text-default-400 pointer-events-none select-none">Ký tại đây</p>
                   </div>
                   <div className="flex gap-2 mt-3">
                     <Button size="sm" variant="flat" className="flex-1" onPress={() => clearSig(draftSigRef, setDraftSignature)}>
@@ -218,8 +226,8 @@ export default function LoanSignPage() {
                 </>
               ) : (
                 <div className="relative">
-                  <div className="border border-success-200 rounded-xl p-3">
-                    <img src={draftSignature} alt="Chữ ký nháy" className="w-full h-44 object-contain" />
+                  <div className="border border-success-200 rounded-xl p-3 bg-white dark:bg-white">
+                    <img src={draftSignature} alt="Chữ ký nháy" className="w-full h-44 object-contain bg-white" />
                   </div>
                   <Button
                     size="sm" variant="flat" color="danger"
@@ -255,12 +263,9 @@ export default function LoanSignPage() {
             <div className="p-4">
               {!officialSignature ? (
                 <>
-                  <div className="border-2 border-dashed border-success/30 rounded-xl bg-success/5 relative">
-                    <SignatureCanvas
-                      ref={officialSigRef}
-                      canvasProps={{ className: "w-full h-56 cursor-crosshair rounded-xl" }}
-                    />
-                    <p className="absolute bottom-2 right-3 text-xs text-default-300 pointer-events-none select-none">Ký tại đây</p>
+                  <div className="relative">
+                    <SignaturePad ref={officialSigRef} heightClass="h-56" className="rounded-xl" />
+                    <p className="absolute bottom-2 right-3 text-xs text-default-400 pointer-events-none select-none">Ký tại đây</p>
                   </div>
                   <div className="flex gap-2 mt-3">
                     <Button size="sm" variant="flat" className="flex-1" onPress={() => clearSig(officialSigRef, setOfficialSignature)}>
@@ -273,8 +278,8 @@ export default function LoanSignPage() {
                 </>
               ) : (
                 <div>
-                  <div className="border border-success-200 rounded-xl p-3">
-                    <img src={officialSignature} alt="Chữ ký chính thức" className="w-full h-44 object-contain" />
+                  <div className="border border-success-200 rounded-xl p-3 bg-white dark:bg-white">
+                    <img src={officialSignature} alt="Chữ ký chính thức" className="w-full h-44 object-contain bg-white" />
                   </div>
                   <Button
                     size="sm" variant="flat" color="danger"

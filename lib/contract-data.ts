@@ -11,7 +11,11 @@ import { formatDateShortVN } from "@/lib/format";
 import { COMPANY_INFO } from "@/constants/company";
 import { getLoanInterestRateDescription, DAILY_INTEREST_RATE } from "@/lib/loan-constants";
 import { LOAN_TYPES, ASSET_TYPES, type TLoanType } from "@/constants/loan";
-import { calculateAppraisalFee } from "@/lib/loan-calculation";
+import {
+  calculateAppraisalFee,
+  calculateBulletPaymentWithCollateralHold,
+} from "@/lib/loan-calculation";
+import { isCollateralHoldLoanType } from "@/constants/contracts";
 
 /** Format số tiền VND */
 function formatVND(n: number): string {
@@ -101,8 +105,18 @@ function buildAssetIdentityInfo(loan: TLoanDetails): {
  */
 function buildPledgeMilestones(loan: TLoanDetails): TPledgeMilestone[] {
   const loanAmount = loan.loanAmount;
-  
-  // Tính lãi suất pháp lý cho 3 mốc (chỉ hiển thị lãi, không hiển thị phí thuê)
+
+  // Gói 3: Hiển thị tổng chuộc (Gốc + Lãi + Phí thuê + Phí DV)
+  if (isCollateralHoldLoanType(loan.loanType)) {
+    return calculateBulletPaymentWithCollateralHold(loanAmount).map((p) => ({
+      moc: p.milestone,
+      ngay: p.days,
+      lai: formatVND(p.interest),
+      tongTien: formatVND(p.total),
+    }));
+  }
+
+  // Gói 1 & 2: Tính lãi suất pháp lý cho 3 mốc (chỉ hiển thị lãi, không hiển thị phí thuê)
   const milestones = [
     {
       moc: 1,

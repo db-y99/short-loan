@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { uploadAssetImagesService } from "@/services/assets/asset-images.service";
 
 export const runtime = "nodejs";
@@ -9,6 +10,18 @@ export const runtime = "nodejs";
  */
 export async function POST(req: NextRequest) {
   try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
     const formData = await req.formData();
     
     const loanId = formData.get("loanId") as string;
@@ -48,9 +61,10 @@ export async function POST(req: NextRequest) {
     const result = await uploadAssetImagesService(loanId, files);
 
     if (!result.success) {
+      const status = result.error?.includes("chờ duyệt") ? 400 : 500;
       return NextResponse.json(
-        { error: result.error ?? "Lỗi không xác định" },
-        { status: 500 }
+        { success: false, error: result.error ?? "Lỗi không xác định" },
+        { status },
       );
     }
 

@@ -4,7 +4,7 @@ import { generateSignedContractsService } from "@/services/contracts/contracts.s
 
 /**
  * POST /api/loans/[id]/generate-signed-contracts
- * Generate signed contract PDFs (called separately after signing)
+ * Generate or repair signed contract PDFs for a signed loan
  */
 export async function POST(
   request: NextRequest,
@@ -26,10 +26,10 @@ export async function POST(
       );
     }
 
-    // Verify loan exists and is signed
+    // Verify loan exists, is signed, and has signatures
     const { data: loan, error: fetchError } = await supabase
       .from("loans")
-      .select("id, status")
+      .select("id, status, draft_signature_file_id, official_signature_file_id")
       .eq("id", loanId)
       .single();
 
@@ -47,7 +47,14 @@ export async function POST(
       );
     }
 
-    // Generate PDFs
+    if (!loan.draft_signature_file_id || !loan.official_signature_file_id) {
+      return NextResponse.json(
+        { success: false, error: "Chưa có chữ ký để tạo PDF" },
+        { status: 400 }
+      );
+    }
+
+    // Generate or repair signed PDFs
     console.log("[GENERATE_CONTRACTS] Starting PDF generation for loan:", loanId);
     const result = await generateSignedContractsService(loanId);
 

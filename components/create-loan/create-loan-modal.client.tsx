@@ -8,7 +8,7 @@ import {
   ModalFooter,
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import CustomerInfoSection from "./customer-info-section.client";
 import BankInfoSection from "./bank-info-section.client";
@@ -16,12 +16,15 @@ import LoanInfoSection from "./loan-info-section.client";
 import ReferencesSection from "./references-section.client";
 import AttachmentsSection from "./attachments-section.client";
 import { createLoanAction } from "@/features/loans/actions/create-loan.action";
+import { CreateLoanSchema } from "@/features/loans/actions/create-loan.schema";
 import { saveLoanAttachmentsAction } from "@/features/loans/actions/save-loan-attachments.action";
+import { cleanupDriveFilesAction } from "@/features/loans/actions/cleanup-drive-files.action";
 import type { TCreateLoanForm, TReference, TUploadFiles } from "@/types/loan.types";
 import type { TBranch } from "@/types/branch.types";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { PROVIDER_TYPES } from "@/constants/google-drive";
 import { LOAN_TYPES } from "@/constants/loan";
+import { zodIssuesToFieldErrors } from "@/lib/zod-field-errors";
 import { Select, SelectItem } from "@heroui/select";
 import { Divider } from "@heroui/divider";
 import { Chip } from "@heroui/chip";
@@ -34,6 +37,11 @@ type TProps = {
   branches?: TBranch[];
   isAdmin?: boolean;
   userBranchName?: string | null;
+  initialForm?: TCreateLoanForm | null;
+  initialBranchId?: string | null;
+  sourceLoanCode?: string | null;
+  initialAssetImages?: TUploadFiles[] | null;
+  keepAssetImages?: boolean;
 };
 
 const INITIAL_FORM: TCreateLoanForm = {
@@ -104,19 +112,57 @@ const isCreateLoanFormDirty = (
   return form.references.length > 0;
 };
 
-const CreateContractModal = ({ isOpen, onClose, onSuccess, branches = [], isAdmin = false, userBranchName }: TProps) => {
+const CreateContractModal = ({
+  isOpen,
+  onClose,
+  onSuccess,
+  branches = [],
+  isAdmin = false,
+  userBranchName,
+  initialForm = null,
+  initialBranchId = null,
+  sourceLoanCode = null,
+  initialAssetImages = null,
+  keepAssetImages = false,
+}: TProps) => {
   const [form, setForm] = useState<TCreateLoanForm>(INITIAL_FORM);
   const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+  const [keptAssetImages, setKeptAssetImages] = useState<TUploadFiles[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [uploadProgress, setUploadProgress] = useState<string>("");
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   const { uploadFiles, isUploading } = useFileUpload();
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (initialForm) {
+      setForm(initialForm);
+      setSelectedBranchId(initialBranchId ?? "");
+      setKeptAssetImages(initialAssetImages ?? []);
+    } else {
+      setForm(INITIAL_FORM);
+      setSelectedBranchId("");
+      setKeptAssetImages([]);
+    }
+    setError(null);
+    setFieldErrors({});
+    setUploadProgress("");
+    setShowDiscardConfirm(false);
+  }, [isOpen, initialForm, initialBranchId, initialAssetImages]);
+
   const handleFieldChange = useCallback(
     (field: keyof TCreateLoanForm, value: string) => {
       setForm((prev) => ({ ...prev, [field]: value }));
+      setFieldErrors((prev) => {
+        if (!prev[field]) return prev;
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
     },
     [],
   );
@@ -170,11 +216,17 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess, branches = [], isAdmi
     }));
   }, []);
 
+  const handleRemoveKeptAssetImage = useCallback((index: number) => {
+    setKeptAssetImages((prev) => prev.filter((_, i) => i !== index));
+  }, []);
+
   const handleClose = useCallback(() => {
     setShowDiscardConfirm(false);
     setForm(INITIAL_FORM);
     setSelectedBranchId("");
+    setKeptAssetImages([]);
     setError(null);
+    setFieldErrors({});
     setUploadProgress("");
     onClose();
   }, [onClose]);
@@ -192,48 +244,55 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess, branches = [], isAdmi
 
   const handleSubmit = useCallback(async () => {
     setError(null);
+
+    const payload = {
+      full_name: form.full_name,
+      cccd: form.cccd,
+      phone: form.phone,
+      cccd_issue_date: form.cccd_issue_date,
+      cccd_issue_place: form.cccd_issue_place,
+      address: form.address,
+      facebook_link: form.facebook_link,
+      job: form.job,
+      income: form.income,
+      bank_name: form.bank_name,
+      bank_account_holder: form.bank_account_holder,
+      bank_account_number: form.bank_account_number,
+      asset_type: form.asset_type,
+      asset_name: form.asset_name,
+      asset_identity: {
+        chassis_number: form.chassis_number,
+        engine_number: form.engine_number,
+        imei: form.imei,
+        serial: form.serial,
+      },
+      asset_condition: form.asset_condition,
+      loan_amount: form.loan_amount,
+      loan_type: form.loan_type,
+      notes: form.notes,
+      branch_id: isAdmin ? (selectedBranchId || null) : null,
+      references: form.references.map((r) => ({
+        full_name: r.full_name,
+        phone: r.phone,
+        relationship: r.relationship || null,
+      })),
+    };
+
+    const parseResult = CreateLoanSchema.safeParse(payload);
+    if (!parseResult.success) {
+      setFieldErrors(zodIssuesToFieldErrors(parseResult.error.issues));
+      return;
+    }
+    setFieldErrors({});
+
     setIsSubmitting(true);
 
     try {
-      // 1) Tạo loan trước (CHƯA có attachments)
-      const payload = {
-        full_name: form.full_name,
-        cccd: form.cccd,
-        phone: form.phone,
-        cccd_issue_date: form.cccd_issue_date,
-        cccd_issue_place: form.cccd_issue_place,
-        address: form.address,
-        facebook_link: form.facebook_link,
-        job: form.job,
-        income: form.income,
-        bank_name: form.bank_name,
-        bank_account_holder: form.bank_account_holder,
-        bank_account_number: form.bank_account_number,
-        asset_type: form.asset_type,
-        asset_name: form.asset_name,
-        asset_identity: {
-          chassis_number: form.chassis_number,
-          engine_number: form.engine_number,
-          imei: form.imei,
-          serial: form.serial,
-        },
-        asset_condition: form.asset_condition,
-        loan_amount: form.loan_amount,
-        loan_type: form.loan_type,
-        notes: form.notes,
-        branch_id: isAdmin ? (selectedBranchId || null) : null,
-        references: form.references.map((r) => ({
-          full_name: r.full_name,
-          phone: r.phone,
-          relationship: r.relationship || null,
-        })),
-      };
-
       const result = await createLoanAction(payload);
 
       if (result.success) {
-        // 2) Upload files vào đúng folder đã tạo
-        let uploadedFiles: TUploadFiles[] = [];
+        // 2) Upload files mới vào folder đã tạo
+        let uploadedFiles: TUploadFiles[] = [...keptAssetImages];
 
         if (form.attachments.length > 0) {
           setUploadProgress(`Đang upload ${form.attachments.length} file...`);
@@ -256,6 +315,11 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess, branches = [], isAdmi
             attachments: uploadedFiles,
           });
           if (!saveRes.success) {
+            await cleanupDriveFilesAction(
+              uploadedFiles.map((file) => file.file_id),
+            ).catch((cleanupError) => {
+              console.error("[CREATE_LOAN_ATTACHMENT_CLEANUP_ERROR]", cleanupError);
+            });
             setError(saveRes.error);
             return;
           }
@@ -263,8 +327,10 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess, branches = [], isAdmi
 
         handleClose();
         onSuccess?.();
+      } else if (result.fieldErrors && Object.keys(result.fieldErrors).length > 0) {
+        setFieldErrors(result.fieldErrors);
       } else {
-        setError(result.error);
+        setError(result.error ?? "Đã xảy ra lỗi khi tạo hợp đồng");
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Đã xảy ra lỗi");
@@ -272,7 +338,7 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess, branches = [], isAdmi
       setIsSubmitting(false);
       setUploadProgress("");
     }
-  }, [form, handleClose, onSuccess, uploadFiles]);
+  }, [form, keptAssetImages, handleClose, onSuccess, uploadFiles, isAdmin, selectedBranchId]);
 
 
   const isLoading = isSubmitting || isUploading;
@@ -295,18 +361,28 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess, branches = [], isAdmi
     >
       <ModalContent>
         <ModalHeader className="flex gap-2">
-          <div>Tạo hợp đồng mới</div>
+          <div>
+            {sourceLoanCode
+              ? `Tạo đơn vay mới (từ ${sourceLoanCode})`
+              : "Tạo hợp đồng mới"}
+          </div>
           <Chip variant="bordered" color={userBranchName ? "primary" : "default"}>
             {userBranchName ?? "Chưa được gán chi nhánh"}
           </Chip>
         </ModalHeader>
 
         <ModalBody className="flex flex-col gap-8" ref={setModalContentRef}>
-          {error && (
-            <div className="rounded-lg bg-danger-50 px-4 py-3 text-danger text-sm">
-              {error}
+          {sourceLoanCode && (
+            <div className="rounded-lg bg-primary-50 px-4 py-3 text-sm text-primary-700">
+              Thông tin khách hàng, tài sản và ngân hàng đã được điền sẵn từ hợp đồng cũ.
+              {keepAssetImages
+                ? " Ảnh tài sản cũ đã được giữ lại — bạn có thể bổ sung thêm ảnh mới nếu cần."
+                : " Vui lòng kiểm tra lại và tải ảnh tài sản mới trước khi tạo đơn."}
             </div>
           )}
+          {error ? (
+            <p className="text-sm text-danger">{error}</p>
+          ) : null}
 
           {/* Chi nhánh */}
             {isAdmin ? (
@@ -332,10 +408,15 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess, branches = [], isAdmi
           <CustomerInfoSection
             form={form}
             onChange={handleFieldChange}
+            fieldErrors={fieldErrors}
             datePickerPortalContainer={datePickerPortalContainer}
           />
           <BankInfoSection form={form} onChange={handleFieldChange} />
-          <LoanInfoSection form={form} onChange={handleFieldChange} />
+          <LoanInfoSection
+            form={form}
+            onChange={handleFieldChange}
+            fieldErrors={fieldErrors}
+          />
           <ReferencesSection
             references={form.references}
             onAdd={handleAddReference}
@@ -344,8 +425,10 @@ const CreateContractModal = ({ isOpen, onClose, onSuccess, branches = [], isAdmi
           />
           <AttachmentsSection
             attachments={form.attachments}
+            existingImages={keptAssetImages}
             onAdd={handleAddAttachments}
             onRemove={handleRemoveAttachment}
+            onRemoveExisting={handleRemoveKeptAssetImage}
           />
         </ModalBody>
 

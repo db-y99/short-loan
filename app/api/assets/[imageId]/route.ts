@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteAssetImageService } from "@/services/assets/asset-images.service";
 
 export const runtime = "nodejs";
@@ -21,12 +22,25 @@ export async function DELETE(
       );
     }
 
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
     const result = await deleteAssetImageService(imageId);
 
     if (!result.success) {
+      const status = result.error?.includes("chờ duyệt") ? 400 : 404;
       return NextResponse.json(
         { success: false, error: result.error ?? "Lỗi khi xóa ảnh" },
-        { status: 404 },
+        { status },
       );
     }
 

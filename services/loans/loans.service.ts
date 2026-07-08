@@ -22,6 +22,9 @@ import {
 import { formatDateShortVN } from "@/lib/format";
 import { calculatePaymentPeriods } from "@/lib/payment-calculator";
 import { getPaymentPeriodsService } from "@/services/payments/payment-periods.service";
+import {
+  splitLoanContractFiles,
+} from "@/lib/contract-utils";
 
 export type TLoanFilters = {
   search?: string;
@@ -268,6 +271,18 @@ export const updateLoanDriveFolderIdService = async ({
 };
 
 /**
+ * Xóa loan (cascade references, cycles, assets, files)
+ * Dùng để rollback khi tạo loan thất bại giữa chừng
+ */
+export const deleteLoanService = async (loanId: string): Promise<void> => {
+  const supabase = await createSupabaseServerClient();
+
+  const { error } = await supabase.from("loans").delete().eq("id", loanId);
+
+  if (error) throw new Error(error.message);
+};
+
+/**
  * 🔹 Lưu attachments (asset images) cho loan
  * - Chỉ insert DB, KHÔNG upload file
  */
@@ -335,6 +350,7 @@ export const getLoanDetailsService = async (
       created_at,
       drive_folder_id,
       customer_id,
+      branch_id,
       customers!inner (
         id,
         full_name,
@@ -416,19 +432,10 @@ export const getLoanDetailsService = async (
     type: f.type,
   }));
 
-  // Tách file gốc và file đã ký
-  const signedContractTypes = [
-    "asset_pledge",
-    "asset_lease",
-    "full_payment",
-    "asset_disposal",
-  ];
-  const originalFiles = allFiles.filter(
-    (f) => !signedContractTypes.includes(f.type),
-  );
-  const signedFiles = allFiles.filter((f) =>
-    signedContractTypes.includes(f.type),
-  );
+  const { unsignedContractFiles, signedContractFiles } =
+    splitLoanContractFiles(allFiles);
+  const originalFiles = unsignedContractFiles;
+  const signedFiles = signedContractFiles;
 
   /* =========================
      ASSET IMAGES
@@ -480,47 +487,12 @@ export const getLoanDetailsService = async (
   let nextPeriod: TPaymentPeriod | undefined;
 
   try {
-    // Lấy cycle hiện tại
-    let { data: cycle } = await supabase
+    const { data: cycle } = await supabase
       .from("loan_payment_cycles")
       .select("id")
       .eq("loan_id", loanId)
       .eq("cycle_number", loan.current_cycle)
-      .single();
-
-    // Nếu chưa có cycle, tự động tạo
-    if (!cycle) {
-      console.log("⚠️ No payment cycle found, creating one...");
-
-      const startDate = new Date(loan.signed_at ?? loan.created_at)
-        .toISOString()
-        .split("T")[0];
-      const endDate = new Date(
-        new Date(loan.signed_at ?? loan.created_at).getTime() +
-          30 * 24 * 60 * 60 * 1000,
-      )
-        .toISOString()
-        .split("T")[0];
-
-      const { data: newCycle, error: createError } = await supabase
-        .from("loan_payment_cycles")
-        .insert({
-          loan_id: loanId,
-          cycle_number: loan.current_cycle,
-          principal: loan.amount,
-          start_date: startDate,
-          end_date: endDate,
-        })
-        .select("id")
-        .single();
-
-      if (createError) {
-        console.error("❌ Failed to create payment cycle:", createError);
-      } else {
-        cycle = newCycle;
-        console.log("✅ Payment cycle created successfully");
-      }
-    }
+      .maybeSingle();
 
     if (cycle) {
       // Lấy payment periods từ DB
@@ -585,6 +557,9 @@ export const getLoanDetailsService = async (
     appraisalFee: loan.appraisal_fee ? Number(loan.appraisal_fee) : undefined,
 
     references,
+
+    assetTypeKey: loan.asset_type,
+    branchId: loan.branch_id ?? null,
 
     asset: {
       type: ASSET_TYPE_LABEL[loan.asset_type] ?? loan.asset_type,

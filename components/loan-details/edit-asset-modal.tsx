@@ -10,15 +10,25 @@ import {
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
+import { Select, SelectItem } from "@heroui/select";
 import { addToast } from "@heroui/toast";
 import { Loader2, Smartphone } from "lucide-react";
+import { ASSET_TYPES, ASSET_TYPE_LABEL } from "@/constants/loan";
+
+const ASSET_TYPE_OPTIONS = Object.values(ASSET_TYPES).map((type) => ({
+  key: type,
+  label: ASSET_TYPE_LABEL[type],
+}));
+
+const VEHICLE_TYPES: readonly string[] = [ASSET_TYPES.MOTORBIKE, ASSET_TYPES.CAR];
+const DEVICE_TYPES: readonly string[] = [ASSET_TYPES.PHONE, ASSET_TYPES.LAPTOP];
 
 type TProps = {
   isOpen: boolean;
   onClose: () => void;
   loanId: string;
   assetData: {
-    type: string;
+    typeKey: string;
     name: string;
     imei?: string;
     serial?: string;
@@ -42,7 +52,7 @@ const EditAssetModal = ({ isOpen, onClose, loanId, assetData, onSuccess }: TProp
   useEffect(() => {
     if (isOpen) {
       setFormData({
-        assetType: assetData.type || "",
+        assetType: assetData.typeKey || "",
         assetName: assetData.name || "",
         imei: assetData.imei || "",
         serial: assetData.serial || "",
@@ -51,6 +61,9 @@ const EditAssetModal = ({ isOpen, onClose, loanId, assetData, onSuccess }: TProp
       });
     }
   }, [isOpen, assetData]);
+
+  const isVehicle = VEHICLE_TYPES.includes(formData.assetType);
+  const isDevice = DEVICE_TYPES.includes(formData.assetType);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,15 +125,20 @@ const EditAssetModal = ({ isOpen, onClose, loanId, assetData, onSuccess }: TProp
             <span>Sửa thông tin tài sản</span>
           </ModalHeader>
           <ModalBody className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Input
-              label="Loại tài sản"
-              value={formData.assetType}
-              onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, assetType: value }))
-              }
+            <Select
               isRequired
+              label="Loại tài sản"
+              placeholder="Chọn loại tài sản"
+              selectedKeys={formData.assetType ? [formData.assetType] : []}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, assetType: e.target.value }))
+              }
               isDisabled={isSubmitting}
-            />
+            >
+              {ASSET_TYPE_OPTIONS.map((option) => (
+                <SelectItem key={option.key}>{option.label}</SelectItem>
+              ))}
+            </Select>
             <Input
               label="Tên tài sản"
               value={formData.assetName}
@@ -130,38 +148,46 @@ const EditAssetModal = ({ isOpen, onClose, loanId, assetData, onSuccess }: TProp
               isRequired
               isDisabled={isSubmitting}
             />
-            <Input
-              label="IMEI"
-              value={formData.imei}
-              onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, imei: value }))
-              }
-              isDisabled={isSubmitting}
-            />
-            <Input
-              label="Serial"
-              value={formData.serial}
-              onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, serial: value }))
-              }
-              isDisabled={isSubmitting}
-            />
-            <Input
-              label="Số khung"
-              value={formData.chassisNumber}
-              onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, chassisNumber: value }))
-              }
-              isDisabled={isSubmitting}
-            />
-            <Input
-              label="Số máy"
-              value={formData.engineNumber}
-              onValueChange={(value) =>
-                setFormData((prev) => ({ ...prev, engineNumber: value }))
-              }
-              isDisabled={isSubmitting}
-            />
+            {isDevice && (
+              <>
+                <Input
+                  label="IMEI"
+                  value={formData.imei}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, imei: value }))
+                  }
+                  isDisabled={isSubmitting}
+                />
+                <Input
+                  label="Serial"
+                  value={formData.serial}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, serial: value }))
+                  }
+                  isDisabled={isSubmitting}
+                />
+              </>
+            )}
+            {isVehicle && (
+              <>
+                <Input
+                  label="Số khung"
+                  value={formData.chassisNumber}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, chassisNumber: value }))
+                  }
+                  isDisabled={isSubmitting}
+                />
+                <Input
+                  label="Số máy"
+                  value={formData.engineNumber}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, engineNumber: value }))
+                  }
+                  isDisabled={isSubmitting}
+                />
+              </>
+            )}
           </ModalBody>
           <ModalFooter>
             <Button variant="flat" onPress={onClose} isDisabled={isSubmitting}>

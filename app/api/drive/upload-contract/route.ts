@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { uploadToDrive } from "@/lib/google-drive";
+import { uploadToDrive, deleteFromDrive } from "@/lib/google-drive";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -43,13 +43,23 @@ export async function POST(req: NextRequest) {
 
     if (loanId?.trim()) {
       const supabase = await createSupabaseServerClient();
-      await supabase.from("loan_files").insert({
+      const { error: insertError } = await supabase.from("loan_files").insert({
         loan_id: loanId,
         name: safeFileName,
         type: fileType,
         provider: "google_drive",
         file_id: fileId,
       });
+
+      if (insertError) {
+        await deleteFromDrive(fileId).catch((cleanupError) => {
+          console.error("[DRIVE_UPLOAD_CONTRACT_CLEANUP_ERROR]", cleanupError);
+        });
+        return NextResponse.json(
+          { error: "Không thể lưu hợp đồng vào hệ thống" },
+          { status: 500 },
+        );
+      }
     }
 
     return NextResponse.json({

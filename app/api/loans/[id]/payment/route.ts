@@ -1,141 +1,238 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { LOAN_STATUS } from "@/constants/loan";
 import { getCurrentUser } from "@/lib/actions/auth";
+import { isRpcNotFoundError, parseRpcResult } from "@/lib/supabase/rpc-result";
+
+async function recordFlexiblePaymentFallback({
+  supabase,
+  loanId,
+  amount,
+  note,
+  userId,
+  userEmail,
+}: {
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
+  loanId: string;
+  amount: number;
+  note?: string;
+  userId: string;
+  userEmail: string;
+}) {
+  const { data: loan, error: loanError } = await supabase
+    .from("loans")
+    .select("id, status, amount, current_cycle")
+    .eq("id", loanId)
+    .single();
+
+  if (loanError || !loan) {
+    return { success: false as const, error: "Không tìm thấy khoản vay", status: 404 };
+  }
+
+  if (loan.status !== LOAN_STATUS.DISBURSED) {
+    return {
+      success: false as const,
+      error: "Khoản vay chưa được giải ngân",
+      status: 400,
+    };
+  }
+
+  const cycleNumber = loan.current_cycle || 1;
+
+  let { data: currentCycle } = await supabase
+    .from("loan_payment_cycles")
+    .select("id")
+    .eq("loan_id", loanId)
+    .eq("cycle_number", cycleNumber)
+    .maybeSingle();
+
+  if (!currentCycle) {
+    const { data: newCycle, error: cycleError } = await supabase
+      .from("loan_payment_cycles")
+      .insert({
+        loan_id: loanId,
+        cycle_number: cycleNumber,
+        principal: loan.amount,
+        start_date: new Date().toISOString().split("T")[0],
+        end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+          .toISOString()
+          .split("T")[0],
+      })
+      .select("id")
+      .maybeSingle();
+
+    if (cycleError?.code === "23505") {
+      const { data: existingCycle, error: existingCycleError } = await supabase
+        .from("loan_payment_cycles")
+        .select("id")
+        .eq("loan_id", loanId)
+        .eq("cycle_number", cycleNumber)
+        .single();
+
+      if (existingCycleError || !existingCycle) {
+        return {
+          success: false as const,
+          error: "Lỗi khi tạo chu kỳ thanh toán",
+          status: 500,
+        };
+      }
+
+      currentCycle = existingCycle;
+    } else if (cycleError || !newCycle) {
+      console.error("[FLEXIBLE_PAYMENT_CYCLE_ERROR]", cycleError);
+      return {
+        success: false as const,
+        error: "Lỗi khi tạo chu kỳ thanh toán",
+        status: 500,
+      };
+    } else {
+      currentCycle = newCycle;
+    }
+  }
+
+  const paymentNote =
+    note?.trim() ||
+    `Thanh toán linh hoạt ${amount.toLocaleString("vi-VN")} VNĐ`;
+
+  const { data: payment, error: paymentError } = await supabase
+    .from("loan_payment_transactions")
+    .insert({
+      loan_id: loanId,
+      cycle_id: currentCycle.id,
+      period_id: null,
+      transaction_type: "fee_payment",
+      amount,
+      payment_method: "cash",
+      notes: paymentNote,
+      created_by: userId,
+      created_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
+
+  if (paymentError) {
+    console.error("[FLEXIBLE_PAYMENT_INSERT_ERROR]", paymentError);
+    return {
+      success: false as const,
+      error: "Lỗi khi tạo bản ghi thanh toán",
+      status: 500,
+    };
+  }
+
+  await supabase.from("loan_activity_logs").insert({
+    loan_id: loanId,
+    type: "system_event",
+    user_id: userId,
+    user_name: userEmail || "System",
+    system_message: `Đóng tiền linh hoạt ${amount.toLocaleString("vi-VN")} VNĐ${note ? ` - ${note}` : ""}`,
+  });
+
+  const { data: totalPaidData } = await supabase
+    .from("loan_payment_transactions")
+    .select("amount")
+    .eq("loan_id", loanId);
+
+  const totalPaid =
+    totalPaidData?.reduce((sum, item) => sum + Number(item.amount), 0) || 0;
+
+  return {
+    success: true as const,
+    data: {
+      payment,
+      totalPaid,
+      message: `Đã ghi nhận thanh toán ${amount.toLocaleString("vi-VN")} VNĐ`,
+    },
+  };
+}
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
-    const { amount, type = "flexible", note } = await request.json();
+    const { amount, note } = await request.json();
 
     if (!amount || amount <= 0) {
       return NextResponse.json(
         { success: false, error: "Số tiền không hợp lệ" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const supabase = await createSupabaseServerClient();
     const { id: loanId } = await params;
 
-    // Kiểm tra khoản vay tồn tại và trạng thái
-    const { data: loan, error: loanError } = await supabase
-      .from("loans")
-      .select("*, loan_payment_cycles(*)")
-      .eq("id", loanId)
-      .single();
-
-    if (loanError || !loan) {
-      return NextResponse.json(
-        { success: false, error: "Không tìm thấy khoản vay" },
-        { status: 404 }
-      );
-    }
-
-    if (loan.status !== "disbursed") {
-      return NextResponse.json(
-        { success: false, error: "Khoản vay chưa được giải ngân" },
-        { status: 400 }
-      );
-    }
-
-    // Lấy cycle hiện tại hoặc tạo mới nếu chưa có
-    let currentCycle = loan.loan_payment_cycles?.find((cycle: any) => 
-      cycle.cycle_number === loan.current_cycle
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      "record_flexible_payment",
+      {
+        p_loan_id: loanId,
+        p_amount: amount,
+        p_notes: note ?? null,
+        p_user_id: user.id,
+        p_user_name: user.email || "System",
+      },
     );
 
-    if (!currentCycle) {
-      // Tạo cycle mới nếu chưa có
-      const { data: newCycle, error: cycleError } = await supabase
-        .from("loan_payment_cycles")
-        .insert({
-          loan_id: loanId,
-          cycle_number: loan.current_cycle || 1,
-          principal: loan.amount,
-          start_date: new Date().toISOString().split('T')[0],
-          end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 ngày sau
-        })
-        .select()
-        .single();
-
-      if (cycleError) {
-        console.error("Cycle creation error:", cycleError);
+    if (!rpcError) {
+      const result = parseRpcResult(rpcData);
+      if (!result.success) {
         return NextResponse.json(
-          { success: false, error: "Lỗi khi tạo chu kỳ thanh toán" },
-          { status: 500 }
+          { success: false, error: result.error || "Không thể ghi nhận thanh toán" },
+          { status: 400 },
         );
       }
-      currentCycle = newCycle;
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          paymentId: result.payment_id,
+          totalPaid: result.total_paid,
+          message: `Đã ghi nhận thanh toán ${Number(amount).toLocaleString("vi-VN")} VNĐ`,
+        },
+      });
     }
 
-    // Tạo bản ghi thanh toán
-    const { data: payment, error: paymentError } = await supabase
-      .from("loan_payment_transactions")
-      .insert({
-        loan_id: loanId,
-        cycle_id: currentCycle.id, // Sử dụng cycle_id từ cycle hiện tại
-        period_id: null, // Thanh toán linh hoạt không thuộc kỳ cụ thể
-        transaction_type: "fee_payment", // Sử dụng fee_payment cho thanh toán linh hoạt
-        amount: amount,
-        payment_method: "cash", // Mặc định là tiền mặt
-        notes: note || `Thanh toán linh hoạt ${amount.toLocaleString('vi-VN')} VNĐ`,
-        created_by: user.id,
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
-
-    if (paymentError) {
-      console.error("Payment creation error:", paymentError);
+    if (!isRpcNotFoundError(rpcError)) {
+      console.error("[FLEXIBLE_PAYMENT_RPC_ERROR]", rpcError);
       return NextResponse.json(
-        { success: false, error: "Lỗi khi tạo bản ghi thanh toán" },
-        { status: 500 }
+        { success: false, error: "Lỗi khi ghi nhận thanh toán" },
+        { status: 500 },
       );
     }
 
-    // Log activity cho thanh toán linh hoạt
-    await supabase.from("loan_activity_logs").insert({
-      loan_id: loanId,
-      type: "system_event",
-      user_id: user.id,
-      user_name: user.email || "System",
-      system_message: `Đóng tiền linh hoạt ${amount.toLocaleString("vi-VN")} VNĐ${note ? ` - ${note}` : ""}`,
+    const fallback = await recordFlexiblePaymentFallback({
+      supabase,
+      loanId,
+      amount,
+      note,
+      userId: user.id,
+      userEmail: user.email || "System",
     });
 
-    // Tính tổng số tiền đã thanh toán
-    const { data: totalPaidData } = await supabase
-      .from("loan_payment_transactions")
-      .select("amount")
-      .eq("loan_id", loanId);
+    if (!fallback.success) {
+      return NextResponse.json(
+        { success: false, error: fallback.error },
+        { status: fallback.status },
+      );
+    }
 
-    const totalAmount = totalPaidData?.reduce((sum: number, p: any) => sum + p.amount, 0) || 0;
-
-    // Cập nhật thông tin khoản vay (nếu có trường total_paid)
-    // Lưu ý: Bảng loans hiện tại không có trường total_paid, có thể bỏ qua hoặc thêm sau
-    
     return NextResponse.json({
       success: true,
-      data: {
-        payment,
-        totalPaid: totalAmount,
-        message: `Đã ghi nhận thanh toán ${amount.toLocaleString('vi-VN')} VNĐ`,
-      },
+      data: fallback.data,
     });
-
   } catch (error) {
-    console.error("Payment API error:", error);
+    console.error("[FLEXIBLE_PAYMENT_API_ERROR]", error);
     return NextResponse.json(
       { success: false, error: "Lỗi server" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -111,13 +111,18 @@ export function MessageBubble({
               // Show actual image
               return (
                 <div key={index} className="relative">
-                  <img
-                    src={`/api/drive/file/${imageUrl}`}
-                    alt="Uploaded image"
-                    className="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                  <button
+                    type="button"
+                    className="block max-w-full rounded-lg p-0 border-0 bg-transparent cursor-pointer hover:opacity-90 transition-opacity"
                     onClick={() => onImageClick?.(imageUrl)}
-                    loading="lazy"
-                  />
+                  >
+                    <img
+                      src={`/api/drive/file/${imageUrl}`}
+                      alt="Tin nhắn đính kèm"
+                      className="max-w-full rounded-lg"
+                      loading="lazy"
+                    />
+                  </button>
                 </div>
               );
             })}

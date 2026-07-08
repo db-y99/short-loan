@@ -13,9 +13,10 @@ import { Checkbox } from "@heroui/checkbox";
 import { AlertTriangle, FileText } from "lucide-react";
 import {
   GENERATABLE_CONTRACT_TYPES,
+  DEFAULT_SELECTED_CONTRACT_TYPES,
+  CONTRACT_TYPE,
   CONTRACT_TYPE_LABEL,
   CONTRACT_TYPE_DESCRIPTION,
-  getGeneratableContractTypesForLoan,
 } from "@/constants/contracts";
 import type { TContractType } from "@/types/contract.types";
 
@@ -25,7 +26,6 @@ type TProps = {
   onConfirm: (selectedTypes: TContractType[]) => void;
   isLoading?: boolean;
   mode?: "create" | "regenerate";
-  loanType?: string;
 };
 
 const ContractSelectionModal = ({
@@ -34,25 +34,18 @@ const ContractSelectionModal = ({
   onConfirm,
   isLoading = false,
   mode = "create",
-  loanType = "",
 }: TProps) => {
-  const availableTypes = useMemo(
-    () =>
-      loanType
-        ? getGeneratableContractTypesForLoan(loanType)
-        : [...GENERATABLE_CONTRACT_TYPES],
-    [loanType],
-  );
+  const availableTypes = useMemo(() => [...GENERATABLE_CONTRACT_TYPES], []);
 
   const [selectedTypes, setSelectedTypes] = useState<TContractType[]>([
-    ...availableTypes,
+    ...DEFAULT_SELECTED_CONTRACT_TYPES,
   ]);
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedTypes([...availableTypes]);
+      setSelectedTypes([...DEFAULT_SELECTED_CONTRACT_TYPES]);
     }
-  }, [isOpen, availableTypes]);
+  }, [isOpen]);
 
   const allSelected = selectedTypes.length === availableTypes.length;
   const noneSelected = selectedTypes.length === 0;
@@ -156,6 +149,9 @@ const ContractSelectionModal = ({
                   </p>
                   <p className="text-xs text-default-500 mt-0.5">
                     {CONTRACT_TYPE_DESCRIPTION[type]}
+                    {type === CONTRACT_TYPE.ASSET_LEASE ? (
+                      <span className="text-default-400"> · Ít dùng</span>
+                    ) : null}
                   </p>
                 </div>
               </div>

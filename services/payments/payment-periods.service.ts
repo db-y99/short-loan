@@ -376,3 +376,118 @@ export async function createPaymentCycleService({
 
   return data.id;
 }
+
+/**
+ * Tính lại chu kỳ + các kỳ thanh toán khi sửa số tiền vay (chỉ PENDING, chưa có giao dịch)
+ */
+export async function recalculatePendingLoanPaymentScheduleService({
+  loanId,
+  loanAmount,
+}: {
+  loanId: string;
+  loanAmount: number;
+}): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data: loan, error: loanError } = await supabase
+    .from("loans")
+    .select("id, loan_type, loan_package, created_at, current_cycle")
+    .eq("id", loanId)
+    .single();
+
+  if (loanError || !loan) {
+    throw new Error("Không tìm thấy khoản vay");
+  }
+
+  const cycleNumber = loan.current_cycle ?? 1;
+
+  const { data: cycle, error: cycleError } = await supabase
+    .from("loan_payment_cycles")
+    .select("id, start_date")
+    .eq("loan_id", loanId)
+    .eq("cycle_number", cycleNumber)
+    .single();
+
+  if (cycleError || !cycle) {
+    throw new Error("Không tìm thấy chu kỳ thanh toán");
+  }
+
+  const { count, error: txCountError } = await supabase
+    .from("loan_payment_transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("loan_id", loanId);
+
+  if (txCountError) {
+    throw new Error("Không thể kiểm tra lịch sử thanh toán");
+  }
+
+  if (count && count > 0) {
+    throw new Error(
+      "Không thể tính lại lịch thanh toán khi đã có giao dịch",
+    );
+  }
+
+  const { error: updateCycleError } = await supabase
+    .from("loan_payment_cycles")
+    .update({ principal: loanAmount })
+    .eq("id", cycle.id);
+
+  if (updateCycleError) {
+    throw new Error(updateCycleError.message);
+  }
+
+  const loanType = loan.loan_package ?? loan.loan_type ?? "";
+  const signedAt = cycle.start_date
+    ? new Date(cycle.start_date).toISOString()
+    : (loan.created_at ?? new Date().toISOString());
+
+  await saveDetailedPaymentPeriodsService({
+    loanId,
+    cycleId: cycle.id,
+    loanAmount,
+    loanType,
+    signedAt,
+  });
+}
+
+/**
+ * Tạo chu kỳ + lịch thanh toán ban đầu (rollback cycle nếu lưu periods thất bại)
+ */
+export async function createLoanPaymentScheduleService({
+  loanId,
+  loanAmount,
+  loanType,
+  signedAt,
+}: {
+  loanId: string;
+  loanAmount: number;
+  loanType: string;
+  signedAt: string;
+}): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+  const startDate = signedAt.split("T")[0];
+  const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split("T")[0];
+
+  const cycleId = await createPaymentCycleService({
+    loanId,
+    cycleNumber: 1,
+    principal: loanAmount,
+    startDate,
+    endDate,
+  });
+
+  try {
+    await saveDetailedPaymentPeriodsService({
+      loanId,
+      cycleId,
+      loanAmount,
+      loanType,
+      signedAt,
+    });
+  } catch (error) {
+    await supabase.from("loan_payment_cycles").delete().eq("id", cycleId);
+    throw error;
+  }
+}

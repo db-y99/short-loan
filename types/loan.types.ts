@@ -115,6 +115,12 @@ export type TLoanDetails = {
 
   references: TReference[];
 
+  /** Key gốc của asset_type (motorbike, car, ...) — dùng khi prefill form tạo đơn mới */
+  assetTypeKey?: string;
+
+  /** ID chi nhánh — dùng khi prefill form tạo đơn mới (admin) */
+  branchId?: string | null;
+
   asset: {
     type: string;
     name: string;
@@ -253,4 +259,8 @@ export type TUploadFiles = {
   name?: string;
   provider: string;
   file_id: string;
+};
+
+export type TReuseLoanOptions = {
+  keepAssetImages: boolean;
 };

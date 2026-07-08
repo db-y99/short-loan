@@ -158,6 +158,26 @@ export async function createLoanFolder({
 }
 
 /**
+ * Xóa file trên Google Drive (dùng để bù trừ khi DB thất bại)
+ */
+export async function deleteFromDrive(fileId: string): Promise<void> {
+  const auth = getAuth();
+  const drive = google.drive({ version: "v3", auth });
+
+  await drive.files.delete({
+    fileId,
+    supportsAllDrives: true,
+  });
+}
+
+/**
+ * Xóa nhiều file trên Drive, bỏ qua lỗi từng file
+ */
+export async function deleteManyFromDrive(fileIds: string[]): Promise<void> {
+  await Promise.allSettled(fileIds.map((id) => deleteFromDrive(id)));
+}
+
+/**
  * Get file từ Drive as Buffer (dùng cho PDF generation)
  */
 export async function getFileFromDrive(fileId: string): Promise<Buffer> {

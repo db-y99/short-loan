@@ -35,6 +35,7 @@ type TProps = {
   onEditBank?: () => void;
   onEditReference?: (referenceId: string) => void;
   onDeleteReference?: (referenceId: string) => void;
+  canManageImages?: boolean;
   onRefresh?: () => void;
 };
 
@@ -47,6 +48,7 @@ const LoanInfoCards = ({
   onEditBank,
   onEditReference,
   onDeleteReference,
+  canManageImages = false,
   onRefresh,
 }: TProps) => {
   // Xác định loại tài sản để hiển thị đúng thông tin định danh
@@ -358,6 +360,7 @@ const LoanInfoCards = ({
             <AssetGallery
               assetImages={loanDetails.asset.images}
               loanId={loanDetails.id}
+              canManageImages={canManageImages}
               onRefresh={onRefresh}
             />
           )}

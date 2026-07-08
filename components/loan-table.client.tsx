@@ -35,6 +35,7 @@ type TProps = {
   loans: TLoan[];
   onRefresh?: () => void;
   onRowClick?: (loan: TLoan) => void;
+  onCreateLoan?: () => void;
   branches?: TBranch[];
   selectedBranch?: string;
 };
@@ -58,7 +59,7 @@ const LOAN_TYPE_OPTIONS = [
 ];
 
 
-const LoansTable = ({ loans, onRefresh, onRowClick, branches = [], selectedBranch = "" }: TProps) => {
+const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [], selectedBranch = "" }: TProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -314,7 +315,7 @@ const LoansTable = ({ loans, onRefresh, onRowClick, branches = [], selectedBranc
         </Tooltip>
 
         {/* Create loan button */}
-        <CreateLoanButton />
+        {onCreateLoan && <CreateLoanButton onPress={onCreateLoan} />}
       </div>
 
       {/* Result count */}

@@ -24,6 +24,7 @@ import ConfirmModal from "@/components/confirm-modal";
 type TProps = {
   assetImages: TAssetImage[];
   loanId: string;
+  canManageImages?: boolean;
   onRefresh?: () => void;
 };
 
@@ -32,7 +33,12 @@ type TPreviewImage = {
   preview: string;
 };
 
-const AssetGallery = ({ assetImages, loanId, onRefresh }: TProps) => {
+const AssetGallery = ({
+  assetImages,
+  loanId,
+  canManageImages = false,
+  onRefresh,
+}: TProps) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -167,6 +173,7 @@ const AssetGallery = ({ assetImages, loanId, onRefresh }: TProps) => {
           description: result.error || "Không thể xóa ảnh",
           color: "danger",
         });
+        onRefresh?.();
       }
     } catch (error) {
       addToast({
@@ -175,6 +182,7 @@ const AssetGallery = ({ assetImages, loanId, onRefresh }: TProps) => {
         color: "danger",
       });
       console.error(error);
+      onRefresh?.();
     } finally {
       setIsDeleting(false);
       setDeleteTarget(null);
@@ -276,15 +284,17 @@ const AssetGallery = ({ assetImages, loanId, onRefresh }: TProps) => {
         <p className="text-xs text-default-400 mb-2">
           {displayImages.length} ảnh tài sản
         </p>
-        <Button
-          color="primary"
-          variant="light"
-          size="sm"
-          startContent={<Upload className="w-4 h-4" />}
-          onPress={handleUploadClick}
-        >
-          Thêm ảnh
-        </Button>
+        {canManageImages && (
+          <Button
+            color="primary"
+            variant="light"
+            size="sm"
+            startContent={<Upload className="w-4 h-4" />}
+            onPress={handleUploadClick}
+          >
+            Thêm ảnh
+          </Button>
+        )}
       </div>
 
       {!displayImages.length && (
@@ -320,14 +330,16 @@ const AssetGallery = ({ assetImages, loanId, onRefresh }: TProps) => {
                   Ảnh {index + 1}
                 </span>
               </button>
-              <button
-                type="button"
-                className="absolute top-1.5 right-1.5 p-1 rounded-full bg-danger text-white hover:bg-danger-600 transition-all opacity-0 group-hover:opacity-100 shadow-lg z-10"
-                onClick={(e) => handleRequestDelete(image, e)}
-                aria-label={`Xóa ảnh ${index + 1}`}
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              {canManageImages && (
+                <button
+                  type="button"
+                  className="absolute top-1.5 right-1.5 p-1 rounded-full bg-danger text-white hover:bg-danger-600 transition-all opacity-0 group-hover:opacity-100 shadow-lg z-10"
+                  onClick={(e) => handleRequestDelete(image, e)}
+                  aria-label={`Xóa ảnh ${index + 1}`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -336,10 +348,7 @@ const AssetGallery = ({ assetImages, loanId, onRefresh }: TProps) => {
       {/* Upload Overlay */}
       {isUploadModalOpen && (
         <div className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/60 p-4">
-          <div
-            className="w-full max-w-5xl max-h-[90vh] bg-content1 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="w-full max-w-5xl max-h-[90vh] bg-content1 rounded-2xl shadow-2xl overflow-hidden flex flex-col">
             <div className="flex items-center justify-between p-4 border-b border-divider">
               <span className="font-semibold">
                 {isUploading
@@ -472,15 +481,17 @@ const AssetGallery = ({ assetImages, loanId, onRefresh }: TProps) => {
 
       {/* Image View Overlay */}
       {selectedImage && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm"
-          onClick={handleClose}
-          style={{ position: "fixed" }}
-        >
+        <div className="fixed inset-0 z-[9999]">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+            onClick={handleClose}
+            aria-label="Đóng xem ảnh"
+          />
+          <div className="relative z-10 flex h-full items-center justify-center p-4">
           <div
             className="relative max-w-7xl w-full mx-4 bg-content1 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
             style={{ maxHeight: "90vh" }}
-            onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-divider bg-content1 flex-shrink-0">
               <div className="flex items-center gap-2">
@@ -569,26 +580,29 @@ const AssetGallery = ({ assetImages, loanId, onRefresh }: TProps) => {
                 >
                   Tải xuống
                 </Button>
-                <Button
-                  color="danger"
-                  variant="flat"
-                  isDisabled={isDeleting}
-                  onPress={() => handleRequestDelete(localImages[selectedIndex])}
-                  startContent={
-                    isDeleting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 size={16} />
-                    )
-                  }
-                >
-                  Xóa ảnh
-                </Button>
+                {canManageImages && (
+                  <Button
+                    color="danger"
+                    variant="flat"
+                    isDisabled={isDeleting}
+                    onPress={() => handleRequestDelete(localImages[selectedIndex])}
+                    startContent={
+                      isDeleting ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 size={16} />
+                      )
+                    }
+                  >
+                    Xóa ảnh
+                  </Button>
+                )}
                 <Button color="danger" variant="light" onPress={handleClose}>
                   Đóng
                 </Button>
               </div>
             </div>
+          </div>
           </div>
         </div>
       )}

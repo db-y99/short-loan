@@ -108,7 +108,6 @@ const EditLoanAmountModal = ({
             value={amountInput}
             onValueChange={(value) => setAmountInput(formatNumberInput(value))}
             isDisabled={isSubmitting}
-            autoFocus
           />
         </ModalBody>
         <ModalFooter>

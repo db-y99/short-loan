@@ -7,9 +7,11 @@ import {
   buildAssetDisposalAuthorizationData,
 } from "@/lib/contract-data";
 import { CONTRACT_TYPE } from "@/types/contract.types";
+import type { TContractType } from "@/types/contract.types";
 import {
   getGeneratableContractTypesForLoan,
 } from "@/constants/contracts";
+import { getUnsignedContractTypesFromFiles } from "@/lib/contract-utils";
 
 /**
  * GET /api/loans/[id]/contract-data
@@ -50,16 +52,27 @@ export async function GET(
       );
     }
 
+    // Lấy các loại hợp đồng đã tạo (chưa ký) từ loan_files
+    const { data: loanFiles } = await supabase
+      .from("loan_files")
+      .select("type, name")
+      .eq("loan_id", loanId);
+
+    const createdContractTypes = getUnsignedContractTypesFromFiles(
+      loanFiles ?? [],
+    ) as TContractType[];
+
+    const createdSet = new Set(createdContractTypes);
+    const applicableContractTypes =
+      createdContractTypes.length > 0
+        ? createdContractTypes
+        : getGeneratableContractTypesForLoan(loanDetails.loanType);
+
     // Build contract data using the same functions as contract generation
     const pledgeData = buildAssetPledgeContractData(loanDetails);
     const paymentData = buildFullPaymentConfirmationData(loanDetails);
     const disposalData = buildAssetDisposalAuthorizationData(loanDetails);
-    const applicableContractTypes = getGeneratableContractTypesForLoan(
-      loanDetails.loanType,
-    );
-    const includeLeaseContract = applicableContractTypes.includes(
-      CONTRACT_TYPE.ASSET_LEASE,
-    );
+    const includeLeaseContract = createdSet.has(CONTRACT_TYPE.ASSET_LEASE);
     const leaseData = includeLeaseContract
       ? buildAssetLeaseContractData(loanDetails)
       : null;
@@ -74,19 +87,22 @@ export async function GET(
     // Return separate contract data objects with proper typing
     const contractData = {
       loanType: loanDetails.loanType,
+      createdContractTypes: applicableContractTypes,
       applicableContractTypes,
       // Asset Pledge Contract Data
-      pledgeContract: {
-        ...pledgeData,
-        NGAY: ngay,
-        THANG: thang,
-        NAM: nam,
-        SIGNED_DATE: signedDateStr,
-        DRAFT_SIGNATURE: null,
-        OFFICIAL_SIGNATURE: null,
-      },
+      pledgeContract: createdSet.has(CONTRACT_TYPE.ASSET_PLEDGE)
+        ? {
+            ...pledgeData,
+            NGAY: ngay,
+            THANG: thang,
+            NAM: nam,
+            SIGNED_DATE: signedDateStr,
+            DRAFT_SIGNATURE: null,
+            OFFICIAL_SIGNATURE: null,
+          }
+        : null,
 
-      // Asset Lease Contract Data (Gói 3 giữ TS: không có HĐ thuê)
+      // Asset Lease Contract Data
       leaseContract: leaseData
         ? {
             ...leaseData,
@@ -98,28 +114,32 @@ export async function GET(
             OFFICIAL_SIGNATURE: null,
           }
         : null,
-      
+
       // Payment Confirmation Data
-      paymentConfirmation: {
-        ...paymentData,
-        NGAY: ngay,
-        THANG: thang,
-        NAM: nam,
-        SIGNED_DATE: signedDateStr,
-        DRAFT_SIGNATURE: null,
-        OFFICIAL_SIGNATURE: null,
-      },
-      
+      paymentConfirmation: createdSet.has(CONTRACT_TYPE.FULL_PAYMENT)
+        ? {
+            ...paymentData,
+            NGAY: ngay,
+            THANG: thang,
+            NAM: nam,
+            SIGNED_DATE: signedDateStr,
+            DRAFT_SIGNATURE: null,
+            OFFICIAL_SIGNATURE: null,
+          }
+        : null,
+
       // Asset Disposal Authorization Data
-      disposalAuthorization: {
-        ...disposalData,
-        NGAY: ngay,
-        THANG: thang,
-        NAM: nam,
-        SIGNED_DATE: signedDateStr,
-        DRAFT_SIGNATURE: null,
-        OFFICIAL_SIGNATURE: null,
-      },
+      disposalAuthorization: createdSet.has(CONTRACT_TYPE.ASSET_DISPOSAL)
+        ? {
+            ...disposalData,
+            NGAY: ngay,
+            THANG: thang,
+            NAM: nam,
+            SIGNED_DATE: signedDateStr,
+            DRAFT_SIGNATURE: null,
+            OFFICIAL_SIGNATURE: null,
+          }
+        : null,
     };
 
     console.log(contractData.pledgeContract.MILESTONES)

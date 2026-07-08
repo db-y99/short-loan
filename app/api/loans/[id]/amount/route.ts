@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LOAN_STATUS, type TLoanType } from "@/constants/loan";
 import { calculateAppraisalFee } from "@/lib/loan-calculation";
+import { recalculatePendingLoanPaymentScheduleService } from "@/services/payments/payment-periods.service";
 
 export async function PATCH(
   request: NextRequest,
@@ -34,7 +35,7 @@ export async function PATCH(
 
     const { data: loan, error: loanError } = await supabase
       .from("loans")
-      .select("id, status, loan_type")
+      .select("id, status, loan_type, amount")
       .eq("id", loanId)
       .single();
 
@@ -58,19 +59,71 @@ export async function PATCH(
     }
 
     const appraisalFee = calculateAppraisalFee(loanAmount, loan.loan_type as TLoanType);
+    const previousAmount = Number(loan.amount);
 
-    const { error: updateError } = await supabase
+    const { data: updatedLoans, error: updateError } = await supabase
       .from("loans")
       .update({
         amount: loanAmount,
         appraisal_fee: appraisalFee,
       })
-      .eq("id", loanId);
+      .eq("id", loanId)
+      .eq("status", LOAN_STATUS.PENDING)
+      .select("id");
 
-    if (updateError) {
+    if (updateError || !updatedLoans || updatedLoans.length === 0) {
       console.error("[UPDATE_LOAN_AMOUNT_ERROR]", updateError);
       return NextResponse.json(
-        { success: false, error: "Không thể cập nhật số tiền vay" },
+        {
+          success: false,
+          error: updateError
+            ? "Không thể cập nhật số tiền vay"
+            : "Khoản vay không còn ở trạng thái chờ duyệt",
+        },
+        { status: updateError ? 500 : 409 },
+      );
+    }
+
+    try {
+      await recalculatePendingLoanPaymentScheduleService({
+        loanId,
+        loanAmount,
+      });
+    } catch (recalcError) {
+      console.error("[RECALCULATE_PAYMENT_SCHEDULE_ERROR]", recalcError);
+
+      await supabase
+        .from("loans")
+        .update({
+          amount: previousAmount,
+          appraisal_fee: calculateAppraisalFee(
+            previousAmount,
+            loan.loan_type as TLoanType,
+          ),
+        })
+        .eq("id", loanId)
+        .eq("status", LOAN_STATUS.PENDING);
+
+      try {
+        await recalculatePendingLoanPaymentScheduleService({
+          loanId,
+          loanAmount: previousAmount,
+        });
+      } catch (rollbackRecalcError) {
+        console.error(
+          "[RECALCULATE_PAYMENT_SCHEDULE_ROLLBACK_ERROR]",
+          rollbackRecalcError,
+        );
+      }
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            recalcError instanceof Error
+              ? recalcError.message
+              : "Không thể tính lại lịch thanh toán",
+        },
         { status: 500 },
       );
     }

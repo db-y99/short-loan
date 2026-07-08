@@ -7,9 +7,9 @@ import {
   ModalFooter,
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
-import { AlertCircle, MessageSquare, ShoppingCart, CheckCircle, DollarSign, Loader2, UserCog } from "lucide-react";
+import { AlertCircle, MessageSquare, ShoppingCart, CheckCircle, DollarSign, Loader2, UserCog, RotateCcw, Copy } from "lucide-react";
 import { addToast } from "@heroui/toast";
-import type { TLoanDetails } from "@/types/loan.types";
+import type { TLoanDetails, TReuseLoanOptions } from "@/types/loan.types";
 import { LOAN_STATUS } from "@/constants/loan";
 import ContractHeader from "@/components/loan-details/loan-header";
 import LoanAmountSummary from "@/components/loan-details/loan-amount-summary";
@@ -30,6 +30,7 @@ import EditReferenceModal from "@/components/loan-details/edit-reference-modal";
 import EditAssetModal from "@/components/loan-details/edit-asset-modal";
 import SimplePaymentModal from "@/components/loan-details/simple-payment-modal";
 import ConfirmModal from "@/components/confirm-modal";
+import ReuseLoanConfirmModal from "@/components/reuse-loan-confirm-modal.client";
 
 import { ROLES } from "@/constants/roles";
 import { useAuth } from "@/lib/contexts/auth-context";
@@ -41,6 +42,7 @@ type TProps = {
   isLoading?: boolean;
   error?: string | null;
   onRefresh?: () => void;
+  onReuseLoan?: (loanDetails: TLoanDetails, options: TReuseLoanOptions) => void;
 };
 
 const LoanDetailsModal = ({
@@ -50,6 +52,7 @@ const LoanDetailsModal = ({
   isLoading = false,
   error = null,
   onRefresh,
+  onReuseLoan,
 }: TProps) => {
   const { user, profile } = useAuth();
   const [isDisbursing, setIsDisbursing] = useState(false);
@@ -73,6 +76,7 @@ const LoanDetailsModal = ({
   } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0); // Thêm state để force refresh
   const [selectedReferenceId, setSelectedReferenceId] = useState<string | null>(null);
+  const [isReuseConfirmOpen, setIsReuseConfirmOpen] = useState(false);
 
   const handleDisburse = async () => {
     if (!loanDetails) return;
@@ -141,9 +145,21 @@ const LoanDetailsModal = ({
   // Kiểm tra trạng thái
   const isAdmin = profile?.role === ROLES.ADMIN;
   const isPending = loanDetails?.status === LOAN_STATUS.PENDING;
+  const isApproved = loanDetails?.status === LOAN_STATUS.APPROVED;
   const isSigned = loanDetails?.status === LOAN_STATUS.SIGNED;
   const isDisbursed = loanDetails?.status === LOAN_STATUS.DISBURSED;
+  const isRedeemed = loanDetails?.status === LOAN_STATUS.REDEEMED;
+  const isRejected = loanDetails?.status === LOAN_STATUS.REJECTED;
+  const canReuseLoan = Boolean(onReuseLoan && loanDetails && (isRedeemed || isRejected));
   const canEditLoanDetails = isAdmin && isPending;
+  const contractFiles =
+    loanDetails?.status === LOAN_STATUS.SIGNED
+      ? loanDetails.signedFiles?.length
+        ? loanDetails.signedFiles
+        : (loanDetails.originalFiles ?? [])
+      : (loanDetails?.originalFiles ?? loanDetails?.signedFiles ?? []);
+  const hasContractSignatures =
+    loanDetails?.status === LOAN_STATUS.SIGNED || Boolean(loanDetails?.isSigned);
 
   const handlePayInterestSuccess = () => {
     // Tăng refreshKey để force refresh PaymentPeriods
@@ -210,6 +226,68 @@ const LoanDetailsModal = ({
     if (onRefresh) {
       onRefresh();
     }
+  };
+
+  const handleRevertToPending = () => {
+    if (!loanDetails) return;
+
+    setConfirmConfig({
+      title: "Trả về chờ duyệt",
+      message:
+        "Trả khoản vay này về trạng thái Chờ duyệt để chỉnh sửa?\n\nLưu ý:\n- Các hợp đồng đã tạo sẽ bị xóa để tránh dữ liệu sai lệch\n- Cần duyệt lại sau khi chỉnh sửa xong",
+      confirmColor: "warning",
+      onConfirm: async () => {
+        setIsDisbursing(true);
+        try {
+          const response = await fetch(
+            `/api/loans/${loanDetails.id}/revert-to-pending`,
+            { method: "POST" },
+          );
+          const result = await response.json();
+
+          if (!result.success) {
+            addToast({
+              title: "Lỗi",
+              description: result.error || "Không thể trả về chờ duyệt",
+              color: "danger",
+            });
+            if (onRefresh) {
+              onRefresh();
+            }
+            return;
+          }
+
+          addToast({
+            title: "Thành công",
+            description: "Đã trả về trạng thái chờ duyệt",
+            color: "success",
+          });
+
+          if (onRefresh) {
+            onRefresh();
+          }
+        } catch (error) {
+          console.error("[REVERT_TO_PENDING_ERROR]", error);
+          addToast({
+            title: "Lỗi",
+            description: "Có lỗi xảy ra khi trả về chờ duyệt",
+            color: "danger",
+          });
+          if (onRefresh) {
+            onRefresh();
+          }
+        } finally {
+          setIsDisbursing(false);
+        }
+      },
+    });
+    setIsConfirmOpen(true);
+  };
+
+  const handleReuseConfirm = (keepAssetImages: boolean) => {
+    if (!loanDetails || !onReuseLoan) return;
+    setIsReuseConfirmOpen(false);
+    onReuseLoan(loanDetails, { keepAssetImages });
   };
 
   const handleOpenEditReference = (referenceId: string) => {
@@ -384,6 +462,7 @@ const LoanDetailsModal = ({
                         onDeleteReference={
                           canEditLoanDetails ? handleDeleteReference : undefined
                         }
+                        canManageImages={canEditLoanDetails}
                         onRefresh={onRefresh}
                       />
                     </div>
@@ -397,7 +476,8 @@ const LoanDetailsModal = ({
                       loanId={loanDetails.id}
                       loanStatus={loanDetails.status}
                       loanType={loanDetails.loanType}
-                      loanFiles={loanDetails.originalFiles}
+                      loanFiles={contractFiles}
+                      hasSignatures={hasContractSignatures}
                       onRefresh={onRefresh}
                     />
                   </div>
@@ -471,6 +551,16 @@ const LoanDetailsModal = ({
           <Button variant="flat" onPress={onClose}>
             Đóng
           </Button>
+          {canReuseLoan && (
+            <Button
+              color="primary"
+              variant="flat"
+              startContent={<Copy className="w-4 h-4" />}
+              onPress={() => setIsReuseConfirmOpen(true)}
+            >
+              Vay lại
+            </Button>
+          )}
           {isPending && isAdmin && (
             <Button
               color="primary"
@@ -485,6 +575,23 @@ const LoanDetailsModal = ({
               onPress={handleDisburse}
             >
               {isDisbursing ? "Đang xử lý..." : "Duyệt"}
+            </Button>
+          )}
+          {isApproved && isAdmin && (
+            <Button
+              color="warning"
+              variant="flat"
+              startContent={
+                isDisbursing ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <RotateCcw className="w-4 h-4" />
+                )
+              }
+              isDisabled={isDisbursing}
+              onPress={handleRevertToPending}
+            >
+              {isDisbursing ? "Đang xử lý..." : "Trả về chờ duyệt"}
             </Button>
           )}
           {isSigned && isAdmin && (
@@ -582,7 +689,7 @@ const LoanDetailsModal = ({
             onClose={() => setIsEditAssetOpen(false)}
             loanId={loanDetails.id}
             assetData={{
-              type: loanDetails.asset.type,
+              typeKey: loanDetails.assetTypeKey ?? "",
               name: loanDetails.asset.name,
               imei: loanDetails.asset.imei,
               serial: loanDetails.asset.serial,
@@ -642,6 +749,16 @@ const LoanDetailsModal = ({
           onConfirm={confirmConfig.onConfirm}
           confirmColor={confirmConfig.confirmColor}
           isLoading={isDisbursing}
+        />
+      )}
+
+      {loanDetails && (
+        <ReuseLoanConfirmModal
+          isOpen={isReuseConfirmOpen}
+          onClose={() => setIsReuseConfirmOpen(false)}
+          loanCode={loanDetails.code}
+          assetImageCount={loanDetails.asset.images.length}
+          onConfirm={handleReuseConfirm}
         />
       )}
     </Modal>
