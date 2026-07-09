@@ -5,8 +5,8 @@ export type TLoanStatus =
   | "disbursed"    // Đang cầm
   | "redeemed"     // Đã chuộc
   | "rejected"     // Từ chối
-  | "completed"    // Hoàn thành (legacy)
-  | "liquidated";  // Thanh lý (legacy)
+  | "completed"    // Hoàn thành (legacy - chỉ dữ liệu cũ)
+  | "liquidated"; // Thanh lý (legacy - chỉ dữ liệu cũ)
 
 /** Loan row từ DB (loans + customer full_name) - dùng cho danh sách */
 export type TLoan = {

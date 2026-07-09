@@ -198,7 +198,7 @@ const RedeemModal = ({ isOpen, onClose, loanId, loanAmount, loanType, onSuccess 
       msg += `⚠️ Lưu ý: Còn thiếu ${formatCurrencyVND(remainingInterest - numericInterest)}\n\n`;
     }
     
-    msg += `Sau khi chuộc đồ, khoản vay sẽ chuyển sang trạng thái "Hoàn thành"`;
+    msg += `Sau khi chuộc đồ, khoản vay sẽ chuyển sang trạng thái "Đã chuộc"`;
 
     setConfirmMessage(msg);
     setIsConfirmOpen(true);

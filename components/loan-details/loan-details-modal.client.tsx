@@ -7,7 +7,7 @@ import {
   ModalFooter,
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
-import { AlertCircle, MessageSquare, ShoppingCart, CheckCircle, DollarSign, Loader2, UserCog, RotateCcw, Copy } from "lucide-react";
+import { AlertCircle, MessageSquare, ShoppingCart, CheckCircle, DollarSign, Loader2, UserCog, RotateCcw, Copy, XCircle } from "lucide-react";
 import { addToast } from "@heroui/toast";
 import type { TLoanDetails, TReuseLoanOptions } from "@/types/loan.types";
 import { LOAN_STATUS } from "@/constants/loan";
@@ -30,6 +30,7 @@ import EditReferenceModal from "@/components/loan-details/edit-reference-modal";
 import EditAssetModal from "@/components/loan-details/edit-asset-modal";
 import SimplePaymentModal from "@/components/loan-details/simple-payment-modal";
 import ConfirmModal from "@/components/confirm-modal";
+import RejectLoanModal from "@/components/loan-details/reject-loan-modal.client";
 import ReuseLoanConfirmModal from "@/components/reuse-loan-confirm-modal.client";
 
 import { ROLES } from "@/constants/roles";
@@ -77,6 +78,7 @@ const LoanDetailsModal = ({
   const [refreshKey, setRefreshKey] = useState(0); // Thêm state để force refresh
   const [selectedReferenceId, setSelectedReferenceId] = useState<string | null>(null);
   const [isReuseConfirmOpen, setIsReuseConfirmOpen] = useState(false);
+  const [isRejectOpen, setIsRejectOpen] = useState(false);
 
   const handleDisburse = async () => {
     if (!loanDetails) return;
@@ -223,6 +225,18 @@ const LoanDetailsModal = ({
   };
 
   const handleEditAssetSuccess = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  const handleRejectSuccess = () => {
+    addToast({
+      title: "Thành công",
+      description: "Đã từ chối khoản vay",
+      color: "success",
+    });
+
     if (onRefresh) {
       onRefresh();
     }
@@ -562,20 +576,31 @@ const LoanDetailsModal = ({
             </Button>
           )}
           {isPending && isAdmin && (
-            <Button
-              color="primary"
-              startContent={
-                isDisbursing ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <CheckCircle className="w-4 h-4" />
-                )
-              }
-              isDisabled={isDisbursing}
-              onPress={handleDisburse}
-            >
-              {isDisbursing ? "Đang xử lý..." : "Duyệt"}
-            </Button>
+            <>
+              <Button
+                color="danger"
+                variant="flat"
+                startContent={<XCircle className="w-4 h-4" />}
+                isDisabled={isDisbursing}
+                onPress={() => setIsRejectOpen(true)}
+              >
+                Từ chối
+              </Button>
+              <Button
+                color="primary"
+                startContent={
+                  isDisbursing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4" />
+                  )
+                }
+                isDisabled={isDisbursing}
+                onPress={handleDisburse}
+              >
+                {isDisbursing ? "Đang xử lý..." : "Duyệt"}
+              </Button>
+            </>
           )}
           {isApproved && isAdmin && (
             <Button
@@ -749,6 +774,15 @@ const LoanDetailsModal = ({
           onConfirm={confirmConfig.onConfirm}
           confirmColor={confirmConfig.confirmColor}
           isLoading={isDisbursing}
+        />
+      )}
+
+      {loanDetails && (
+        <RejectLoanModal
+          isOpen={isRejectOpen}
+          onClose={() => setIsRejectOpen(false)}
+          loanId={loanDetails.id}
+          onSuccess={handleRejectSuccess}
         />
       )}
 

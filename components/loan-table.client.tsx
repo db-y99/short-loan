@@ -24,7 +24,7 @@ import {
   LOANS_TABLE_COLUMNS,
   LOAN_STATUS_LABEL,
   LOAN_STATUS_COLOR,
-  LOAN_STATUS,
+  LOAN_FILTER_STATUSES,
   LOAN_TYPES,
   LOAN_TYPE_LABEL,
 } from "@/constants/loan";
@@ -44,7 +44,7 @@ const ALL_FILTER_VALUE = "all";
 
 const STATUS_OPTIONS = [
   { key: ALL_FILTER_VALUE, label: "Tất cả" },
-  ...Object.values(LOAN_STATUS).map((status) => ({
+  ...LOAN_FILTER_STATUSES.map((status) => ({
     key: status,
     label: LOAN_STATUS_LABEL[status],
   })),
@@ -198,10 +198,10 @@ const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [],
         case "status":
           return (
             <Chip
-              color={LOAN_STATUS_COLOR[loan.status as TLoanStatus]}
+              color={LOAN_STATUS_COLOR[loan.status as TLoanStatus] ?? "default"}
               variant="flat"
             >
-              {LOAN_STATUS_LABEL[loan.status as TLoanStatus]}
+              {LOAN_STATUS_LABEL[loan.status as TLoanStatus] ?? "Không xác định"}
             </Chip>
           );
         default:
