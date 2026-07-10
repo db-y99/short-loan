@@ -391,7 +391,7 @@ const LoanDetailsModal = ({
         </ModalHeader>
 
         <ModalBody className="flex-1 p-0 overflow-hidden">
-          <div className="flex h-full">
+          <div className="flex h-full min-h-0 min-w-0">
             {/* Left Column - Contract Details */}
             <div className="flex-3 overflow-y-auto p-6 border-r border-default-200">
               {isLoading && (
@@ -548,7 +548,7 @@ const LoanDetailsModal = ({
             </div>
 
             {/* Right Column - Chat Interface */}
-            <div className="w-[500px] flex flex-col flex-2 h-full">
+            <div className="flex h-full min-h-0 min-w-0 w-[500px] flex-2 flex-col overflow-hidden">
               {loanDetails && user && (
                 <ChatInterface
                   loanId={loanDetails.id}
