@@ -17,9 +17,19 @@ export const LOAN_STATUS = {
   DISBURSED: "disbursed", // Đang cầm
   REDEEMED: "redeemed", // Đã chuộc
   REJECTED: "rejected", // Từ chối
-  COMPLETED: "completed", // Hoàn thành (legacy - không dùng nữa)
-  LIQUIDATED: "liquidated", // Thanh lý (legacy - không dùng nữa)
+  COMPLETED: "completed", // Hoàn thành (legacy - chỉ dữ liệu cũ)
+  LIQUIDATED: "liquidated", // Thanh lý (legacy - chỉ dữ liệu cũ)
 } as const;
+
+/** Status dùng trong filter UI — không gồm legacy */
+export const LOAN_FILTER_STATUSES = [
+  LOAN_STATUS.PENDING,
+  LOAN_STATUS.APPROVED,
+  LOAN_STATUS.SIGNED,
+  LOAN_STATUS.DISBURSED,
+  LOAN_STATUS.REDEEMED,
+  LOAN_STATUS.REJECTED,
+] as const satisfies readonly TLoanStatus[];
 
 export const LOAN_STATUS_LABEL: Record<TLoanStatus, string> = {
   [LOAN_STATUS.PENDING]: "Chờ duyệt",
@@ -28,8 +38,8 @@ export const LOAN_STATUS_LABEL: Record<TLoanStatus, string> = {
   [LOAN_STATUS.DISBURSED]: "Đang cầm",
   [LOAN_STATUS.REDEEMED]: "Đã chuộc",
   [LOAN_STATUS.REJECTED]: "Từ chối",
-  [LOAN_STATUS.COMPLETED]: "Hoàn thành (Legacy)",
-  [LOAN_STATUS.LIQUIDATED]: "Thanh lý (Legacy)",
+  [LOAN_STATUS.COMPLETED]: "Hoàn thành",
+  [LOAN_STATUS.LIQUIDATED]: "Thanh lý",
 } as const;
 
 export const LOAN_STATUS_COLOR: Record<

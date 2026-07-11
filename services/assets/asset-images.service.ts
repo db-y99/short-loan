@@ -4,7 +4,8 @@
  */
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { uploadToDrive } from "@/lib/google-drive";
+import { uploadToDrive, deleteManyFromDrive } from "@/lib/google-drive";
+import { LOAN_STATUS } from "@/constants/loan";
 
 type TUploadImagesResult = {
   success: boolean;
@@ -30,7 +31,7 @@ export async function uploadAssetImagesService(
     // 1. Lấy thông tin loan để có drive_folder_id
     const { data: loan, error: loanError } = await supabase
       .from("loans")
-      .select("drive_folder_id")
+      .select("drive_folder_id, status")
       .eq("id", loanId)
       .single();
 
@@ -41,6 +42,13 @@ export async function uploadAssetImagesService(
       };
     }
 
+    if (loan.status !== LOAN_STATUS.PENDING) {
+      return {
+        success: false,
+        error: "Chỉ được thêm ảnh khi khoản vay ở trạng thái chờ duyệt",
+      };
+    }
+
     if (!loan.drive_folder_id) {
       return {
         success: false,
@@ -48,54 +56,61 @@ export async function uploadAssetImagesService(
       };
     }
 
-    // 2. Upload từng file lên Drive
-    const uploadedImages = [];
+    // 2. Upload tất cả file lên Drive trước (rollback Drive nếu lỗi giữa chừng)
+    const uploadedFiles: Array<{
+      name: string;
+      fileId: string;
+    }> = [];
 
-    for (const file of files) {
-      try {
-        // Upload lên Drive
+    try {
+      for (const file of files) {
         const { fileId } = await uploadToDrive(
           file.buffer,
           file.name,
           file.mimeType,
           loan.drive_folder_id,
         );
-
-        // Lưu vào DB (loan_assets)
-        const { data: dbData, error: dbError } = await supabase
-          .from("loan_assets")
-          .insert({
-            loan_id: loanId,
-            name: file.name,
-            provider: "google_drive",
-            file_id: fileId,
-          })
-          .select("id, name, file_id, provider")
-          .single();
-
-        if (dbError) {
-          console.error(`[DB_INSERT_ERROR] ${file.name}:`, dbError);
-          continue;
-        }
-
-        uploadedImages.push({
-          id: dbData.id,
-          name: dbData.name,
-          fileId: dbData.file_id,
-          provider: dbData.provider,
-        });
-      } catch (err) {
-        console.error(`[FILE_UPLOAD_ERROR] ${file.name}:`, err);
-        // Continue với các file khác
+        uploadedFiles.push({ name: file.name, fileId });
       }
-    }
-
-    if (uploadedImages.length === 0) {
+    } catch (uploadError) {
+      if (uploadedFiles.length > 0) {
+        await deleteManyFromDrive(uploadedFiles.map((f) => f.fileId));
+      }
+      console.error("[UPLOAD_ASSET_IMAGES_DRIVE_ERROR]", uploadError);
       return {
         success: false,
-        error: "Không thể upload ảnh. Vui lòng thử lại.",
+        error: "Không thể upload ảnh lên Drive. Vui lòng thử lại.",
       };
     }
+
+    // 3. Insert tất cả vào DB trong một lần — nếu fail thì xóa file Drive
+    const rows = uploadedFiles.map((f) => ({
+      loan_id: loanId,
+      name: f.name,
+      provider: "google_drive",
+      file_id: f.fileId,
+    }));
+
+    const { data: dbRows, error: dbError } = await supabase
+      .from("loan_assets")
+      .insert(rows)
+      .select("id, name, file_id, provider");
+
+    if (dbError || !dbRows || dbRows.length === 0) {
+      await deleteManyFromDrive(uploadedFiles.map((f) => f.fileId));
+      console.error("[UPLOAD_ASSET_IMAGES_DB_ERROR]", dbError);
+      return {
+        success: false,
+        error: "Không thể lưu ảnh vào hệ thống. Vui lòng thử lại.",
+      };
+    }
+
+    const uploadedImages = dbRows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      fileId: row.file_id,
+      provider: row.provider,
+    }));
 
     return {
       success: true,
@@ -112,19 +127,54 @@ export async function uploadAssetImagesService(
 }
 
 /**
- * Xóa ảnh tài sản
+ * Xóa mềm ảnh tài sản — chỉ gỡ khỏi DB, giữ file trên Drive
  */
 export async function deleteAssetImageService(imageId: string) {
   try {
     const supabase = await createSupabaseServerClient();
 
-    const { error } = await supabase
+    const { data: asset, error: assetError } = await supabase
       .from("loan_assets")
-      .delete()
-      .eq("id", imageId);
+      .select("id, loan_id")
+      .eq("id", imageId)
+      .is("deleted_at", null)
+      .single();
+
+    if (assetError || !asset) {
+      return { success: false, error: "Không tìm thấy ảnh" };
+    }
+
+    const { data: loan, error: loanError } = await supabase
+      .from("loans")
+      .select("status")
+      .eq("id", asset.loan_id)
+      .single();
+
+    if (loanError || !loan) {
+      return { success: false, error: "Không tìm thấy khoản vay" };
+    }
+
+    if (loan.status !== LOAN_STATUS.PENDING) {
+      return {
+        success: false,
+        error: "Chỉ được xóa ảnh khi khoản vay ở trạng thái chờ duyệt",
+      };
+    }
+
+    const { data, error } = await supabase
+      .from("loan_assets")
+      .update({ deleted_at: new Date().toISOString() })
+      .eq("id", imageId)
+      .is("deleted_at", null)
+      .select("id")
+      .single();
 
     if (error) {
-      throw new Error(error.message);
+      return { success: false, error: error.message };
+    }
+
+    if (!data) {
+      return { success: false, error: "Không tìm thấy ảnh" };
     }
 
     return { success: true };

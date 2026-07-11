@@ -3,27 +3,38 @@
 import { useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { FileText, Download, Eye, Loader2, Plus, CheckCircle, RefreshCw } from "lucide-react";
+import { FileText, Download, Eye, Loader2, Plus, CheckCircle, RefreshCw, AlertCircle } from "lucide-react";
 import { addToast } from "@heroui/toast";
 import type { TLoanFile, TLoanStatus } from "@/types/loan.types";
 import { generateContractsAction, regenerateContractsAction } from "@/features/contracts/actions/generate-contracts.action";
+import { repairSignedContractsAction } from "@/features/contracts/actions/repair-signed-contracts.action";
 import ContractPreviewModal from "@/components/contracts/contract-preview-modal";
 import ContractSelectionModal from "@/components/contracts/contract-selection-modal";
 import ContractErrorDetails from "@/components/contracts/contract-error-details";
 import type { TContractType } from "@/types/contract.types";
-import { sortContractsByType } from "@/lib/contract-utils";
+import { needsSignedContractRepair, sortContractsByType } from "@/lib/contract-utils";
 import { LOAN_STATUS, LOAN_STATUS_LABEL } from "@/constants/loan";
 
 type TProps = {
   loanId: string;
-  loanStatus: TLoanStatus; // Thêm loan status
-  loanFiles?: TLoanFile[]; // All loan files from DB
-  onRefresh?: () => void; // Thêm callback để refresh data
+  loanStatus: TLoanStatus;
+  loanType: string;
+  loanFiles?: TLoanFile[];
+  hasSignatures?: boolean;
+  onRefresh?: () => void;
 };
 
-const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TProps) => {
+const ContractsSection = ({
+  loanId,
+  loanStatus,
+  loanType,
+  loanFiles = [],
+  hasSignatures = false,
+  onRefresh,
+}: TProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [isRepairing, setIsRepairing] = useState(false);
   const [selectionModalMode, setSelectionModalMode] = useState<
     "create" | "regenerate" | null
   >(null);
@@ -38,6 +49,41 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
 
   // Sắp xếp contracts theo thứ tự mong muốn
   const sortedContracts = sortContractsByType(loanFiles);
+  const shouldRepairSignedContracts = needsSignedContractRepair({
+    loanStatus,
+    hasSignatures,
+    loanType,
+    loanFiles,
+  });
+
+  const handleRepairSignedContracts = async () => {
+    setIsRepairing(true);
+    setMessage(null);
+
+    try {
+      const result = await repairSignedContractsAction(loanId);
+
+      if (result.success) {
+        addToast({
+          title: "Thành công",
+          description: `Đã tạo lại ${result.data.length} hợp đồng PDF đã ký`,
+          color: "success",
+        });
+        onRefresh?.();
+        setMessage(null);
+      } else {
+        setMessage({ type: "error", text: result.error });
+      }
+    } catch (error) {
+      setMessage({
+        type: "error",
+        text: "Lỗi khi tạo lại hợp đồng PDF đã ký",
+      });
+      console.error(error);
+    } finally {
+      setIsRepairing(false);
+    }
+  };
 
   const handleGenerateContracts = async (selectedTypes: TContractType[]) => {
     setIsGenerating(true);
@@ -180,6 +226,23 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
             <h3 className="text-lg font-semibold">Hợp đồng</h3>
           </div>
         <div className="flex items-center gap-2">
+            {shouldRepairSignedContracts ? (
+              <Button
+                color="warning"
+                size="sm"
+                startContent={
+                  isRepairing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="w-4 h-4" />
+                  )
+                }
+                isDisabled={isRepairing}
+                onPress={handleRepairSignedContracts}
+              >
+                {isRepairing ? "Đang tạo PDF..." : "Tạo lại PDF đã ký"}
+              </Button>
+            ) : null}
             {loanFiles.length > 0 && (
               <Button
                 size="sm"
@@ -240,16 +303,34 @@ const ContractsSection = ({ loanId, loanStatus, loanFiles = [], onRefresh }: TPr
         </CardHeader>
         <CardBody className="pt-0 space-y-3">
           {/* Loading state khi đang tạo hợp đồng */}
-          {(isGenerating || isRegenerating) && (
+          {(isGenerating || isRegenerating || isRepairing) && (
             <div className="flex items-center gap-2 p-3 rounded-lg bg-warning-50 text-warning-700 dark:bg-warning-900/20 dark:text-warning-400 border border-warning-200 dark:border-warning-800">
               <Loader2 className="w-4 h-4 animate-spin" />
               <div className="flex-1">
                 <p className="text-sm font-semibold">
-                  {isRegenerating ? "Đang tạo lại hợp đồng PDF..." : "Đang tạo hợp đồng PDF..."}
+                  {isRepairing
+                    ? "Đang tạo lại hợp đồng PDF đã ký..."
+                    : isRegenerating
+                      ? "Đang tạo lại hợp đồng PDF..."
+                      : "Đang tạo hợp đồng PDF..."}
                 </p>
                 <p className="text-xs mt-1">
                   Quá trình này có thể mất vài giây. Vui lòng đợi.
                 </p>
+              </div>
+            </div>
+          )}
+
+          {shouldRepairSignedContracts && (
+            <div className="p-3 bg-danger-50 dark:bg-danger-900/20 rounded-lg border border-danger-200 dark:border-danger-800">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-danger flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-danger-700 dark:text-danger-400">
+                  <p className="font-semibold">Thiếu hợp đồng PDF đã ký</p>
+                  <p className="mt-1">
+                    Khoản vay đã ký nhưng PDF chưa đủ. Nhấn &quot;Tạo lại PDF đã ký&quot; để khôi phục.
+                  </p>
+                </div>
               </div>
             </div>
           )}

@@ -1,6 +1,9 @@
 import type { TAssetPledgeContractData } from "@/types/contract.types";
+import { isCollateralHoldLoanType } from "@/constants/contracts";
 
 export function generateAssetPledgeHTML(data: TAssetPledgeContractData): string {
+const isPackage3 = isCollateralHoldLoanType(data.loan_type);
+
 const draftSignatureHTML = data.DRAFT_SIGNATURE
   ? `<img src="${data.DRAFT_SIGNATURE}" 
           alt="Chữ ký nháy" 
@@ -13,7 +16,7 @@ const draftSignatureHTML = data.DRAFT_SIGNATURE
       <tr>
         <td style="padding: 8px; border: 1px solid #000;">Mốc ${m.moc}</td>
         <td style="padding: 8px; border: 1px solid #000;">Ngày ${m.ngay}</td>
-        <td style="padding: 8px; border: 1px solid #000;">${m.lai}</td>
+        <td style="padding: 8px; border: 1px solid #000;">${isPackage3 ? m.tongTien : m.lai}</td>
       </tr>
     `,
     )

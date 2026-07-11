@@ -54,7 +54,7 @@ export function MessageBubble({
 
   return (
     <div
-      className={`flex gap-3 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}
+      className={`flex min-w-0 gap-3 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}
     >
       {/* Avatar */}
       <div
@@ -66,12 +66,14 @@ export function MessageBubble({
       </div>
 
       {/* Message content */}
-      <div className={`flex-1 max-w-[70%] ${isOwnMessage ? "items-end" : "items-start"} flex flex-col`}>
+      <div
+        className={`flex min-w-0 flex-1 max-w-[70%] flex-col ${isOwnMessage ? "items-end" : "items-start"}`}
+      >
         {/* Name and timestamp */}
         <div
-          className={`flex items-center gap-2 mb-1 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}
+          className={`mb-1 flex min-w-0 max-w-full items-center gap-2 ${isOwnMessage ? "flex-row-reverse" : "flex-row"}`}
         >
-          <span className="text-sm font-semibold text-default-900">
+          <span className="truncate text-sm font-semibold text-default-900">
             {message.user_name}
           </span>
           <span className="text-xs text-default-500">
@@ -82,13 +84,15 @@ export function MessageBubble({
         {/* Message bubble - conditional wrapper based on message type */}
         {isTextMessage && (
           <div
-            className={`rounded-lg px-4 py-2 ${
+            className={`max-w-full overflow-hidden rounded-lg px-4 py-2 ${
               isOwnMessage
                 ? "bg-primary text-white"
                 : "bg-default-100 text-default-900"
             }`}
           >
-            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+            <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
+              {message.content}
+            </p>
           </div>
         )}
 
@@ -111,13 +115,18 @@ export function MessageBubble({
               // Show actual image
               return (
                 <div key={index} className="relative">
-                  <img
-                    src={`/api/drive/file/${imageUrl}`}
-                    alt="Uploaded image"
-                    className="max-w-full rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                  <button
+                    type="button"
+                    className="block max-w-full rounded-lg p-0 border-0 bg-transparent cursor-pointer hover:opacity-90 transition-opacity"
                     onClick={() => onImageClick?.(imageUrl)}
-                    loading="lazy"
-                  />
+                  >
+                    <img
+                      src={`/api/drive/file/${imageUrl}`}
+                      alt="Tin nhắn đính kèm"
+                      className="max-w-full rounded-lg"
+                      loading="lazy"
+                    />
+                  </button>
                 </div>
               );
             })}

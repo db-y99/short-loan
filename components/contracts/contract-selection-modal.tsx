@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Modal,
   ModalContent,
@@ -13,6 +13,8 @@ import { Checkbox } from "@heroui/checkbox";
 import { AlertTriangle, FileText } from "lucide-react";
 import {
   GENERATABLE_CONTRACT_TYPES,
+  DEFAULT_SELECTED_CONTRACT_TYPES,
+  CONTRACT_TYPE,
   CONTRACT_TYPE_LABEL,
   CONTRACT_TYPE_DESCRIPTION,
 } from "@/constants/contracts";
@@ -33,18 +35,19 @@ const ContractSelectionModal = ({
   isLoading = false,
   mode = "create",
 }: TProps) => {
+  const availableTypes = useMemo(() => [...GENERATABLE_CONTRACT_TYPES], []);
+
   const [selectedTypes, setSelectedTypes] = useState<TContractType[]>([
-    ...GENERATABLE_CONTRACT_TYPES,
+    ...DEFAULT_SELECTED_CONTRACT_TYPES,
   ]);
 
   useEffect(() => {
     if (isOpen) {
-      setSelectedTypes([...GENERATABLE_CONTRACT_TYPES]);
+      setSelectedTypes([...DEFAULT_SELECTED_CONTRACT_TYPES]);
     }
   }, [isOpen]);
 
-  const allSelected =
-    selectedTypes.length === GENERATABLE_CONTRACT_TYPES.length;
+  const allSelected = selectedTypes.length === availableTypes.length;
   const noneSelected = selectedTypes.length === 0;
 
   const toggleType = (type: TContractType, checked: boolean) => {
@@ -54,7 +57,7 @@ const ContractSelectionModal = ({
   };
 
   const handleSelectAll = () => {
-    setSelectedTypes([...GENERATABLE_CONTRACT_TYPES]);
+    setSelectedTypes([...availableTypes]);
   };
 
   const handleDeselectAll = () => {
@@ -107,7 +110,7 @@ const ContractSelectionModal = ({
 
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">
-              Đã chọn {selectedTypes.length}/{GENERATABLE_CONTRACT_TYPES.length}
+              Đã chọn {selectedTypes.length}/{availableTypes.length}
             </span>
             <div className="flex gap-2">
               <Button
@@ -130,7 +133,7 @@ const ContractSelectionModal = ({
           </div>
 
           <div className="space-y-2">
-            {GENERATABLE_CONTRACT_TYPES.map((type) => (
+            {availableTypes.map((type) => (
               <div
                 key={type}
                 className="flex items-start gap-3 p-3 rounded-lg border border-default-200 dark:border-default-100 hover:bg-default-50 transition-colors"
@@ -146,6 +149,9 @@ const ContractSelectionModal = ({
                   </p>
                   <p className="text-xs text-default-500 mt-0.5">
                     {CONTRACT_TYPE_DESCRIPTION[type]}
+                    {type === CONTRACT_TYPE.ASSET_LEASE ? (
+                      <span className="text-default-400"> · Ít dùng</span>
+                    ) : null}
                   </p>
                 </div>
               </div>

@@ -74,7 +74,6 @@ const UpdateAssetConditionModal = ({
             value={condition}
             onValueChange={setCondition}
             minRows={6}
-            autoFocus
           />
         </ModalBody>
         <ModalFooter>

@@ -13,7 +13,7 @@ import { AlertTriangle } from "lucide-react";
 type TProps = {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
   title: string;
   message: string;
   confirmText?: string;
@@ -33,8 +33,8 @@ const ConfirmModal = ({
   confirmColor = "primary",
   isLoading = false,
 }: TProps) => {
-  const handleConfirm = () => {
-    onConfirm();
+  const handleConfirm = async () => {
+    await onConfirm();
     onClose();
   };
 

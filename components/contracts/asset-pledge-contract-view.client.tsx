@@ -3,6 +3,7 @@
 
 import type { TAssetPledgeContractData } from "@/types/contract.types";
 import { unformatMoney, formatMoney } from "@/lib/loan-calculation";
+import { isCollateralHoldLoanType } from "@/constants/contracts";
 
 const S = {
   container: {
@@ -43,6 +44,8 @@ export function AssetPledgeContractView({
   data,
   id = "contract-content",
 }: TProps) {
+  const isPackage3 = isCollateralHoldLoanType(data.loan_type);
+
   // Use the milestone data as provided, with fallback calculation if needed
   const milestones = data.MILESTONES && data.MILESTONES.length > 0 
     ? data.MILESTONES 
@@ -277,7 +280,7 @@ export function AssetPledgeContractView({
               <tr key={m.moc}>
                 <td style={S.tdBorder}>Mốc {m.moc}</td>
                 <td style={S.tdBorder}>Ngày {m.ngay}</td>
-                <td style={S.tdBorder}>{m.lai}</td>
+                <td style={S.tdBorder}>{isPackage3 ? m.tongTien : m.lai}</td>
               </tr>
             ))}
           </tbody>

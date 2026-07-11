@@ -1,10 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { ZodError } from "zod";
 import { CreateLoanSchema } from "./create-loan.schema";
 import { upsertCustomerService } from "@/services/customers/customers.service";
 import {
   createLoanService,
+  deleteLoanService,
   generateLoanCodeService,
   updateLoanDriveFolderIdService,
 } from "@/services/loans/loans.service";
@@ -15,20 +17,22 @@ import { createLoanFolder } from "@/lib/google-drive";
 import { env } from "@/config/env";
 import { calculateAppraisalFee } from "@/lib/loan-calculation";
 import {
-  createPaymentCycleService,
-  saveDetailedPaymentPeriodsService,
+  createLoanPaymentScheduleService,
 } from "@/services/payments/payment-periods.service";
 import { getCurrentUser } from "@/lib/actions/auth";
 import { getProfileById } from "@/services/profiles.service";
 import { ROLES } from "@/constants/roles";
+import { zodIssuesToFieldErrors } from "@/lib/zod-field-errors";
 
 type TCreateLoanResult =
   | { success: true; data: { id: string; code: string; folderId: string } }
-  | { success: false; error: string };
+  | { success: false; error?: string; fieldErrors?: Record<string, string> };
 
 export const createLoanAction = async (
   payload: TCreateLoanPayload,
 ): Promise<TCreateLoanResult> => {
+  let createdLoanId: string | null = null;
+
   try {
     // Lấy thông tin user đang đăng nhập
     const currentUser = await getCurrentUser();
@@ -79,8 +83,6 @@ export const createLoanAction = async (
     const appraisalFee = calculateAppraisalFee(amount, loanType);
     const appraisalFeePercentage = appraisalFee > 0 ? 5 : undefined;
 
-    // 1) Create loan trước (chưa có attachments)
-    // drive_folder_id tạm thời set = parent folder để satisfy NOT NULL
     const { id } = await createLoanService({
       code,
       profile_id: currentUser.id,
@@ -106,47 +108,45 @@ export const createLoanAction = async (
         relationship: r.relationship ?? null,
       })),
     });
+    createdLoanId = id;
 
-    // 2) Tạo folder Drive cho loan
     const folderId = await createLoanFolder({
       parentFolderId,
       loanCode: code,
       customerName: input.full_name,
     });
 
-    // 3) Update loan.drive_folder_id = folderId
     await updateLoanDriveFolderIdService({
       loanId: id,
       driveFolderId: folderId,
     });
 
-    // 4) Tạo payment cycle và periods
     const signedAt = new Date().toISOString();
-    const startDate = new Date().toISOString().split("T")[0];
-    const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      .toISOString()
-      .split("T")[0];
 
-    const cycleId = await createPaymentCycleService({
+    await createLoanPaymentScheduleService({
       loanId: id,
-      cycleNumber: 1,
-      principal: amount,
-      startDate,
-      endDate,
-    });
-
-    // 5) Lưu payment periods vào DB
-    await saveDetailedPaymentPeriodsService({
-      loanId: id,
-      cycleId,
       loanAmount: amount,
       loanType: loanPackage,
       signedAt,
     });
 
     revalidatePath("/");
+    createdLoanId = null;
     return { success: true, data: { id, code, folderId } };
   } catch (err) {
+    if (createdLoanId) {
+      await deleteLoanService(createdLoanId).catch((cleanupError) => {
+        console.error("[CREATE_LOAN_ROLLBACK_ERROR]", cleanupError);
+      });
+    }
+
+    if (err instanceof ZodError) {
+      return {
+        success: false,
+        fieldErrors: zodIssuesToFieldErrors(err.issues),
+      };
+    }
+
     if (err instanceof Error) {
       return { success: false, error: err.message };
     }

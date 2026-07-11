@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LOAN_STATUS } from "@/constants/loan";
+import { isRpcNotFoundError, parseRpcResult } from "@/lib/supabase/rpc-result";
 
 /**
  * POST /api/loans/[id]/pay-interest
@@ -156,116 +157,84 @@ export async function POST(
       }
     }
 
-    // Insert payment transaction
-    const { data: payment, error: paymentError } = await supabase
-      .from("loan_payment_transactions")
-      .insert({
-        loan_id: loanId,
-        cycle_id: cycle.id,
-        transaction_type: "interest_payment",
-        amount: amount,
-        payment_method: "cash", // Default, có thể thêm field trong form
-        notes: notes || null,
-        created_by: user.id,
-      })
-      .select()
-      .single();
+    // Insert payment transaction — atomic via RPC
+    const loanTypeLabel = isInstallmentType
+      ? "Gói 1 (Đóng tiền tổng chuộc)"
+      : "Gói 2/3 (Đóng tiền lãi + phí)";
+    const systemMessage = `Đóng tiền ${amount.toLocaleString("vi-VN")} VNĐ - ${loanTypeLabel}${notes ? ` - ${notes}` : ""}`;
 
-    if (paymentError) {
-      console.error("[PAY_INTEREST_ERROR]", paymentError);
+    let targetPeriod: NonNullable<typeof periods>[number] | undefined;
+    let newPeriodStatus: string | undefined;
+
+    if (periods && periods.length > 0) {
+      if (isBulletPaymentType) {
+        targetPeriod =
+          periods.find((p) => p.milestone_day === 30) || periods[periods.length - 1];
+      } else {
+        targetPeriod =
+          periods.find((p) => p.status !== "paid") || periods[periods.length - 1];
+      }
+
+      if (targetPeriod?.id) {
+        const feeAmount = Number(targetPeriod.fee_amount || 0);
+        const principalAmount = Number(targetPeriod.principal || 0);
+        const totalRequired = isInstallmentType
+          ? principalAmount + feeAmount
+          : feeAmount;
+        const newPaidAmount = Number(targetPeriod.paid_amount || 0) + Number(amount);
+        newPeriodStatus =
+          newPaidAmount >= totalRequired ? "paid" : targetPeriod.status;
+      }
+    }
+
+    const { data: rpcResult, error: rpcError } = await supabase.rpc(
+      "record_interest_payment",
+      {
+        p_loan_id: loanId,
+        p_cycle_id: cycle.id,
+        p_period_id: targetPeriod?.id ?? null,
+        p_amount: amount,
+        p_notes: notes || null,
+        p_user_id: user.id,
+        p_user_name: user.email || "System",
+        p_new_period_status: newPeriodStatus ?? targetPeriod?.status ?? "pending",
+        p_system_message: systemMessage,
+      }
+    );
+
+    if (!rpcError && rpcResult) {
+      const result = parseRpcResult(rpcResult);
+      if (result.success) {
+        return NextResponse.json({
+          success: true,
+          data: {
+            totalInterestPaid: result.total_interest_paid,
+            periods: periods || [],
+          },
+        });
+      }
+      const status = result.error?.includes("Không tìm thấy") ? 404 : 400;
       return NextResponse.json(
-        { success: false, error: "Không thể tạo giao dịch thanh toán" },
+        { success: false, error: result.error ?? "Không thể tạo giao dịch thanh toán" },
+        { status }
+      );
+    }
+
+    if (!isRpcNotFoundError(rpcError)) {
+      console.error("[PAY_INTEREST_RPC_ERROR]", rpcError);
+      return NextResponse.json(
+        { success: false, error: "Lỗi khi ghi nhận thanh toán" },
         { status: 500 }
       );
     }
 
-    // Update total_interest_paid in cycle (tổng tích lũy)
-    const newTotalInterestPaid = Number(cycle.total_interest_paid || 0) + Number(amount);
-    
-    const { error: updateError } = await supabase
-      .from("loan_payment_cycles")
-      .update({
-        total_interest_paid: newTotalInterestPaid,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", cycle.id);
-
-    if (updateError) {
-      console.error("[UPDATE_CYCLE_ERROR]", updateError);
-      // Không return error vì transaction đã được tạo
-    }
-
-    // Update paid_amount cho period hiện tại
-    if (periods && periods.length > 0) {
-      let targetPeriod;
-      
-      if (isBulletPaymentType) {
-        // Gói 2, 3: Luôn cập nhật vào mốc 30 ngày
-        targetPeriod = periods.find((p: any) => p.milestone_day === 30) || periods[periods.length - 1];
-      } else {
-        // Gói 1: Tìm kỳ đầu tiên CHƯA hoàn thành (status !== 'paid')
-        targetPeriod = periods.find((p: any) => p.status !== 'paid') || periods[periods.length - 1];
-      }
-
-      if (targetPeriod && targetPeriod.id) {
-        const newPaidAmount = Number(targetPeriod.paid_amount || 0) + Number(amount);
-        
-        // Kiểm tra xem đã đóng đủ chưa để cập nhật status
-        const feeAmount = Number(targetPeriod.fee_amount || 0);
-        const principalAmount = Number(targetPeriod.principal || 0);
-        const totalRequired = isInstallmentType 
-          ? principalAmount + feeAmount  // Gói 1: Gốc + Lãi + Phí
-          : feeAmount;                    // Gói 2, 3: Chỉ Lãi + Phí
-        
-        const newStatus = newPaidAmount >= totalRequired ? 'paid' : targetPeriod.status;
-
-        console.log('[UPDATE_PERIOD]', {
-          periodId: targetPeriod.id,
-          milestoneDay: targetPeriod.milestone_day,
-          isGoi23: isBulletPaymentType,
-          oldPaidAmount: targetPeriod.paid_amount,
-          newPaidAmount,
-          totalRequired,
-          oldStatus: targetPeriod.status,
-          newStatus,
-        });
-
-        const { error: updatePeriodError } = await supabase
-          .from("loan_payment_periods")
-          .update({
-            paid_amount: newPaidAmount,
-            status: newStatus,
-          })
-          .eq("id", targetPeriod.id);
-
-        if (updatePeriodError) {
-          console.error("[UPDATE_PERIOD_ERROR]", updatePeriodError);
-        } else {
-          console.log('[UPDATE_PERIOD_SUCCESS]', targetPeriod.id);
-        }
-      } else {
-        console.error("[UPDATE_PERIOD_ERROR] No target period found or missing ID");
-      }
-    }
-
-    // Log activity với thông tin về loại gói
-    const loanTypeLabel = isInstallmentType ? "Gói 1 (Đóng tiền tổng chuộc)" : "Gói 2/3 (Đóng tiền lãi + phí)";
-    await supabase.from("loan_activity_logs").insert({
-      loan_id: loanId,
-      type: "system_event",
-      user_id: user.id,
-      user_name: user.email || "System",
-      system_message: `Đóng tiền ${amount.toLocaleString("vi-VN")} VNĐ - ${loanTypeLabel}${notes ? ` - ${notes}` : ""}`,
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        payment,
-        totalInterestPaid: newTotalInterestPaid,
-        periods: periods || [],
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Chức năng đóng tiền chưa sẵn sàng. Vui lòng chạy migration database.",
       },
-    });
+      { status: 503 }
+    );
   } catch (error) {
     console.error("[PAY_INTEREST_ERROR]", error);
     return NextResponse.json(

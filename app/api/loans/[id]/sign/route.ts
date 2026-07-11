@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LOAN_STATUS } from "@/constants/loan";
-import { uploadToDrive } from "@/lib/google-drive";
-import { env } from "@/config/env";
-
+import { uploadToDrive, deleteManyFromDrive } from "@/lib/google-drive";
+import { generateSignedContractsService } from "@/services/contracts/contracts.service";
 /**
  * Helper function to convert base64 data URL to Buffer
  */
@@ -130,44 +129,99 @@ export async function POST(
       );
     }
 
-    // Cập nhật trạng thái và log activity song song
-    const [updateResult] = await Promise.all([
-      supabase
-        .from("loans")
-        .update({
-          status: LOAN_STATUS.SIGNED,
-          signed_at: signedAt,
-          draft_signature_file_id: draftSignatureFileId,
-          official_signature_file_id: officialSignatureFileId,
-        })
-        .eq("id", loanId),
-      supabase.from("loan_activity_logs").insert({
-        loan_id: loanId,
-        type: "contract_signed",
-        user_id: user.id,
-        user_name: user.email || "System",
-        system_message: `Hợp đồng đã được ký kết`,
-      }),
-    ]);
+    // Cập nhật trạng thái (optimistic lock: chỉ khi đang approved)
+    const { data: updatedLoans, error: updateError } = await supabase
+      .from("loans")
+      .update({
+        status: LOAN_STATUS.SIGNED,
+        signed_at: signedAt,
+        is_signed: true,
+        draft_signature_file_id: draftSignatureFileId,
+        official_signature_file_id: officialSignatureFileId,
+      })
+      .eq("id", loanId)
+      .eq("status", LOAN_STATUS.APPROVED)
+      .select("id");
 
-    if (updateResult.error) {
-      console.error("Error updating loan status:", updateResult.error);
+    if (updateError || !updatedLoans || updatedLoans.length === 0) {
+      console.error("Error updating loan status:", updateError);
+      // Bù trừ: xóa chữ ký đã upload lên Drive
+      const uploadedIds = [draftSignatureFileId, officialSignatureFileId].filter(
+        (id): id is string => Boolean(id)
+      );
+      if (uploadedIds.length > 0) {
+        await deleteManyFromDrive(uploadedIds).catch((cleanupError) => {
+          console.error("[SIGN_DRIVE_CLEANUP_ERROR]", cleanupError);
+        });
+      }
       return NextResponse.json(
-        { success: false, error: "Lỗi khi cập nhật trạng thái" },
-        { status: 500 }
+        {
+          success: false,
+          error: updateError
+            ? "Lỗi khi cập nhật trạng thái"
+            : "Khoản vay không còn ở trạng thái đã duyệt hoặc đã được ký",
+        },
+        { status: updateError ? 500 : 409 }
       );
     }
 
-    // Return immediately - PDF generation will be triggered from client
+    await supabase.from("loan_activity_logs").insert({
+      loan_id: loanId,
+      type: "contract_signed",
+      user_id: user.id,
+      user_name: user.email || "System",
+      system_message: "Hợp đồng đã được ký kết",
+    });
+
+    const pdfResult = await generateSignedContractsService(loanId);
+
+    if (!pdfResult.success) {
+      const signatureFileIds = [draftSignatureFileId, officialSignatureFileId].filter(
+        (id): id is string => Boolean(id),
+      );
+
+      const { error: revertError } = await supabase
+        .from("loans")
+        .update({
+          status: LOAN_STATUS.APPROVED,
+          signed_at: null,
+          is_signed: false,
+          draft_signature_file_id: null,
+          official_signature_file_id: null,
+        })
+        .eq("id", loanId)
+        .eq("status", LOAN_STATUS.SIGNED);
+
+      if (revertError) {
+        console.error("[SIGN_REVERT_STATUS_ERROR]", revertError);
+      }
+
+      if (signatureFileIds.length > 0) {
+        await deleteManyFromDrive(signatureFileIds).catch((cleanupError) => {
+          console.error("[SIGN_REVERT_DRIVE_CLEANUP_ERROR]", cleanupError);
+        });
+      }
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            pdfResult.error ||
+            "Không thể tạo hợp đồng PDF. Trạng thái ký đã được hoàn tác.",
+        },
+        { status: 500 },
+      );
+    }
+
     return NextResponse.json({
       success: true,
-      message: "Ký hợp đồng thành công",
+      message: "Ký hợp đồng và tạo PDF thành công",
       data: {
         signedAt,
-        loanId, // Return loanId so client can trigger PDF generation
+        loanId,
+        contracts: pdfResult.contracts,
       },
-    });
-  } catch (error) {
+    });  } catch (error) {
     console.error("Error signing contract:", error);
     return NextResponse.json(
       { success: false, error: "Lỗi server" },
@@ -175,3 +229,5 @@ export async function POST(
     );
   }
 }
+
+export const maxDuration = 60;

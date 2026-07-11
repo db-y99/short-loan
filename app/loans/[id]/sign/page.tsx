@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
@@ -11,10 +11,15 @@ import {
   ChevronLeft, ChevronRight, Shield, ScrollText,
 } from "lucide-react";
 import SignatureCanvas from "react-signature-canvas";
+import SignaturePad from "@/components/signature-pad.client";
 import { AssetPledgeContractView } from "@/components/contracts/asset-pledge-contract-view.client";
 import { AssetLeaseContractView } from "@/components/contracts/asset-lease-contract-view.client";
 import { FullPaymentConfirmationView } from "@/components/contracts/full-payment-confirmation-view.client";
 import { AssetDisposalAuthorizationView } from "@/components/contracts/asset-disposal-authorization-view.client";
+import {
+  getSignPageContractTabsForCreatedTypes,
+  type TSignPageContractTabKey,
+} from "@/constants/contracts";
 
 const CONTRACT_TYPE = {
   ASSET_PLEDGE: "asset_pledge",
@@ -23,14 +28,7 @@ const CONTRACT_TYPE = {
   ASSET_DISPOSAL: "asset_disposal",
 } as const;
 
-type ContractType = typeof CONTRACT_TYPE[keyof typeof CONTRACT_TYPE];
-
-const CONTRACT_TABS = [
-  { key: CONTRACT_TYPE.ASSET_PLEDGE, label: "HĐ Cầm Cố", short: "1" },
-  { key: CONTRACT_TYPE.ASSET_LEASE, label: "HĐ Thuê TS", short: "2" },
-  { key: CONTRACT_TYPE.FULL_PAYMENT, label: "XN Nhận Tiền", short: "3" },
-  { key: CONTRACT_TYPE.ASSET_DISPOSAL, label: "Ủy Quyền TS", short: "4" },
-] as const;
+type ContractType = TSignPageContractTabKey;
 
 type Step = "review" | "sign" | "done";
 
@@ -60,7 +58,19 @@ export default function LoanSignPage() {
     try {
       const res = await fetch(`/api/loans/${loanId}/contract-data`);
       const result = await res.json();
-      if (result.success) setContractData(result.data);
+      if (result.success) {
+        setContractData(result.data);
+        const createdTypes =
+          result.data.createdContractTypes ??
+          result.data.applicableContractTypes ??
+          [];
+        const tabs = getSignPageContractTabsForCreatedTypes(createdTypes);
+        if (tabs.length > 0) {
+          setSelectedContractType((current) =>
+            tabs.some((tab) => tab.key === current) ? current : tabs[0].key,
+          );
+        }
+      }
     } catch (err) {
       console.error("Error fetching contract data:", err);
     } finally {
@@ -105,7 +115,11 @@ export default function LoanSignPage() {
         addToast({ title: "Lỗi khi ký hợp đồng", description: signResult.error || "Có lỗi xảy ra", color: "danger" });
         return;
       }
-      fetch(`/api/loans/${loanId}/generate-signed-contracts`, { method: "POST" }).catch(() => {});
+      addToast({
+        title: "Hoàn tất!",
+        description: signResult.message || "Hợp đồng đã được ký và tạo PDF thành công",
+        color: "success",
+      });
       setStep("done");
     } catch (err) {
       console.error("Error signing:", err);
@@ -115,7 +129,19 @@ export default function LoanSignPage() {
     }
   };
 
-  const currentTabIndex = CONTRACT_TABS.findIndex(t => t.key === selectedContractType);
+  const contractTabs = useMemo(() => {
+    const createdTypes =
+      contractData?.createdContractTypes ??
+      contractData?.applicableContractTypes ??
+      [];
+    if (createdTypes.length === 0) return [];
+
+    return getSignPageContractTabsForCreatedTypes(createdTypes);
+  }, [contractData?.createdContractTypes, contractData?.applicableContractTypes]);
+
+  const currentTabIndex = contractTabs.findIndex(
+    (t) => t.key === selectedContractType,
+  );
 
   // ── DONE ────────────────────────────────────────────────────────────────────
   if (step === "done") {
@@ -185,12 +211,9 @@ export default function LoanSignPage() {
             <div className="p-4">
               {!draftSignature ? (
                 <>
-                  <div className="border-2 border-dashed border-primary/30 rounded-xl bg-primary/5 relative">
-                    <SignatureCanvas
-                      ref={draftSigRef}
-                      canvasProps={{ className: "w-full h-56 cursor-crosshair rounded-xl" }}
-                    />
-                    <p className="absolute bottom-2 right-3 text-xs text-default-300 pointer-events-none select-none">Ký tại đây</p>
+                  <div className="relative">
+                    <SignaturePad ref={draftSigRef} heightClass="h-56" className="rounded-xl" />
+                    <p className="absolute bottom-2 right-3 text-xs text-default-400 pointer-events-none select-none">Ký tại đây</p>
                   </div>
                   <div className="flex gap-2 mt-3">
                     <Button size="sm" variant="flat" className="flex-1" onPress={() => clearSig(draftSigRef, setDraftSignature)}>
@@ -203,8 +226,8 @@ export default function LoanSignPage() {
                 </>
               ) : (
                 <div className="relative">
-                  <div className="border border-success-200 rounded-xl p-3">
-                    <img src={draftSignature} alt="Chữ ký nháy" className="w-full h-44 object-contain" />
+                  <div className="border border-success-200 rounded-xl p-3 bg-white dark:bg-white">
+                    <img src={draftSignature} alt="Chữ ký nháy" className="w-full h-44 object-contain bg-white" />
                   </div>
                   <Button
                     size="sm" variant="flat" color="danger"
@@ -240,12 +263,9 @@ export default function LoanSignPage() {
             <div className="p-4">
               {!officialSignature ? (
                 <>
-                  <div className="border-2 border-dashed border-success/30 rounded-xl bg-success/5 relative">
-                    <SignatureCanvas
-                      ref={officialSigRef}
-                      canvasProps={{ className: "w-full h-56 cursor-crosshair rounded-xl" }}
-                    />
-                    <p className="absolute bottom-2 right-3 text-xs text-default-300 pointer-events-none select-none">Ký tại đây</p>
+                  <div className="relative">
+                    <SignaturePad ref={officialSigRef} heightClass="h-56" className="rounded-xl" />
+                    <p className="absolute bottom-2 right-3 text-xs text-default-400 pointer-events-none select-none">Ký tại đây</p>
                   </div>
                   <div className="flex gap-2 mt-3">
                     <Button size="sm" variant="flat" className="flex-1" onPress={() => clearSig(officialSigRef, setOfficialSignature)}>
@@ -258,8 +278,8 @@ export default function LoanSignPage() {
                 </>
               ) : (
                 <div>
-                  <div className="border border-success-200 rounded-xl p-3">
-                    <img src={officialSignature} alt="Chữ ký chính thức" className="w-full h-44 object-contain" />
+                  <div className="border border-success-200 rounded-xl p-3 bg-white dark:bg-white">
+                    <img src={officialSignature} alt="Chữ ký chính thức" className="w-full h-44 object-contain bg-white" />
                   </div>
                   <Button
                     size="sm" variant="flat" color="danger"
@@ -278,7 +298,7 @@ export default function LoanSignPage() {
           <div className="bg-content1 rounded-2xl border border-default-200 px-4 py-3">
             <Checkbox isSelected={isAgreed} onValueChange={setIsAgreed} size="sm" color="primary">
               <span className="text-sm text-default-700">
-                Tôi đã đọc, hiểu và đồng ý với tất cả <span className="text-primary font-medium">4 hợp đồng</span> và các điều khoản liên quan
+                Tôi đã đọc, hiểu và đồng ý với tất cả <span className="text-primary font-medium">{contractTabs.length} hợp đồng</span> và các điều khoản liên quan
               </span>
             </Checkbox>
           </div>
@@ -329,7 +349,7 @@ export default function LoanSignPage() {
 
         {/* Tab bar */}
         <div className="flex gap-1.5">
-          {CONTRACT_TABS.map((t) => {
+          {contractTabs.map((t) => {
             const isActive = t.key === selectedContractType;
             return (
               <button
@@ -363,7 +383,7 @@ export default function LoanSignPage() {
                 {currentTabIndex + 1}
               </span>
               <p className="text-xs font-medium text-default-600">
-                {CONTRACT_TABS[currentTabIndex]?.label}
+                {contractTabs[currentTabIndex]?.label}
               </p>
             </div>
             <div className="p-4 flex justify-center overflow-x-auto">
@@ -396,18 +416,18 @@ export default function LoanSignPage() {
           <Button
             size="sm" variant="flat"
             isDisabled={currentTabIndex === 0}
-            onPress={() => setSelectedContractType(CONTRACT_TABS[currentTabIndex - 1].key)}
+            onPress={() => setSelectedContractType(contractTabs[currentTabIndex - 1].key)}
             startContent={<ChevronLeft className="w-3.5 h-3.5" />}
           >
             Trước
           </Button>
           <p className="text-xs text-default-400">
-            {currentTabIndex + 1} / {CONTRACT_TABS.length} hợp đồng
+            {currentTabIndex + 1} / {contractTabs.length} hợp đồng
           </p>
           <Button
             size="sm" variant="flat"
-            isDisabled={currentTabIndex === CONTRACT_TABS.length - 1}
-            onPress={() => setSelectedContractType(CONTRACT_TABS[currentTabIndex + 1].key)}
+            isDisabled={currentTabIndex === contractTabs.length - 1}
+            onPress={() => setSelectedContractType(contractTabs[currentTabIndex + 1].key)}
             endContent={<ChevronRight className="w-3.5 h-3.5" />}
           >
             Tiếp

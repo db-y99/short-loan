@@ -67,16 +67,18 @@ export function SystemEventBubble({ event }: SystemEventBubbleProps) {
   };
 
   return (
-    <div className="flex items-center justify-center py-4">
-      <div className="flex items-center gap-3 rounded-full bg-default-100 px-4 py-2 text-sm text-default-700">
+    <div className="flex w-full min-w-0 justify-center px-2 py-4">
+      <div className="flex max-w-full min-w-0 flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-2xl bg-default-100 px-4 py-2 text-sm text-default-700">
         {/* Icon */}
-        {getIcon()}
+        <span className="flex-shrink-0">{getIcon()}</span>
 
         {/* Message */}
-        <span className="font-medium">{getDisplayText()}</span>
+        <span className="min-w-0 font-medium [overflow-wrap:anywhere]">
+          {getDisplayText()}
+        </span>
 
         {/* Timestamp */}
-        <span className="text-xs text-default-500">
+        <span className="flex-shrink-0 text-xs text-default-500">
           {formatTimestamp(event.created_at)}
         </span>
       </div>

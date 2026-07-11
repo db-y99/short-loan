@@ -24,7 +24,7 @@ import {
   LOANS_TABLE_COLUMNS,
   LOAN_STATUS_LABEL,
   LOAN_STATUS_COLOR,
-  LOAN_STATUS,
+  LOAN_FILTER_STATUSES,
   LOAN_TYPES,
   LOAN_TYPE_LABEL,
 } from "@/constants/loan";
@@ -35,6 +35,7 @@ type TProps = {
   loans: TLoan[];
   onRefresh?: () => void;
   onRowClick?: (loan: TLoan) => void;
+  onCreateLoan?: () => void;
   branches?: TBranch[];
   selectedBranch?: string;
 };
@@ -43,7 +44,7 @@ const ALL_FILTER_VALUE = "all";
 
 const STATUS_OPTIONS = [
   { key: ALL_FILTER_VALUE, label: "Tất cả" },
-  ...Object.values(LOAN_STATUS).map((status) => ({
+  ...LOAN_FILTER_STATUSES.map((status) => ({
     key: status,
     label: LOAN_STATUS_LABEL[status],
   })),
@@ -58,7 +59,7 @@ const LOAN_TYPE_OPTIONS = [
 ];
 
 
-const LoansTable = ({ loans, onRefresh, onRowClick, branches = [], selectedBranch = "" }: TProps) => {
+const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [], selectedBranch = "" }: TProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -197,10 +198,10 @@ const LoansTable = ({ loans, onRefresh, onRowClick, branches = [], selectedBranc
         case "status":
           return (
             <Chip
-              color={LOAN_STATUS_COLOR[loan.status as TLoanStatus]}
+              color={LOAN_STATUS_COLOR[loan.status as TLoanStatus] ?? "default"}
               variant="flat"
             >
-              {LOAN_STATUS_LABEL[loan.status as TLoanStatus]}
+              {LOAN_STATUS_LABEL[loan.status as TLoanStatus] ?? "Không xác định"}
             </Chip>
           );
         default:
@@ -314,7 +315,7 @@ const LoansTable = ({ loans, onRefresh, onRowClick, branches = [], selectedBranc
         </Tooltip>
 
         {/* Create loan button */}
-        <CreateLoanButton />
+        {onCreateLoan && <CreateLoanButton onPress={onCreateLoan} />}
       </div>
 
       {/* Result count */}

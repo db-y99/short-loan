@@ -34,7 +34,12 @@ const PaymentPeriods = ({ loanDetails, refreshKey, onOpenPaymentHistory }: TProp
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    if (loanDetails.id && (loanDetails.status === LOAN_STATUS.DISBURSED || loanDetails.status === LOAN_STATUS.COMPLETED || loanDetails.status === LOAN_STATUS.REDEEMED) ) {
+    if (
+      loanDetails.id &&
+      (loanDetails.status === LOAN_STATUS.DISBURSED ||
+        loanDetails.status === LOAN_STATUS.REDEEMED ||
+        loanDetails.status === LOAN_STATUS.COMPLETED)
+    ) {
       fetchPaymentHistory();
     }
   }, [loanDetails.id, loanDetails.status, refreshKey]); // Thêm refreshKey vào dependencies

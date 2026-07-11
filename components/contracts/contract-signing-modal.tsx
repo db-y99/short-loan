@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import {
   Modal,
   ModalContent,
@@ -14,10 +14,15 @@ import { Checkbox } from "@heroui/checkbox";
 import { addToast } from "@heroui/toast";
 import { X, FileText, CheckCircle, Loader2, Pen, Trash2 } from "lucide-react";
 import SignatureCanvas from "react-signature-canvas";
+import SignaturePad from "@/components/signature-pad.client";
 import { AssetPledgeContractView } from "@/components/contracts/asset-pledge-contract-view.client";
 import { AssetLeaseContractView } from "@/components/contracts/asset-lease-contract-view.client";
 import { FullPaymentConfirmationView } from "@/components/contracts/full-payment-confirmation-view.client";
 import { AssetDisposalAuthorizationView } from "@/components/contracts/asset-disposal-authorization-view.client";
+import {
+  getSignPageContractTabsForCreatedTypes,
+  type TSignPageContractTabKey,
+} from "@/constants/contracts";
 
 const CONTRACT_TYPE = {
   ASSET_PLEDGE: "asset_pledge",
@@ -26,7 +31,7 @@ const CONTRACT_TYPE = {
   ASSET_DISPOSAL: "asset_disposal",
 } as const;
 
-type ContractType = typeof CONTRACT_TYPE[keyof typeof CONTRACT_TYPE];
+type ContractType = TSignPageContractTabKey;
 
 type TProps = {
   isOpen: boolean;
@@ -68,6 +73,16 @@ const ContractSigningModal = ({
       console.log({ result });
       if (result.success) {
         setContractData(result.data);
+        const createdTypes =
+          result.data.createdContractTypes ??
+          result.data.applicableContractTypes ??
+          [];
+        const tabs = getSignPageContractTabsForCreatedTypes(createdTypes);
+        if (tabs.length > 0) {
+          setSelectedContractType((current) =>
+            tabs.some((tab) => tab.key === current) ? current : tabs[0].key,
+          );
+        }
       }
     } catch (error) {
       console.error("Error fetching contract data:", error);
@@ -76,12 +91,25 @@ const ContractSigningModal = ({
     }
   };
 
-  const contractTypes = [
-    { key: CONTRACT_TYPE.ASSET_PLEDGE, label: "HĐ Cầm Cố Tài Sản" },
-    { key: CONTRACT_TYPE.ASSET_LEASE, label: "HĐ Thuê Tài Sản" },
-    { key: CONTRACT_TYPE.FULL_PAYMENT, label: "XN Đã Nhận Đủ Tiền" },
-    { key: CONTRACT_TYPE.ASSET_DISPOSAL, label: "Ủy Quyền Xử Lý TS" },
-  ];
+  const contractTypes = useMemo(() => {
+    const createdTypes =
+      contractData?.createdContractTypes ??
+      contractData?.applicableContractTypes ??
+      [];
+    if (createdTypes.length === 0) return [];
+
+    return getSignPageContractTabsForCreatedTypes(createdTypes).map((tab) => ({
+      key: tab.key,
+      label:
+        tab.key === "asset_pledge"
+          ? "HĐ Cầm Cố Tài Sản"
+          : tab.key === "asset_lease"
+            ? "HĐ Thuê Tài Sản"
+            : tab.key === "full_payment"
+              ? "XN Đã Nhận Đủ Tiền"
+              : "Ủy Quyền Xử Lý TS",
+    }));
+  }, [contractData?.createdContractTypes, contractData?.applicableContractTypes]);
 
   const handleSign = async () => {
     if (!isAgreed) {
@@ -127,43 +155,13 @@ const ContractSigningModal = ({
         return;
       }
 
-      // Step 2: Generate PDFs (with timeout protection)
-      try {
-        const pdfResponse = await Promise.race([
-          fetch(`/api/loans/${loanId}/generate-signed-contracts`, {
-            method: "POST",
-          }),
-          new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('timeout')), 50000) // 50s timeout
-          )
-        ]) as Response;
+      addToast({
+        title: "Hoàn tất!",
+        description: signResult.message || "Hợp đồng đã được ký và tạo PDF thành công",
+        color: "success",
+      });
 
-        const pdfResult = await pdfResponse.json();
-        
-        if (pdfResult.success) {
-          addToast({
-            title: "Hoàn tất!",
-            description: "Hợp đồng PDF đã được tạo thành công",
-            color: "success",
-          });
-        } else {
-          addToast({
-            title: "Ký hợp đồng thành công",
-            description: "PDF đang được tạo, vui lòng đợi giây lát",
-            color: "warning",
-          });
-        }
-      } catch (error) {
-        // Timeout or error - PDF is still generating in background
-        console.error("PDF generation timeout or error:", error);
-        addToast({
-          title: "Ký hợp đồng thành công",
-          description: "PDF đang được tạo trong nền, vui lòng đợi",
-          color: "success",
-        });
-      }
-      
-      onSign(); // Close modal and trigger parent refresh
+      onSign();
     } catch (error) {
       console.error("Error signing contract:", error);
       addToast({
@@ -395,14 +393,7 @@ const ContractSigningModal = ({
                     </div>
                     {!draftSignature ? (
                       <>
-                        <div className="border-2 border-dashed border-default-300 rounded-lg bg-default-50">
-                          <SignatureCanvas
-                            ref={draftSigRef}
-                            canvasProps={{
-                              className: "w-full h-48 cursor-crosshair",
-                            }}
-                          />
-                        </div>
+                        <SignaturePad ref={draftSigRef} />
                         <div className="flex gap-2 mt-2">
                           <Button
                             size="sm"
@@ -423,8 +414,8 @@ const ContractSigningModal = ({
                         </div>
                       </>
                     ) : (
-                      <div className="border border-default-200 rounded-lg p-2 bg-white">
-                        <img src={draftSignature} alt="Draft signature" className="w-full h-48 object-contain" />
+                      <div className="border border-default-200 rounded-lg p-2 bg-white dark:bg-white">
+                        <img src={draftSignature} alt="Draft signature" className="w-full h-48 object-contain bg-white" />
                       </div>
                     )}
                   </CardBody>
@@ -452,14 +443,7 @@ const ContractSigningModal = ({
                     </div>
                     {!officialSignature ? (
                       <>
-                        <div className="border-2 border-dashed border-success-300 rounded-lg bg-success-50">
-                          <SignatureCanvas
-                            ref={officialSigRef}
-                            canvasProps={{
-                              className: "w-full h-48 cursor-crosshair",
-                            }}
-                          />
-                        </div>
+                        <SignaturePad ref={officialSigRef} />
                         <div className="flex gap-2 mt-2">
                           <Button
                             size="sm"
@@ -480,8 +464,8 @@ const ContractSigningModal = ({
                         </div>
                       </>
                     ) : (
-                      <div className="border border-success-200 rounded-lg p-2 bg-white">
-                        <img src={officialSignature} alt="Official signature" className="w-full h-48 object-contain" />
+                      <div className="border border-default-200 rounded-lg p-2 bg-white dark:bg-white">
+                        <img src={officialSignature} alt="Official signature" className="w-full h-48 object-contain bg-white" />
                       </div>
                     )}
                   </CardBody>

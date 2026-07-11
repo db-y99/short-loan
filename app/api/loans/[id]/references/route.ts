@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { LOAN_STATUS } from "@/constants/loan";
 
 /**
  * POST /api/loans/[id]/references
@@ -43,7 +44,7 @@ export async function POST(
     // Check if loan exists
     const { data: loan, error: loanError } = await supabase
       .from("loans")
-      .select("id")
+      .select("id, status")
       .eq("id", loanId)
       .single();
 
@@ -51,6 +52,13 @@ export async function POST(
       return NextResponse.json(
         { success: false, error: "Không tìm thấy khoản vay" },
         { status: 404 }
+      );
+    }
+
+    if (loan.status !== LOAN_STATUS.PENDING) {
+      return NextResponse.json(
+        { success: false, error: "Chỉ được thêm tham chiếu khi khoản vay ở trạng thái chờ duyệt" },
+        { status: 400 }
       );
     }
 

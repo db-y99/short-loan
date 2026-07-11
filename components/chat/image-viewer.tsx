@@ -58,19 +58,16 @@ export function ImageViewer({ imageUrl, isOpen, onClose }: ImageViewerProps) {
     setZoom((prev) => Math.max(prev - 0.25, 0.5));
   };
 
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90"
-      onClick={handleBackdropClick}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <button
+        type="button"
+        className="absolute inset-0 bg-black bg-opacity-90"
+        onClick={onClose}
+        aria-label="Đóng xem ảnh"
+      />
       {/* Controls */}
-      <div className="absolute top-4 right-4 flex items-center gap-2">
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
         {/* Zoom controls */}
         <button
           onClick={handleZoomOut}
@@ -101,7 +98,7 @@ export function ImageViewer({ imageUrl, isOpen, onClose }: ImageViewerProps) {
       </div>
 
       {/* Image */}
-      <div className="relative flex items-center justify-center">
+      <div className="relative z-10 flex items-center justify-center">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
@@ -118,7 +115,7 @@ export function ImageViewer({ imageUrl, isOpen, onClose }: ImageViewerProps) {
       </div>
 
       {/* Helper text */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-sm text-white text-opacity-70">
+      <div className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 text-sm text-white text-opacity-70">
         Click bên ngoài hoặc nhấn ESC để đóng
       </div>
     </div>

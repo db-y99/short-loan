@@ -19,14 +19,25 @@ export async function POST(
 
     const supabase = await createSupabaseServerClient();
 
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
+
     // Insert message into loan_activity_logs
     const { data, error } = await supabase
       .from("loan_activity_logs")
       .insert({
         loan_id: loanId,
         type: "message",
-        user_id: userId,
-        user_name: userName,
+        user_id: user.id,
+        user_name: user.email || userName || "User",
         content: content.trim(),
       })
       .select()

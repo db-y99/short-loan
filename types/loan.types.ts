@@ -5,8 +5,8 @@ export type TLoanStatus =
   | "disbursed"    // Đang cầm
   | "redeemed"     // Đã chuộc
   | "rejected"     // Từ chối
-  | "completed"    // Hoàn thành (legacy)
-  | "liquidated";  // Thanh lý (legacy)
+  | "completed"    // Hoàn thành (legacy - chỉ dữ liệu cũ)
+  | "liquidated"; // Thanh lý (legacy - chỉ dữ liệu cũ)
 
 /** Loan row từ DB (loans + customer full_name) - dùng cho danh sách */
 export type TLoan = {
@@ -114,6 +114,12 @@ export type TLoanDetails = {
   appraisalFee?: number;
 
   references: TReference[];
+
+  /** Key gốc của asset_type (motorbike, car, ...) — dùng khi prefill form tạo đơn mới */
+  assetTypeKey?: string;
+
+  /** ID chi nhánh — dùng khi prefill form tạo đơn mới (admin) */
+  branchId?: string | null;
 
   asset: {
     type: string;
@@ -253,4 +259,8 @@ export type TUploadFiles = {
   name?: string;
   provider: string;
   file_id: string;
+};
+
+export type TReuseLoanOptions = {
+  keepAssetImages: boolean;
 };

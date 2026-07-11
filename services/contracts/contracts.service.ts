@@ -10,7 +10,11 @@ import {
   type TContractFile,
   type TContractType,
 } from "@/types/contract.types";
-import { GENERATABLE_CONTRACT_TYPES } from "@/constants/contracts";
+import {
+  GENERATABLE_CONTRACT_TYPES,
+  getGeneratableContractTypesForLoan,
+} from "@/constants/contracts";
+import { getUnsignedContractTypesFromFiles } from "@/lib/contract-utils";
 import {
   buildAssetPledgeContractData,
   buildAssetLeaseContractData,
@@ -25,6 +29,25 @@ type TContractDataItem = {
   data: TContractData;
 };
 
+async function cleanupDriveFiles(fileIds: string[]): Promise<void> {
+  if (fileIds.length === 0) return;
+  const { deleteManyFromDrive } = await import("@/lib/google-drive");
+  await deleteManyFromDrive(fileIds).catch((err) => {
+    console.error("[CONTRACT_DRIVE_CLEANUP_ERROR]", err);
+  });
+}
+
+async function rollbackInsertedContractRows(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  rowIds: string[],
+  driveFileIds: string[],
+): Promise<void> {
+  if (rowIds.length > 0) {
+    await supabase.from("loan_files").delete().in("id", rowIds);
+  }
+  await cleanupDriveFiles(driveFileIds);
+}
+
 function buildAllContractsData(
   loan: Awaited<
     ReturnType<
@@ -36,7 +59,11 @@ function buildAllContractsData(
 ): TContractDataItem[] {
   if (!loan) return [];
 
-  return [
+  const allowedTypes = new Set(
+    getGeneratableContractTypesForLoan(loan.loanType),
+  );
+
+  const allContracts: TContractDataItem[] = [
     {
       type: CONTRACT_TYPE.ASSET_PLEDGE,
       name: "HĐ Cầm Cố Tài Sản",
@@ -62,6 +89,8 @@ function buildAllContractsData(
       data: buildAssetDisposalAuthorizationData(loan, folderId),
     },
   ];
+
+  return allContracts.filter((contract) => allowedTypes.has(contract.type));
 }
 
 /**
@@ -132,7 +161,18 @@ export async function generateContractsService(
       };
     }
 
-    const selectedSet = new Set(contractTypes);
+    const allowedTypes = getGeneratableContractTypesForLoan(loan.loanType);
+    const selectedSet = new Set(
+      contractTypes.filter((type) => allowedTypes.includes(type)),
+    );
+
+    if (selectedSet.size === 0) {
+      return {
+        success: false,
+        error: "Không có loại hợp đồng hợp lệ được chọn cho gói vay này",
+      };
+    }
+
     const contractsData = buildAllContractsData(
       loan,
       folderId,
@@ -182,6 +222,14 @@ export async function generateContractsService(
       };
     }
 
+    if (validContracts.length !== contractsData.length) {
+      return {
+        success: false,
+        error:
+          "Một hoặc nhiều hợp đồng tạo PDF thất bại. Hệ thống đã dừng để tránh dữ liệu không đồng bộ.",
+      };
+    }
+
     // BƯỚC 2: Upload tất cả file lên Drive song song
     console.time("Upload to Drive");
     const { uploadToDrive } = await import("@/lib/google-drive");
@@ -214,47 +262,93 @@ export async function generateContractsService(
       };
     }
 
-    // BƯỚC 3: Insert tất cả records vào DB song song
-    console.time("Insert to DB");
-
-    const dbPromises = successfulUploads.map(async (contract) => {
-      const { data, error } = await supabase
-        .from("loan_files")
-        .insert({
-          loan_id: loanId,
-          name: contract.name,
-          type: contract.type,
-          provider: "google_drive",
-          file_id: contract.fileId!,
-        })
-        .select("id, name, type, file_id, provider")
-        .single();
-
-      if (error || !data) {
-        console.error(`[DB_INSERT_ERROR] ${contract.name}:`, error);
-        return null;
-      }
-
-      return {
-        id: data.id,
-        name: data.name,
-        type: data.type,
-        fileId: data.file_id,
-        provider: data.provider,
-      };
-    });
-
-    const dbResults = await Promise.all(dbPromises);
-    console.timeEnd("Insert to DB");
-
-    const uploadedContracts = dbResults.filter((contract) => contract !== null) as TContractFile[];
-
-    if (uploadedContracts.length === 0) {
+    if (successfulUploads.length !== validContracts.length) {
+      await cleanupDriveFiles(
+        successfulUploads
+          .map((contract) => contract.fileId)
+          .filter((id): id is string => Boolean(id)),
+      );
       return {
         success: false,
-        error: "Không thể tạo hợp đồng. Vui lòng thử lại.",
+        error:
+          "Một hoặc nhiều hợp đồng upload thất bại. Hệ thống đã dừng để tránh dữ liệu không đồng bộ.",
       };
     }
+
+    const typesToReplace = successfulUploads.map((contract) => contract.type);
+    const { data: existingRows, error: existingRowsError } = await supabase
+      .from("loan_files")
+      .select("id")
+      .eq("loan_id", loanId)
+      .in("type", typesToReplace);
+
+    if (existingRowsError) {
+      console.error("[FETCH_OLD_CONTRACTS_ERROR]", existingRowsError);
+      return {
+        success: false,
+        error:
+          "Không thể kiểm tra hợp đồng cũ trước khi thay thế. Vui lòng thử lại.",
+      };
+    }
+
+    // BƯỚC 3: Insert records mới trước để tránh mất dữ liệu nếu insert thất bại
+    console.time("Insert to DB");
+    const rowsToInsert = successfulUploads.map((contract) => ({
+      loan_id: loanId,
+      name: contract.name,
+      type: contract.type,
+      provider: "google_drive" as const,
+      file_id: contract.fileId!,
+    }));
+
+    const { data: insertedRows, error: insertError } = await supabase
+      .from("loan_files")
+      .insert(rowsToInsert)
+      .select("id, name, type, file_id, provider");
+
+    console.timeEnd("Insert to DB");
+
+    if (insertError || !insertedRows || insertedRows.length !== rowsToInsert.length) {
+      console.error("[DB_BULK_INSERT_ERROR]", insertError);
+      await cleanupDriveFiles(
+        successfulUploads.map((contract) => contract.fileId!),
+      );
+      return {
+        success: false,
+        error:
+          "Không thể lưu đầy đủ hợp đồng mới vào hệ thống. Dữ liệu cũ được giữ nguyên.",
+      };
+    }
+
+    const oldIdsToDelete = (existingRows ?? []).map((row) => row.id);
+    const newDriveFileIds = successfulUploads.map((contract) => contract.fileId!);
+    const newRowIds = insertedRows.map((row) => row.id);
+
+    // BƯỚC 4: Xóa đúng bản ghi cũ đã snapshot trước khi insert mới
+    if (oldIdsToDelete.length > 0) {
+      const { error: cleanupError } = await supabase
+        .from("loan_files")
+        .delete()
+        .in("id", oldIdsToDelete);
+
+      if (cleanupError) {
+        console.error("[CLEANUP_OLD_CONTRACTS_ERROR]", cleanupError);
+        await rollbackInsertedContractRows(supabase, newRowIds, newDriveFileIds);
+        return {
+          success: false,
+          error:
+            "Không thể hoàn tất thay thế hợp đồng. Dữ liệu cũ được giữ nguyên.",
+        };
+      }
+    }
+
+    const uploadedContracts: TContractFile[] = insertedRows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      type: row.type as TContractType,
+      fileId: row.file_id,
+      provider: row.provider,
+    }));
 
     // Cập nhật contract_version trong metadata
     const { data: currentLoan } = await supabase
@@ -268,10 +362,19 @@ export async function generateContractsService(
       contract_version: newVersion,
     };
 
-    await supabase
+    const { error: metadataUpdateError } = await supabase
       .from("loans")
       .update({ metadata: updatedMetadata })
       .eq("id", loanId);
+
+    if (metadataUpdateError) {
+      console.error("[UPDATE_CONTRACT_VERSION_ERROR]", metadataUpdateError);
+      return {
+        success: false,
+        error:
+          "Đã tạo hợp đồng nhưng không thể cập nhật phiên bản hợp đồng. Vui lòng thử lại.",
+      };
+    }
 
     return {
       success: true,
@@ -353,7 +456,9 @@ export async function regenerateContractsService(
     // Kiểm tra loan tồn tại và lấy trạng thái hiện tại
     const { data: currentLoan } = await supabase
       .from("loans")
-      .select("id, status, code")
+      .select(
+        "id, status, code, loan_type, signed_at, is_signed, draft_signature_file_id, official_signature_file_id",
+      )
       .eq("id", loanId)
       .single();
 
@@ -373,40 +478,32 @@ export async function regenerateContractsService(
       };
     }
 
-    // Xóa hợp đồng cũ theo loại đã chọn (giữ file trên Drive)
-    console.log(
-      `[REGENERATE_CONTRACTS] Deleting old contracts for types:`,
-      contractTypes.join(", "),
-    );
-    const { error: deleteError } = await supabase
-      .from("loan_files")
-      .delete()
-      .eq("loan_id", loanId)
-      .in("type", contractTypes);
+    const statusSnapshot =
+      currentLoan.status === "signed"
+        ? {
+            status: currentLoan.status,
+            signed_at: currentLoan.signed_at,
+            is_signed: currentLoan.is_signed ?? true,
+            draft_signature_file_id: currentLoan.draft_signature_file_id,
+            official_signature_file_id: currentLoan.official_signature_file_id,
+          }
+        : null;
 
-    if (deleteError) {
-      console.error("[DELETE_OLD_CONTRACTS_ERROR]", deleteError);
-      return {
-        success: false,
-        error: "Không thể xóa hợp đồng cũ",
-      };
-    }
-
-    const regeneratingAllTypes =
-      contractTypes.length === GENERATABLE_CONTRACT_TYPES.length;
-
-    // Chỉ reset trạng thái khi tạo lại toàn bộ hợp đồng
-    if (regeneratingAllTypes && currentLoan.status === "signed") {
+    // Khoản vay đã ký vẫn có thể tạo lại các loại hợp đồng được chọn.
+    // Reset chữ ký để generateContractsService có thể tạo lại ở trạng thái approved.
+    if (currentLoan.status === "signed") {
       console.log(`[REGENERATE_CONTRACTS] Resetting loan status to approved...`);
       const { error: updateError } = await supabase
         .from("loans")
         .update({
           status: "approved",
           signed_at: null,
+          is_signed: false,
           draft_signature_file_id: null,
           official_signature_file_id: null,
         })
-        .eq("id", loanId);
+        .eq("id", loanId)
+        .eq("status", "signed");
 
       if (updateError) {
         console.error("[RESET_LOAN_STATUS_ERROR]", updateError);
@@ -417,10 +514,23 @@ export async function regenerateContractsService(
       }
     }
 
-    console.log(`[REGENERATE_CONTRACTS] Status reset successful. Generating new contracts...`);
+    console.log(`[REGENERATE_CONTRACTS] Generating new contracts...`);
 
-    // Tạo hợp đồng mới (version sẽ tự động tăng trong generateContractsService)
-    return await generateContractsService(loanId, contractTypes);
+    const result = await generateContractsService(loanId, contractTypes);
+
+    if (!result.success && statusSnapshot) {
+      const { error: rollbackError } = await supabase
+        .from("loans")
+        .update(statusSnapshot)
+        .eq("id", loanId)
+        .eq("status", "approved");
+
+      if (rollbackError) {
+        console.error("[REGENERATE_STATUS_ROLLBACK_ERROR]", rollbackError);
+      }
+    }
+
+    return result;
   } catch (error) {
     console.error("[REGENERATE_CONTRACTS_ERROR]", error);
     return {
@@ -446,28 +556,19 @@ export async function generateSignedContractsService(
     console.log(`[GENERATE_SIGNED_CONTRACTS] Starting for loan: ${loanId}`);
     const supabase = await createSupabaseServerClient();
 
-    // XÓA TẤT CẢ HỢP ĐỒNG CŨ TRƯỚC KHI TẠO MỚI
-    console.log(`[GENERATE_SIGNED_CONTRACTS] Deleting old contracts...`);
-    
-    // Lấy loan details và xóa contracts song song
+    // Lấy loan details và metadata trước. Chỉ thay thế dữ liệu cũ sau khi đã tạo mới thành công.
     const { getLoanDetailsService } = await import(
       "@/services/loans/loans.service"
     );
     
-    const [loan, deleteResult, loanData] = await Promise.all([
+    const [loan, loanData] = await Promise.all([
       getLoanDetailsService(loanId),
-      supabase.from("loan_files").delete().eq("loan_id", loanId),
       supabase
         .from("loans")
         .select("draft_signature_file_id, official_signature_file_id, metadata")
         .eq("id", loanId)
         .single(),
     ]);
-
-    if (deleteResult.error) {
-      console.error(`[GENERATE_SIGNED_CONTRACTS] Error deleting old contracts:`, deleteResult.error);
-      // Continue anyway, don't fail the process
-    }
 
     if (!loan) {
       console.error(`[GENERATE_SIGNED_CONTRACTS] Loan not found: ${loanId}`);
@@ -490,6 +591,24 @@ export async function generateSignedContractsService(
         error: "Chưa có chữ ký",
       };
     }
+
+    const { data: loanFiles } = await supabase
+      .from("loan_files")
+      .select("type, name")
+      .eq("loan_id", loanId);
+
+    const createdContractTypes = getUnsignedContractTypesFromFiles(
+      loanFiles ?? [],
+    ) as TContractType[];
+
+    if (createdContractTypes.length === 0) {
+      return {
+        success: false,
+        error: "Chưa có hợp đồng để ký",
+      };
+    }
+
+    const createdSet = new Set(createdContractTypes);
 
     // Fetch signatures and convert to base64 for PDF embedding
     let draftSignatureBase64: string | null = null;
@@ -518,49 +637,47 @@ export async function generateSignedContractsService(
     const newVersion = 1;
     const versionSuffix = ""; // No suffix for version 1
 
-    // Build contract data with signatures
-    const contractsData = [
-      {
-        type: CONTRACT_TYPE.ASSET_PLEDGE,
+    const signedContractMeta: Partial<
+      Record<TContractType, { name: string; fileName: string }>
+    > = {
+      [CONTRACT_TYPE.ASSET_PLEDGE]: {
         name: "HĐ Cầm Cố Tài Sản (Đã ký)",
         fileName: `HD-CamCo-DaKy-${loan.code}${versionSuffix}.pdf`,
-        data: {
-          ...buildAssetPledgeContractData(loan, folderId),
-          DRAFT_SIGNATURE: draftSignatureBase64,
-          OFFICIAL_SIGNATURE: officialSignatureBase64,
-        },
       },
-      {
-        type: CONTRACT_TYPE.ASSET_LEASE,
+      [CONTRACT_TYPE.ASSET_LEASE]: {
         name: "HĐ Thuê Tài Sản (Đã ký)",
         fileName: `HD-Thue-DaKy-${loan.code}${versionSuffix}.pdf`,
-        data: {
-          ...buildAssetLeaseContractData(loan, folderId),
-          DRAFT_SIGNATURE: draftSignatureBase64,
-          OFFICIAL_SIGNATURE: officialSignatureBase64,
-        },
       },
-      {
-        type: CONTRACT_TYPE.FULL_PAYMENT,
+      [CONTRACT_TYPE.FULL_PAYMENT]: {
         name: "XN Đã Nhận Đủ Tiền (Đã ký)",
         fileName: `XN-NhanTien-DaKy-${loan.code}${versionSuffix}.pdf`,
-        data: {
-          ...buildFullPaymentConfirmationData(loan, folderId),
-          DRAFT_SIGNATURE: draftSignatureBase64,
-          OFFICIAL_SIGNATURE: officialSignatureBase64,
-        },
       },
-      {
-        type: CONTRACT_TYPE.ASSET_DISPOSAL,
+      [CONTRACT_TYPE.ASSET_DISPOSAL]: {
         name: "UQ Xử Lý Tài Sản (Đã ký)",
         fileName: `UQ-XuLy-DaKy-${loan.code}${versionSuffix}.pdf`,
-        data: {
-          ...buildAssetDisposalAuthorizationData(loan, folderId),
-          DRAFT_SIGNATURE: draftSignatureBase64,
-          OFFICIAL_SIGNATURE: officialSignatureBase64,
-        },
       },
-    ];
+    };
+
+    const contractsData = buildAllContractsData(loan, folderId, versionSuffix)
+      .filter((contract) => createdSet.has(contract.type))
+      .map((contract) => {
+        const meta = signedContractMeta[contract.type];
+        if (!meta) return null;
+
+        return {
+          type: contract.type,
+          name: meta.name,
+          fileName: meta.fileName,
+          data: {
+            ...contract.data,
+            DRAFT_SIGNATURE: draftSignatureBase64,
+            OFFICIAL_SIGNATURE: officialSignatureBase64,
+          },
+        };
+      })
+      .filter((contract): contract is NonNullable<typeof contract> =>
+        contract !== null,
+      );
 
     // Generate all PDFs in parallel
     console.time("Generate Signed PDFs");
@@ -585,6 +702,14 @@ export async function generateSignedContractsService(
       return {
         success: false,
         error: "Không thể tạo PDF có chữ ký",
+      };
+    }
+
+    if (validContracts.length !== contractsData.length) {
+      return {
+        success: false,
+        error:
+          "Một hoặc nhiều hợp đồng ký tạo PDF thất bại. Hệ thống đã dừng để tránh dữ liệu không đồng bộ.",
       };
     }
 
@@ -620,46 +745,92 @@ export async function generateSignedContractsService(
       };
     }
 
-    // Insert all records to DB in parallel
-    console.time("Insert Signed PDFs to DB");
-    const dbPromises = successfulUploads.map(async (contract) => {
-      const { data, error } = await supabase
-        .from("loan_files")
-        .insert({
-          loan_id: loanId,
-          name: contract.name,
-          type: contract.type,
-          provider: "google_drive",
-          file_id: contract.fileId!,
-        })
-        .select("id, name, type, file_id, provider")
-        .single();
-
-      if (error || !data) {
-        console.error(`[SIGNED_DB_INSERT_ERROR] ${contract.name}:`, error);
-        return null;
-      }
-
-      return {
-        id: data.id,
-        name: data.name,
-        type: data.type,
-        fileId: data.file_id,
-        provider: data.provider,
-      };
-    });
-
-    const dbResults = await Promise.all(dbPromises);
-    console.timeEnd("Insert Signed PDFs to DB");
-
-    const uploadedContracts = dbResults.filter((contract) => contract !== null) as TContractFile[];
-
-    if (uploadedContracts.length === 0) {
+    if (successfulUploads.length !== validContracts.length) {
+      await cleanupDriveFiles(
+        successfulUploads
+          .map((contract) => contract.fileId)
+          .filter((id): id is string => Boolean(id)),
+      );
       return {
         success: false,
-        error: "Không thể lưu hợp đồng đã ký vào DB",
+        error:
+          "Một hoặc nhiều hợp đồng ký upload thất bại. Hệ thống đã dừng để tránh dữ liệu không đồng bộ.",
       };
     }
+
+    const signedTypes = successfulUploads.map((contract) => contract.type);
+    const { data: existingRows, error: existingRowsError } = await supabase
+      .from("loan_files")
+      .select("id")
+      .eq("loan_id", loanId)
+      .in("type", signedTypes);
+
+    if (existingRowsError) {
+      console.error("[FETCH_OLD_SIGNED_CONTRACTS_ERROR]", existingRowsError);
+      return {
+        success: false,
+        error:
+          "Không thể kiểm tra hợp đồng đã ký cũ trước khi thay thế. Vui lòng thử lại.",
+      };
+    }
+
+    // Insert tất cả records mới trước
+    console.time("Insert Signed PDFs to DB");
+    const rowsToInsert = successfulUploads.map((contract) => ({
+      loan_id: loanId,
+      name: contract.name,
+      type: contract.type,
+      provider: "google_drive" as const,
+      file_id: contract.fileId!,
+    }));
+
+    const { data: insertedRows, error: insertError } = await supabase
+      .from("loan_files")
+      .insert(rowsToInsert)
+      .select("id, name, type, file_id, provider");
+    console.timeEnd("Insert Signed PDFs to DB");
+
+    if (insertError || !insertedRows || insertedRows.length !== rowsToInsert.length) {
+      console.error("[SIGNED_DB_BULK_INSERT_ERROR]", insertError);
+      await cleanupDriveFiles(
+        successfulUploads.map((contract) => contract.fileId!),
+      );
+      return {
+        success: false,
+        error:
+          "Không thể lưu đầy đủ hợp đồng ký mới vào hệ thống. Dữ liệu cũ được giữ nguyên.",
+      };
+    }
+
+    // Xóa đúng hợp đồng cũ cùng type sau khi insert mới thành công
+    const oldIdsToDelete = (existingRows ?? []).map((row) => row.id);
+    const newDriveFileIds = successfulUploads.map((contract) => contract.fileId!);
+    const newRowIds = insertedRows.map((row) => row.id);
+
+    if (oldIdsToDelete.length > 0) {
+      const { error: cleanupError } = await supabase
+        .from("loan_files")
+        .delete()
+        .in("id", oldIdsToDelete);
+
+      if (cleanupError) {
+        console.error("[SIGNED_CLEANUP_OLD_CONTRACTS_ERROR]", cleanupError);
+        await rollbackInsertedContractRows(supabase, newRowIds, newDriveFileIds);
+        return {
+          success: false,
+          error:
+            "Không thể hoàn tất thay thế hợp đồng đã ký. Dữ liệu cũ được giữ nguyên.",
+        };
+      }
+    }
+
+    const uploadedContracts: TContractFile[] = insertedRows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      type: row.type as TContractType,
+      fileId: row.file_id,
+      provider: row.provider,
+    }));
 
     // Update signed_contract_version in metadata (always 1 since we delete old ones)
     const updatedMetadata = {
@@ -667,10 +838,19 @@ export async function generateSignedContractsService(
       signed_contract_version: newVersion,
     };
 
-    await supabase
+    const { error: metadataUpdateError } = await supabase
       .from("loans")
       .update({ metadata: updatedMetadata })
       .eq("id", loanId);
+
+    if (metadataUpdateError) {
+      console.error("[UPDATE_SIGNED_CONTRACT_VERSION_ERROR]", metadataUpdateError);
+      return {
+        success: false,
+        error:
+          "Đã tạo hợp đồng ký nhưng không thể cập nhật phiên bản. Vui lòng thử lại.",
+      };
+    }
 
     console.log(`[GENERATE_SIGNED_CONTRACTS] Successfully created ${uploadedContracts.length} signed PDFs (replaced old contracts)`);
 

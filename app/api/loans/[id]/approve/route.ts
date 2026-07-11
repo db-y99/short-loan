@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LOAN_STATUS } from "@/constants/loan";
+import { isRpcNotFoundError, parseRpcResult } from "@/lib/supabase/rpc-result";
 
 /**
  * POST /api/loans/[id]/approve
@@ -14,41 +15,71 @@ export async function POST(
     const supabase = await createSupabaseServerClient();
     const { id: loanId } = await params;
 
-    // Kiểm tra loan tồn tại và đang ở trạng thái pending
-    const { data: loan, error: fetchError } = await supabase
-      .from("loans")
-      .select("id, status")
-      .eq("id", loanId)
-      .single();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-    if (fetchError || !loan) {
+    if (!user) {
       return NextResponse.json(
-        { success: false, error: "Không tìm thấy khoản vay" },
-        { status: 404 }
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
       );
     }
 
-    if (loan.status !== LOAN_STATUS.PENDING) {
+    const { data: rpcResult, error: rpcError } = await supabase.rpc(
+      "approve_loan",
+      { p_loan_id: loanId }
+    );
+
+    if (!rpcError && rpcResult) {
+      const result = parseRpcResult(rpcResult);
+      if (result.success) {
+        return NextResponse.json({
+          success: true,
+          message: "Duyệt khoản vay thành công",
+        });
+      }
+      const status = result.error?.includes("chờ duyệt") ? 400 : 409;
       return NextResponse.json(
-        { success: false, error: "Khoản vay không ở trạng thái chờ duyệt" },
-        { status: 400 }
+        { success: false, error: result.error ?? "Không thể duyệt khoản vay" },
+        { status }
       );
     }
 
-    // Cập nhật trạng thái sang approved
-    const { error: updateError } = await supabase
+    if (!isRpcNotFoundError(rpcError)) {
+      console.error("[APPROVE_LOAN_RPC_ERROR]", rpcError);
+      return NextResponse.json(
+        { success: false, error: "Lỗi khi duyệt khoản vay" },
+        { status: 500 }
+      );
+    }
+
+    // Fallback: optimistic lock khi RPC chưa deploy
+    const { data: updatedLoans, error: updateError } = await supabase
       .from("loans")
       .update({
         status: LOAN_STATUS.APPROVED,
         approved_at: new Date().toISOString(),
       })
-      .eq("id", loanId);
+      .eq("id", loanId)
+      .eq("status", LOAN_STATUS.PENDING)
+      .select("id");
 
     if (updateError) {
-      console.error("Error updating loan status:", updateError);
+      console.error("[APPROVE_LOAN_UPDATE_ERROR]", updateError);
       return NextResponse.json(
         { success: false, error: "Lỗi khi cập nhật trạng thái" },
         { status: 500 }
+      );
+    }
+
+    if (!updatedLoans || updatedLoans.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Khoản vay không ở trạng thái chờ duyệt hoặc đã được xử lý",
+        },
+        { status: 409 }
       );
     }
 
@@ -57,7 +88,7 @@ export async function POST(
       message: "Duyệt khoản vay thành công",
     });
   } catch (error) {
-    console.error("Error approving loan:", error);
+    console.error("[APPROVE_LOAN_ERROR]", error);
     return NextResponse.json(
       { success: false, error: "Lỗi server" },
       { status: 500 }

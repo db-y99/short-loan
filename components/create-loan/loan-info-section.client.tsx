@@ -18,6 +18,7 @@ import LoanPreviewSection from "./loan-preview-section.client";
 type TProps = {
   form: TCreateLoanForm;
   onChange: (field: keyof TCreateLoanForm, value: string) => void;
+  fieldErrors?: Record<string, string>;
 };
 
 const ASSET_TYPE_OPTIONS = Object.values(ASSET_TYPES).map((type) => ({
@@ -33,7 +34,7 @@ const LOAN_TYPE_OPTIONS = Object.values(LOAN_TYPES).map((type) => ({
 const VEHICLE_TYPES: readonly string[] = [ASSET_TYPES.MOTORBIKE, ASSET_TYPES.CAR];
 const DEVICE_TYPES: readonly string[] = [ASSET_TYPES.PHONE, ASSET_TYPES.LAPTOP];
 
-const LoanInfoSection = ({ form, onChange }: TProps) => {
+const LoanInfoSection = ({ form, onChange, fieldErrors = {} }: TProps) => {
   const isVehicle = VEHICLE_TYPES.includes(form.asset_type);
   const isDevice = DEVICE_TYPES.includes(form.asset_type);
 
@@ -48,6 +49,8 @@ const LoanInfoSection = ({ form, onChange }: TProps) => {
           label="Loại tài sản"
           placeholder="Chọn loại tài sản"
           selectedKeys={form.asset_type ? [form.asset_type] : []}
+          isInvalid={!!fieldErrors.asset_type}
+          errorMessage={fieldErrors.asset_type}
           onChange={(e) => onChange("asset_type", e.target.value)}
         >
           {ASSET_TYPE_OPTIONS.map((option) => (
@@ -60,6 +63,8 @@ const LoanInfoSection = ({ form, onChange }: TProps) => {
           label="Tên tài sản"
           placeholder="Honda Wave RSX 2024"
           value={form.asset_name}
+          isInvalid={!!fieldErrors.asset_name}
+          errorMessage={fieldErrors.asset_name}
           onValueChange={(v) => onChange("asset_name", v)}
         />
 
@@ -104,6 +109,8 @@ const LoanInfoSection = ({ form, onChange }: TProps) => {
           label="Số tiền vay"
           placeholder="5.000.000"
           value={form.loan_amount}
+          isInvalid={!!fieldErrors.loan_amount}
+          errorMessage={fieldErrors.loan_amount}
           onValueChange={(v) => onChange("loan_amount", formatNumberInput(v))}
         />
 
@@ -112,6 +119,8 @@ const LoanInfoSection = ({ form, onChange }: TProps) => {
           label="Hình thức"
           placeholder="Chọn gói vay"
           selectedKeys={form.loan_type ? [form.loan_type] : []}
+          isInvalid={!!fieldErrors.loan_type}
+          errorMessage={fieldErrors.loan_type}
           onChange={(e) => onChange("loan_type", e.target.value)}
         >
           {LOAN_TYPE_OPTIONS.map((option) => (

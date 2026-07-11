@@ -269,17 +269,15 @@ export default function LoginForm() {
                       </p>
 
                       <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-2">
-                            Nhập mã OTP (6 số)
-                          </label>
-                          <OtpInput
-                            value={otpCode}
-                            onChange={setOtpCode}
-                            onComplete={handleVerifyOtp}
-                            disabled={isPending}
-                          />
-                        </div>
+                        <p className="block text-sm font-medium">
+                          Nhập mã OTP (6 số)
+                        </p>
+                        <OtpInput
+                          value={otpCode}
+                          onChange={setOtpCode}
+                          onComplete={handleVerifyOtp}
+                          disabled={isPending}
+                        />
 
                         {otpSentTime && (
                           <OtpExpiryTimer

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { LOAN_STATUS } from "@/constants/loan";
 
 /**
  * PATCH /api/loans/[id]/bank
@@ -51,7 +52,7 @@ export async function PATCH(
       );
     }
 
-    // Update loan bank information
+    // Update loan bank information (chỉ khi chờ duyệt)
     const { data, error } = await supabase
       .from("loans")
       .update({
@@ -60,8 +61,19 @@ export async function PATCH(
         bank_account_number: bank_account_number.trim(),
       })
       .eq("id", loanId)
+      .eq("status", LOAN_STATUS.PENDING)
       .select()
       .single();
+
+    if (error?.code === "PGRST116") {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Chỉ được sửa thông tin ngân hàng khi khoản vay ở trạng thái chờ duyệt",
+        },
+        { status: 400 },
+      );
+    }
 
     if (error) {
       console.error("[UPDATE_BANK_ERROR]", error);

@@ -7,9 +7,9 @@ import {
   ModalFooter,
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
-import { AlertCircle, MessageSquare, ShoppingCart, CheckCircle, DollarSign, Loader2, UserCog } from "lucide-react";
+import { AlertCircle, MessageSquare, ShoppingCart, CheckCircle, DollarSign, Loader2, UserCog, RotateCcw, Copy, XCircle } from "lucide-react";
 import { addToast } from "@heroui/toast";
-import type { TLoanDetails } from "@/types/loan.types";
+import type { TLoanDetails, TReuseLoanOptions } from "@/types/loan.types";
 import { LOAN_STATUS } from "@/constants/loan";
 import ContractHeader from "@/components/loan-details/loan-header";
 import LoanAmountSummary from "@/components/loan-details/loan-amount-summary";
@@ -25,8 +25,13 @@ import AddReferenceModal from "@/components/loan-details/add-reference-modal";
 import UpdateAssetConditionModal from "@/components/loan-details/update-asset-condition-modal";
 import EditCustomerModal from "@/components/loan-details/edit-customer-modal";
 import EditBankModal from "@/components/loan-details/edit-bank-modal";
+import EditLoanAmountModal from "@/components/loan-details/edit-loan-amount-modal";
+import EditReferenceModal from "@/components/loan-details/edit-reference-modal";
+import EditAssetModal from "@/components/loan-details/edit-asset-modal";
 import SimplePaymentModal from "@/components/loan-details/simple-payment-modal";
 import ConfirmModal from "@/components/confirm-modal";
+import RejectLoanModal from "@/components/loan-details/reject-loan-modal.client";
+import ReuseLoanConfirmModal from "@/components/reuse-loan-confirm-modal.client";
 
 import { ROLES } from "@/constants/roles";
 import { useAuth } from "@/lib/contexts/auth-context";
@@ -38,6 +43,7 @@ type TProps = {
   isLoading?: boolean;
   error?: string | null;
   onRefresh?: () => void;
+  onReuseLoan?: (loanDetails: TLoanDetails, options: TReuseLoanOptions) => void;
 };
 
 const LoanDetailsModal = ({
@@ -47,6 +53,7 @@ const LoanDetailsModal = ({
   isLoading = false,
   error = null,
   onRefresh,
+  onReuseLoan,
 }: TProps) => {
   const { user, profile } = useAuth();
   const [isDisbursing, setIsDisbursing] = useState(false);
@@ -55,9 +62,12 @@ const LoanDetailsModal = ({
   const [isPaymentHistoryOpen, setIsPaymentHistoryOpen] = useState(false);
   const [isRedeemOpen, setIsRedeemOpen] = useState(false);
   const [isAddReferenceOpen, setIsAddReferenceOpen] = useState(false);
+  const [isEditReferenceOpen, setIsEditReferenceOpen] = useState(false);
   const [isUpdateConditionOpen, setIsUpdateConditionOpen] = useState(false);
+  const [isEditAssetOpen, setIsEditAssetOpen] = useState(false);
   const [isEditCustomerOpen, setIsEditCustomerOpen] = useState(false);
   const [isEditBankOpen, setIsEditBankOpen] = useState(false);
+  const [isEditLoanAmountOpen, setIsEditLoanAmountOpen] = useState(false);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState<{
     title: string;
@@ -66,6 +76,9 @@ const LoanDetailsModal = ({
     confirmColor?: "primary" | "success" | "warning" | "danger";
   } | null>(null);
   const [refreshKey, setRefreshKey] = useState(0); // Thêm state để force refresh
+  const [selectedReferenceId, setSelectedReferenceId] = useState<string | null>(null);
+  const [isReuseConfirmOpen, setIsReuseConfirmOpen] = useState(false);
+  const [isRejectOpen, setIsRejectOpen] = useState(false);
 
   const handleDisburse = async () => {
     if (!loanDetails) return;
@@ -134,8 +147,21 @@ const LoanDetailsModal = ({
   // Kiểm tra trạng thái
   const isAdmin = profile?.role === ROLES.ADMIN;
   const isPending = loanDetails?.status === LOAN_STATUS.PENDING;
+  const isApproved = loanDetails?.status === LOAN_STATUS.APPROVED;
   const isSigned = loanDetails?.status === LOAN_STATUS.SIGNED;
   const isDisbursed = loanDetails?.status === LOAN_STATUS.DISBURSED;
+  const isRedeemed = loanDetails?.status === LOAN_STATUS.REDEEMED;
+  const isRejected = loanDetails?.status === LOAN_STATUS.REJECTED;
+  const canReuseLoan = Boolean(onReuseLoan && loanDetails && (isRedeemed || isRejected));
+  const canEditLoanDetails = isAdmin && isPending;
+  const contractFiles =
+    loanDetails?.status === LOAN_STATUS.SIGNED
+      ? loanDetails.signedFiles?.length
+        ? loanDetails.signedFiles
+        : (loanDetails.originalFiles ?? [])
+      : (loanDetails?.originalFiles ?? loanDetails?.signedFiles ?? []);
+  const hasContractSignatures =
+    loanDetails?.status === LOAN_STATUS.SIGNED || Boolean(loanDetails?.isSigned);
 
   const handlePayInterestSuccess = () => {
     // Tăng refreshKey để force refresh PaymentPeriods
@@ -156,6 +182,12 @@ const LoanDetailsModal = ({
   };
 
   const handleAddReferenceSuccess = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  const handleEditReferenceSuccess = () => {
     if (onRefresh) {
       onRefresh();
     }
@@ -186,6 +218,151 @@ const LoanDetailsModal = ({
     }
   };
 
+  const handleEditLoanAmountSuccess = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  const handleEditAssetSuccess = () => {
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  const handleRejectSuccess = () => {
+    addToast({
+      title: "Thành công",
+      description: "Đã từ chối khoản vay",
+      color: "success",
+    });
+
+    if (onRefresh) {
+      onRefresh();
+    }
+  };
+
+  const handleRevertToPending = () => {
+    if (!loanDetails) return;
+
+    setConfirmConfig({
+      title: "Trả về chờ duyệt",
+      message:
+        "Trả khoản vay này về trạng thái Chờ duyệt để chỉnh sửa?\n\nLưu ý:\n- Các hợp đồng đã tạo sẽ bị xóa để tránh dữ liệu sai lệch\n- Cần duyệt lại sau khi chỉnh sửa xong",
+      confirmColor: "warning",
+      onConfirm: async () => {
+        setIsDisbursing(true);
+        try {
+          const response = await fetch(
+            `/api/loans/${loanDetails.id}/revert-to-pending`,
+            { method: "POST" },
+          );
+          const result = await response.json();
+
+          if (!result.success) {
+            addToast({
+              title: "Lỗi",
+              description: result.error || "Không thể trả về chờ duyệt",
+              color: "danger",
+            });
+            if (onRefresh) {
+              onRefresh();
+            }
+            return;
+          }
+
+          addToast({
+            title: "Thành công",
+            description: "Đã trả về trạng thái chờ duyệt",
+            color: "success",
+          });
+
+          if (onRefresh) {
+            onRefresh();
+          }
+        } catch (error) {
+          console.error("[REVERT_TO_PENDING_ERROR]", error);
+          addToast({
+            title: "Lỗi",
+            description: "Có lỗi xảy ra khi trả về chờ duyệt",
+            color: "danger",
+          });
+          if (onRefresh) {
+            onRefresh();
+          }
+        } finally {
+          setIsDisbursing(false);
+        }
+      },
+    });
+    setIsConfirmOpen(true);
+  };
+
+  const handleReuseConfirm = (keepAssetImages: boolean) => {
+    if (!loanDetails || !onReuseLoan) return;
+    setIsReuseConfirmOpen(false);
+    onReuseLoan(loanDetails, { keepAssetImages });
+  };
+
+  const handleOpenEditReference = (referenceId: string) => {
+    setSelectedReferenceId(referenceId);
+    setIsEditReferenceOpen(true);
+  };
+
+  const handleCloseEditReference = () => {
+    setIsEditReferenceOpen(false);
+    setSelectedReferenceId(null);
+  };
+
+  const handleDeleteReference = async (referenceId: string) => {
+    if (!loanDetails) return;
+
+    setConfirmConfig({
+      title: "Xóa tham chiếu",
+      message: "Bạn có chắc muốn xóa người tham chiếu này?",
+      confirmColor: "danger",
+      onConfirm: async () => {
+        setIsDisbursing(true);
+        try {
+          const response = await fetch(
+            `/api/loans/${loanDetails.id}/references/${referenceId}`,
+            { method: "DELETE" },
+          );
+          const result = await response.json();
+
+          if (!result.success) {
+            addToast({
+              title: "Lỗi",
+              description: result.error || "Không thể xóa tham chiếu",
+              color: "danger",
+            });
+            return;
+          }
+
+          addToast({
+            title: "Thành công",
+            description: "Đã xóa tham chiếu",
+            color: "success",
+          });
+
+          if (onRefresh) {
+            onRefresh();
+          }
+        } catch (error) {
+          console.error("[DELETE_REFERENCE_ERROR]", error);
+          addToast({
+            title: "Lỗi",
+            description: "Có lỗi xảy ra khi xóa tham chiếu",
+            color: "danger",
+          });
+        } finally {
+          setIsDisbursing(false);
+        }
+      },
+    });
+    setIsConfirmOpen(true);
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -214,7 +391,7 @@ const LoanDetailsModal = ({
         </ModalHeader>
 
         <ModalBody className="flex-1 p-0 overflow-hidden">
-          <div className="flex h-full">
+          <div className="flex h-full min-h-0 min-w-0">
             {/* Left Column - Contract Details */}
             <div className="flex-3 overflow-y-auto p-6 border-r border-default-200">
               {isLoading && (
@@ -233,15 +410,30 @@ const LoanDetailsModal = ({
 
                   {/* Edit Customer Button */}
                   <div className="mb-4">
-                    <Button
-                      color="default"
-                      variant="bordered"
-                      size="sm"
-                      startContent={<UserCog className="w-4 h-4" />}
-                      onPress={() => setIsEditCustomerOpen(true)}
-                    >
-                      Sửa thông tin khách hàng
-                    </Button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {canEditLoanDetails && (
+                        <Button
+                          color="default"
+                          variant="bordered"
+                          size="sm"
+                          startContent={<UserCog className="w-4 h-4" />}
+                          onPress={() => setIsEditCustomerOpen(true)}
+                        >
+                          Sửa thông tin khách hàng
+                        </Button>
+                      )}
+                      {canEditLoanDetails && (
+                        <Button
+                          color="primary"
+                          variant="bordered"
+                          size="sm"
+                          startContent={<DollarSign className="w-4 h-4" />}
+                          onPress={() => setIsEditLoanAmountOpen(true)}
+                        >
+                          Sửa số tiền vay
+                        </Button>
+                      )}
+                    </div>
                   </div>
 
                   {loanDetails.notes && (
@@ -258,9 +450,34 @@ const LoanDetailsModal = ({
                       <LoanInfoCards
                         loanDetails={loanDetails}
                         showAssetGallery
-                        onAddReference={() => setIsAddReferenceOpen(true)}
-                        onUpdateAssetCondition={() => setIsUpdateConditionOpen(true)}
-                        onEditBank={() => setIsEditBankOpen(true)}
+                        onAddReference={
+                          canEditLoanDetails
+                            ? () => setIsAddReferenceOpen(true)
+                            : undefined
+                        }
+                        onUpdateAssetCondition={
+                          canEditLoanDetails
+                            ? () => setIsUpdateConditionOpen(true)
+                            : undefined
+                        }
+                        onEditAsset={
+                          canEditLoanDetails
+                            ? () => setIsEditAssetOpen(true)
+                            : undefined
+                        }
+                        onEditBank={
+                          canEditLoanDetails
+                            ? () => setIsEditBankOpen(true)
+                            : undefined
+                        }
+                        onEditReference={
+                          canEditLoanDetails ? handleOpenEditReference : undefined
+                        }
+                        onDeleteReference={
+                          canEditLoanDetails ? handleDeleteReference : undefined
+                        }
+                        canManageImages={canEditLoanDetails}
+                        onRefresh={onRefresh}
                       />
                     </div>
                     <LoanAmountSummary loanDetails={loanDetails} />
@@ -272,7 +489,9 @@ const LoanDetailsModal = ({
                     <ContractsSection
                       loanId={loanDetails.id}
                       loanStatus={loanDetails.status}
-                      loanFiles={loanDetails.originalFiles}
+                      loanType={loanDetails.loanType}
+                      loanFiles={contractFiles}
+                      hasSignatures={hasContractSignatures}
                       onRefresh={onRefresh}
                     />
                   </div>
@@ -329,7 +548,7 @@ const LoanDetailsModal = ({
             </div>
 
             {/* Right Column - Chat Interface */}
-            <div className="w-[500px] flex flex-col flex-2 h-full">
+            <div className="flex h-full min-h-0 min-w-0 w-[500px] flex-2 flex-col overflow-hidden">
               {loanDetails && user && (
                 <ChatInterface
                   loanId={loanDetails.id}
@@ -346,20 +565,58 @@ const LoanDetailsModal = ({
           <Button variant="flat" onPress={onClose}>
             Đóng
           </Button>
-          {isPending && isAdmin && (
+          {canReuseLoan && (
             <Button
               color="primary"
+              variant="flat"
+              startContent={<Copy className="w-4 h-4" />}
+              onPress={() => setIsReuseConfirmOpen(true)}
+            >
+              Vay lại
+            </Button>
+          )}
+          {isPending && isAdmin && (
+            <>
+              <Button
+                color="danger"
+                variant="flat"
+                startContent={<XCircle className="w-4 h-4" />}
+                isDisabled={isDisbursing}
+                onPress={() => setIsRejectOpen(true)}
+              >
+                Từ chối
+              </Button>
+              <Button
+                color="primary"
+                startContent={
+                  isDisbursing ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4" />
+                  )
+                }
+                isDisabled={isDisbursing}
+                onPress={handleDisburse}
+              >
+                {isDisbursing ? "Đang xử lý..." : "Duyệt"}
+              </Button>
+            </>
+          )}
+          {isApproved && isAdmin && (
+            <Button
+              color="warning"
+              variant="flat"
               startContent={
                 isDisbursing ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : (
-                  <CheckCircle className="w-4 h-4" />
+                  <RotateCcw className="w-4 h-4" />
                 )
               }
               isDisabled={isDisbursing}
-              onPress={handleDisburse}
+              onPress={handleRevertToPending}
             >
-              {isDisbursing ? "Đang xử lý..." : "Duyệt"}
+              {isDisbursing ? "Đang xử lý..." : "Trả về chờ duyệt"}
             </Button>
           )}
           {isSigned && isAdmin && (
@@ -422,12 +679,49 @@ const LoanDetailsModal = ({
             onSuccess={handleAddReferenceSuccess}
           />
 
+          {selectedReferenceId && (
+            <EditReferenceModal
+              isOpen={isEditReferenceOpen}
+              onClose={handleCloseEditReference}
+              loanId={loanDetails.id}
+              referenceId={selectedReferenceId}
+              fullName={
+                loanDetails.references.find((ref) => ref.id === selectedReferenceId)
+                  ?.full_name ?? ""
+              }
+              phone={
+                loanDetails.references.find((ref) => ref.id === selectedReferenceId)
+                  ?.phone ?? ""
+              }
+              relationship={
+                loanDetails.references.find((ref) => ref.id === selectedReferenceId)
+                  ?.relationship ?? ""
+              }
+              onSuccess={handleEditReferenceSuccess}
+            />
+          )}
+
           <UpdateAssetConditionModal
             isOpen={isUpdateConditionOpen}
             onClose={() => setIsUpdateConditionOpen(false)}
             loanId={loanDetails.id}
             currentCondition={loanDetails.assetCondition}
             onSuccess={handleUpdateConditionSuccess}
+          />
+
+          <EditAssetModal
+            isOpen={isEditAssetOpen}
+            onClose={() => setIsEditAssetOpen(false)}
+            loanId={loanDetails.id}
+            assetData={{
+              typeKey: loanDetails.assetTypeKey ?? "",
+              name: loanDetails.asset.name,
+              imei: loanDetails.asset.imei,
+              serial: loanDetails.asset.serial,
+              chassisNumber: loanDetails.asset.chassisNumber,
+              engineNumber: loanDetails.asset.engineNumber,
+            }}
+            onSuccess={handleEditAssetSuccess}
           />
 
           <EditCustomerModal
@@ -459,6 +753,14 @@ const LoanDetailsModal = ({
             }}
             onSuccess={handleEditBankSuccess}
           />
+
+          <EditLoanAmountModal
+            isOpen={isEditLoanAmountOpen}
+            onClose={() => setIsEditLoanAmountOpen(false)}
+            loanId={loanDetails.id}
+            loanAmount={loanDetails.loanAmount}
+            onSuccess={handleEditLoanAmountSuccess}
+          />
         </>
       )}
 
@@ -472,6 +774,25 @@ const LoanDetailsModal = ({
           onConfirm={confirmConfig.onConfirm}
           confirmColor={confirmConfig.confirmColor}
           isLoading={isDisbursing}
+        />
+      )}
+
+      {loanDetails && (
+        <RejectLoanModal
+          isOpen={isRejectOpen}
+          onClose={() => setIsRejectOpen(false)}
+          loanId={loanDetails.id}
+          onSuccess={handleRejectSuccess}
+        />
+      )}
+
+      {loanDetails && (
+        <ReuseLoanConfirmModal
+          isOpen={isReuseConfirmOpen}
+          onClose={() => setIsReuseConfirmOpen(false)}
+          loanCode={loanDetails.code}
+          assetImageCount={loanDetails.asset.images.length}
+          onConfirm={handleReuseConfirm}
         />
       )}
     </Modal>

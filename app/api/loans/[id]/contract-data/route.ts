@@ -6,6 +6,12 @@ import {
   buildFullPaymentConfirmationData,
   buildAssetDisposalAuthorizationData,
 } from "@/lib/contract-data";
+import { CONTRACT_TYPE } from "@/types/contract.types";
+import type { TContractType } from "@/types/contract.types";
+import {
+  getGeneratableContractTypesForLoan,
+} from "@/constants/contracts";
+import { getUnsignedContractTypesFromFiles } from "@/lib/contract-utils";
 
 /**
  * GET /api/loans/[id]/contract-data
@@ -46,11 +52,30 @@ export async function GET(
       );
     }
 
+    // Lấy các loại hợp đồng đã tạo (chưa ký) từ loan_files
+    const { data: loanFiles } = await supabase
+      .from("loan_files")
+      .select("type, name")
+      .eq("loan_id", loanId);
+
+    const createdContractTypes = getUnsignedContractTypesFromFiles(
+      loanFiles ?? [],
+    ) as TContractType[];
+
+    const createdSet = new Set(createdContractTypes);
+    const applicableContractTypes =
+      createdContractTypes.length > 0
+        ? createdContractTypes
+        : getGeneratableContractTypesForLoan(loanDetails.loanType);
+
     // Build contract data using the same functions as contract generation
     const pledgeData = buildAssetPledgeContractData(loanDetails);
-    const leaseData = buildAssetLeaseContractData(loanDetails);
     const paymentData = buildFullPaymentConfirmationData(loanDetails);
     const disposalData = buildAssetDisposalAuthorizationData(loanDetails);
+    const includeLeaseContract = createdSet.has(CONTRACT_TYPE.ASSET_LEASE);
+    const leaseData = includeLeaseContract
+      ? buildAssetLeaseContractData(loanDetails)
+      : null;
 
     // Get signed date
     const signedDate = loanDetails.signedAt ? new Date(loanDetails.signedAt) : new Date();
@@ -61,52 +86,61 @@ export async function GET(
 
     // Return separate contract data objects with proper typing
     const contractData = {
+      loanType: loanDetails.loanType,
+      createdContractTypes: applicableContractTypes,
+      applicableContractTypes,
       // Asset Pledge Contract Data
-      pledgeContract: {
-        ...pledgeData,
-        NGAY: ngay,
-        THANG: thang,
-        NAM: nam,
-        SIGNED_DATE: signedDateStr,
-        DRAFT_SIGNATURE: null,
-        OFFICIAL_SIGNATURE: null,
-      },
-      
-      // Asset Lease Contract Data  
-      leaseContract: {
-        ...leaseData,
-        NGAY: ngay,
-        THANG: thang,
-        NAM: nam,
-        SIGNED_DATE: signedDateStr,
-        DRAFT_SIGNATURE: null,
-        OFFICIAL_SIGNATURE: null,
-      },
-      
-      // Payment Confirmation Data
-      paymentConfirmation: {
-        ...paymentData,
-        NGAY: ngay,
-        THANG: thang,
-        NAM: nam,
-        SIGNED_DATE: signedDateStr,
-        DRAFT_SIGNATURE: null,
-        OFFICIAL_SIGNATURE: null,
-      },
-      
-      // Asset Disposal Authorization Data
-      disposalAuthorization: {
-        ...disposalData,
-        NGAY: ngay,
-        THANG: thang,
-        NAM: nam,
-        SIGNED_DATE: signedDateStr,
-        DRAFT_SIGNATURE: null,
-        OFFICIAL_SIGNATURE: null,
-      },
-    };
+      pledgeContract: createdSet.has(CONTRACT_TYPE.ASSET_PLEDGE)
+        ? {
+            ...pledgeData,
+            NGAY: ngay,
+            THANG: thang,
+            NAM: nam,
+            SIGNED_DATE: signedDateStr,
+            DRAFT_SIGNATURE: null,
+            OFFICIAL_SIGNATURE: null,
+          }
+        : null,
 
-    console.log(contractData.pledgeContract.MILESTONES)
+      // Asset Lease Contract Data
+      leaseContract: leaseData
+        ? {
+            ...leaseData,
+            NGAY: ngay,
+            THANG: thang,
+            NAM: nam,
+            SIGNED_DATE: signedDateStr,
+            DRAFT_SIGNATURE: null,
+            OFFICIAL_SIGNATURE: null,
+          }
+        : null,
+
+      // Payment Confirmation Data
+      paymentConfirmation: createdSet.has(CONTRACT_TYPE.FULL_PAYMENT)
+        ? {
+            ...paymentData,
+            NGAY: ngay,
+            THANG: thang,
+            NAM: nam,
+            SIGNED_DATE: signedDateStr,
+            DRAFT_SIGNATURE: null,
+            OFFICIAL_SIGNATURE: null,
+          }
+        : null,
+
+      // Asset Disposal Authorization Data
+      disposalAuthorization: createdSet.has(CONTRACT_TYPE.ASSET_DISPOSAL)
+        ? {
+            ...disposalData,
+            NGAY: ngay,
+            THANG: thang,
+            NAM: nam,
+            SIGNED_DATE: signedDateStr,
+            DRAFT_SIGNATURE: null,
+            OFFICIAL_SIGNATURE: null,
+          }
+        : null,
+    };
 
     // If specific contract type is requested (for contract page), return only that contract
     if (contractType) {
@@ -116,6 +150,12 @@ export async function GET(
           specificContract = contractData.pledgeContract;
           break;
         case 'asset_lease_contract':
+          if (!contractData.leaseContract) {
+            return NextResponse.json(
+              { success: false, error: "Gói vay này không có hợp đồng thuê tài sản" },
+              { status: 404 },
+            );
+          }
           specificContract = contractData.leaseContract;
           break;
         case 'full_payment_confirmation':

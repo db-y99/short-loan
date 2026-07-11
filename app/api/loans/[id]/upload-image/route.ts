@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { uploadToDrive } from "@/lib/google-drive";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(
   request: NextRequest,
@@ -15,6 +16,18 @@ export async function POST(
   try {
     const { id: loanId } = await params;
     const formData = await request.formData();
+
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
+    }
     
     const file = formData.get("file") as File;
     const driveFolderId = formData.get("driveFolderId") as string;
