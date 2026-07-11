@@ -478,21 +478,6 @@ export async function regenerateContractsService(
       };
     }
 
-    const applicableTypes = getGeneratableContractTypesForLoan(
-      currentLoan.loan_type,
-    );
-    const regeneratingAllTypes =
-      contractTypes.length === applicableTypes.length &&
-      applicableTypes.every((type) => contractTypes.includes(type));
-
-    if (currentLoan.status === "signed" && !regeneratingAllTypes) {
-      return {
-        success: false,
-        error:
-          "Khoản vay đang ở trạng thái signed. Chỉ được tạo lại toàn bộ hợp đồng để đảm bảo tính nhất quán.",
-      };
-    }
-
     const statusSnapshot =
       currentLoan.status === "signed"
         ? {
@@ -504,8 +489,9 @@ export async function regenerateContractsService(
           }
         : null;
 
-    // Chỉ reset trạng thái khi tạo lại toàn bộ hợp đồng từ signed
-    if (regeneratingAllTypes && currentLoan.status === "signed") {
+    // Khoản vay đã ký vẫn có thể tạo lại các loại hợp đồng được chọn.
+    // Reset chữ ký để generateContractsService có thể tạo lại ở trạng thái approved.
+    if (currentLoan.status === "signed") {
       console.log(`[REGENERATE_CONTRACTS] Resetting loan status to approved...`);
       const { error: updateError } = await supabase
         .from("loans")
