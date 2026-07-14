@@ -5,6 +5,10 @@ import { useState } from "react";
 import pMap from "p-map";
 
 import { FOLDER_NAMES, UPLOAD_CONCURRENCY } from "@/constants/google-drive";
+import {
+  getUploadErrorMessage,
+  parseUploadResponse,
+} from "@/lib/parse-upload-response";
 
 type TUploadFilesOptions = {
   feature?: string;
@@ -47,13 +51,20 @@ export const useFileUpload = () => {
             body: formData,
           });
 
-          if (!res.ok) {
-            const error = await res.json();
+          const data = await parseUploadResponse<{
+            error?: string;
+            fileId?: string;
+            fileName?: string;
+            uploadedName?: string;
+          }>(res);
 
-            throw new Error(error.error || `Upload failed for ${file.name}`);
+          if (!res.ok) {
+            throw new Error(getUploadErrorMessage(res, data, file.name));
           }
 
-          const data = await res.json();
+          if (!data?.fileId || !data.fileName) {
+            throw new Error(`Upload failed for ${file.name}`);
+          }
 
           completedCount += 1;
           onProgress?.(completedCount, files.length);

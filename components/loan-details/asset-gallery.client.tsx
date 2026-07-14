@@ -20,6 +20,10 @@ import pMap from "p-map";
 import { TAssetImage } from "@/types/loan.types";
 import ConfirmModal from "@/components/confirm-modal";
 import { UPLOAD_CONCURRENCY } from "@/constants/google-drive";
+import {
+  getUploadErrorMessage,
+  parseUploadResponse,
+} from "@/lib/parse-upload-response";
 
 type TProps = {
   assetImages: TAssetImage[];
@@ -276,18 +280,22 @@ const AssetGallery = ({
             body: formData,
           });
 
-          const result = await response.json();
+          const result = await parseUploadResponse<{
+            success?: boolean;
+            error?: string;
+            data?: TAssetImage[];
+          }>(response);
 
-          if (!response.ok || !result.success) {
+          if (!response.ok || !result?.success) {
             throw new Error(
-              result.error || `Lỗi khi upload ảnh: ${img.file.name}`,
+              getUploadErrorMessage(response, result, img.file.name),
             );
           }
 
           completedCount += 1;
           setUploadProgress({ current: completedCount, total });
 
-          return (result.data ?? []) as TAssetImage[];
+          return result.data ?? [];
         },
         { concurrency: UPLOAD_CONCURRENCY },
       );
