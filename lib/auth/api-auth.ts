@@ -219,22 +219,17 @@ export async function verifyStaffCanAccessDriveFile(
 ): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
 
-  const { data: loanFile } = await supabase
-    .from("loan_files")
-    .select("id")
-    .eq("file_id", fileId)
-    .maybeSingle();
+  // Song song — asset gallery hầu hết match loan_assets
+  const [loanFileRes, assetImageRes] = await Promise.all([
+    supabase.from("loan_files").select("id").eq("file_id", fileId).maybeSingle(),
+    supabase
+      .from("loan_assets")
+      .select("id")
+      .eq("file_id", fileId)
+      .maybeSingle(),
+  ]);
 
-  if (loanFile) return true;
-
-  // Ảnh tài sản lưu ở loan_assets (không phải loan_files)
-  const { data: assetImage } = await supabase
-    .from("loan_assets")
-    .select("id")
-    .eq("file_id", fileId)
-    .maybeSingle();
-
-  if (assetImage) return true;
+  if (loanFileRes.data || assetImageRes.data) return true;
 
   const { data: loan } = await supabase
     .from("loans")

@@ -127,6 +127,36 @@ export async function streamFileFromDrive(
 }
 
 /**
+ * Stream media thôi (không gọi metadata) — tối ưu cho thumbnail gallery.
+ */
+export async function streamFileMediaFromDrive(
+  fileId: string,
+): Promise<StreamFileResult | null> {
+  const auth = getAuth();
+  const drive = google.drive({ version: "v3", auth });
+
+  const res = await drive.files.get(
+    { fileId, alt: "media", supportsAllDrives: true },
+    { responseType: "stream" },
+  );
+
+  const stream = res.data as Readable;
+
+  if (!stream) return null;
+
+  const headerMime =
+    typeof res.headers === "object" && res.headers
+      ? (res.headers["content-type"] as string | undefined)
+      : undefined;
+
+  return {
+    stream,
+    mimeType: headerMime || "image/jpeg",
+    fileName: "image",
+  };
+}
+
+/**
  * Tạo folder con cho khoản vay.
  * Format: {loanCode} - {customerName}
  */

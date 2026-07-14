@@ -19,6 +19,7 @@ import pMap from "p-map";
 
 import { TAssetImage } from "@/types/loan.types";
 import ConfirmModal from "@/components/confirm-modal";
+import DeferredDriveThumb from "@/components/loan-details/deferred-drive-thumb.client";
 import { UPLOAD_CONCURRENCY } from "@/constants/google-drive";
 import {
   getUploadErrorMessage,
@@ -370,14 +371,10 @@ const AssetGallery = ({
                   handleOpenPreview(`/api/drive/image/${image.fileId}`, index)
                 }
               >
-                <Image
+                <DeferredDriveThumb
                   alt={`Ảnh ${index + 1}`}
-                  classNames={{
-                    wrapper: "!max-w-full h-full",
-                    img: "w-full h-full object-cover",
-                  }}
-                  loading={index < 3 ? "eager" : "lazy"}
-                  src={`/api/drive/image/${image.fileId}`}
+                  fileId={image.fileId}
+                  priority={index < 3}
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                 <span className="absolute bottom-1 right-1 text-xs bg-black/60 text-white px-1.5 py-0.5 rounded">
