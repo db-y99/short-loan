@@ -1,7 +1,9 @@
 // hooks/use-file-upload.ts
-import { useState } from "react";
-import { FOLDER_NAMES } from "@/constants/google-drive";
 import type { TUploadResult } from "@/types/google-drive.types";
+
+import { useState } from "react";
+
+import { FOLDER_NAMES } from "@/constants/google-drive";
 
 export const useFileUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -23,6 +25,7 @@ export const useFileUpload = () => {
     try {
       const uploadPromises = files.map(async (file) => {
         const formData = new FormData();
+
         formData.append("file", file);
         formData.append("feature", feature);
         if (folderId) {
@@ -36,10 +39,12 @@ export const useFileUpload = () => {
 
         if (!res.ok) {
           const error = await res.json();
+
           throw new Error(error.error || `Upload failed for ${file.name}`);
         }
 
         const data = await res.json();
+
         return {
           fileId: data.fileId,
           fileName: data.fileName,
@@ -48,9 +53,11 @@ export const useFileUpload = () => {
       });
 
       const results = await Promise.all(uploadPromises);
+
       return results;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Upload failed";
+
       setUploadError(errorMessage);
       throw err;
     } finally {

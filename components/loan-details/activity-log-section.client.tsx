@@ -1,17 +1,15 @@
 "use client";
 
+import type { TActivityLogEntry } from "@/types/loan.types";
+import type { RealtimeChannel } from "@supabase/supabase-js";
+
 import { useState, useEffect, useRef } from "react";
 import { Input } from "@heroui/react";
 import { Button } from "@heroui/button";
-import {
-  MessageSquare,
-  Send,
-  Loader2,
-} from "lucide-react";
-import type { TActivityLogEntry } from "@/types/loan.types";
+import { MessageSquare, Send, Loader2 } from "lucide-react";
+
 import ActivityLogEntry from "@/components/loan-details/activity-log-entry";
 import { supabaseClient } from "@/lib/supabase/client";
-import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useAuth } from "@/lib/contexts/auth-context";
 
 type TProps = {
@@ -19,10 +17,7 @@ type TProps = {
   loanId: string;
 };
 
-const ActivityLogSection = ({ 
-  entries: initialEntries, 
-  loanId,
-}: TProps) => {
+const ActivityLogSection = ({ entries: initialEntries, loanId }: TProps) => {
   const { user } = useAuth();
   const [inputValue, setInputValue] = useState("");
   const [entries, setEntries] = useState<TActivityLogEntry[]>(initialEntries);
@@ -32,7 +27,8 @@ const ActivityLogSection = ({
 
   // Get user info
   const currentUserId = user?.id || "system";
-  const currentUserName = user?.user_metadata?.full_name || user?.email || "Hệ thống";
+  const currentUserName =
+    user?.user_metadata?.full_name || user?.email || "Hệ thống";
 
   // Update entries when initialEntries changes
   useEffect(() => {
@@ -92,7 +88,7 @@ const ActivityLogSection = ({
           };
 
           setEntries((prev) => [...prev, entry]);
-        }
+        },
       )
       .subscribe();
 
@@ -148,35 +144,36 @@ const ActivityLogSection = ({
 
   return (
     <div className="flex flex-col h-full">
-      {
-        !entries || entries.length === 0 && (
+      {!entries ||
+        (entries.length === 0 && (
           <div className="flex items-center justify-center h-full py-8 text-default-400">
             <MessageSquare className="w-8 h-8 mr-2" />
             <span>Chưa có trao đổi</span>
           </div>
-        )
-      }
-      <div className="flex-1 h-full overflow-y-auto p-2">
-        {entries && entries.length > 0 && entries.map((entry) => (
-          <ActivityLogEntry key={entry.id} entry={entry} />
         ))}
+      <div className="flex-1 h-full overflow-y-auto p-2">
+        {entries &&
+          entries.length > 0 &&
+          entries.map((entry) => (
+            <ActivityLogEntry key={entry.id} entry={entry} />
+          ))}
         <div ref={messagesEndRef} />
       </div>
 
       <div className="mt-4 border-t border-default-200">
         <div className="flex gap-2 p-2">
           <Input
+            isDisabled={isSending}
             placeholder="Nhập tin nhắn..."
             value={inputValue}
-            onValueChange={setInputValue}
             onKeyDown={handleKeyPress}
-            isDisabled={isSending}
+            onValueChange={setInputValue}
           />
           <Button
             isIconOnly
             color="primary"
-            onPress={handleSendMessage}
             isDisabled={isSending || !inputValue.trim()}
+            onPress={handleSendMessage}
           >
             {isSending ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -191,4 +188,3 @@ const ActivityLogSection = ({
 };
 
 export default ActivityLogSection;
-

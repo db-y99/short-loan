@@ -1,5 +1,7 @@
 "use client";
 
+import type { TContractType } from "@/types/contract.types";
+
 import { useEffect, useMemo, useState } from "react";
 import {
   Modal,
@@ -11,6 +13,7 @@ import {
 import { Button } from "@heroui/button";
 import { Checkbox } from "@heroui/checkbox";
 import { AlertTriangle, FileText } from "lucide-react";
+
 import {
   GENERATABLE_CONTRACT_TYPES,
   DEFAULT_SELECTED_CONTRACT_TYPES,
@@ -18,7 +21,6 @@ import {
   CONTRACT_TYPE_LABEL,
   CONTRACT_TYPE_DESCRIPTION,
 } from "@/constants/contracts";
-import type { TContractType } from "@/types/contract.types";
 
 type TProps = {
   isOpen: boolean;
@@ -72,7 +74,7 @@ const ContractSelectionModal = ({
   const isRegenerate = mode === "regenerate";
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="lg">
+    <Modal isOpen={isOpen} size="lg" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
@@ -114,18 +116,18 @@ const ContractSelectionModal = ({
             </span>
             <div className="flex gap-2">
               <Button
+                isDisabled={allSelected}
                 size="sm"
                 variant="flat"
                 onPress={handleSelectAll}
-                isDisabled={allSelected}
               >
                 Chọn tất cả
               </Button>
               <Button
+                isDisabled={noneSelected}
                 size="sm"
                 variant="flat"
                 onPress={handleDeselectAll}
-                isDisabled={noneSelected}
               >
                 Bỏ chọn
               </Button>
@@ -139,9 +141,9 @@ const ContractSelectionModal = ({
                 className="flex items-start gap-3 p-3 rounded-lg border border-default-200 dark:border-default-100 hover:bg-default-50 transition-colors"
               >
                 <Checkbox
+                  aria-label={CONTRACT_TYPE_LABEL[type]}
                   isSelected={selectedTypes.includes(type)}
                   onValueChange={(checked) => toggleType(type, checked)}
-                  aria-label={CONTRACT_TYPE_LABEL[type]}
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium">
@@ -165,14 +167,14 @@ const ContractSelectionModal = ({
           )}
         </ModalBody>
         <ModalFooter>
-          <Button variant="flat" onPress={onClose} isDisabled={isLoading}>
+          <Button isDisabled={isLoading} variant="flat" onPress={onClose}>
             Hủy
           </Button>
           <Button
             color={isRegenerate ? "warning" : "primary"}
-            onPress={handleConfirm}
             isDisabled={noneSelected || isLoading}
             isLoading={isLoading}
+            onPress={handleConfirm}
           >
             {isLoading
               ? "Đang tạo..."

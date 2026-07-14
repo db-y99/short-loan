@@ -14,9 +14,15 @@ import NextLink from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Avatar } from "@heroui/avatar";
-import { Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, DropdownSection } from "@heroui/dropdown";
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  DropdownSection,
+} from "@heroui/dropdown";
 import { User } from "@heroui/user";
-import { LogOut, Menu, GitBranch, MapPin } from "lucide-react";
+import { LogOut, Menu, MapPin } from "lucide-react";
 
 import { siteConfig } from "@/config/site";
 import { ROLES } from "@/constants/roles";
@@ -110,49 +116,49 @@ export default function Navbar({ onOpenSidebar }: Props) {
             )}
             <NavbarItem>
               <Dropdown placement="bottom-end">
-              <DropdownTrigger>
-                <Avatar
-                  isBordered
-                  as="button"
-                  className="transition-transform"
-                  color="primary"
-                  name={user.user_metadata?.full_name || user.email || "User"}
-                  size="sm"
-                  src={user.user_metadata?.avatar_url}
-                />
-              </DropdownTrigger>
-              <DropdownMenu aria-label="User menu" variant="flat">
-                <DropdownSection showDivider>
+                <DropdownTrigger>
+                  <Avatar
+                    isBordered
+                    as="button"
+                    className="transition-transform"
+                    color="primary"
+                    name={user.user_metadata?.full_name || user.email || "User"}
+                    size="sm"
+                    src={user.user_metadata?.avatar_url}
+                  />
+                </DropdownTrigger>
+                <DropdownMenu aria-label="User menu" variant="flat">
+                  <DropdownSection showDivider>
+                    <DropdownItem
+                      key="profile"
+                      className="h-14 gap-2"
+                      textValue="Profile"
+                    >
+                      <User
+                        avatarProps={{
+                          size: "sm",
+                          src: user.user_metadata?.avatar_url,
+                        }}
+                        classNames={{
+                          name: "text-default-600 font-semibold",
+                          description: "text-default-500",
+                        }}
+                        description={user.email}
+                        name={user.user_metadata?.full_name || "User"}
+                      />
+                    </DropdownItem>
+                  </DropdownSection>
                   <DropdownItem
-                    key="profile"
-                    className="h-14 gap-2"
-                    textValue="Profile"
+                    key="logout"
+                    className={isLoggingOut ? "opacity-50" : ""}
+                    color="danger"
+                    startContent={<LogOut size={18} />}
+                    onPress={handleLogout}
                   >
-                    <User
-                      name={user.user_metadata?.full_name || "User"}
-                      description={user.email}
-                      classNames={{
-                        name: "text-default-600 font-semibold",
-                        description: "text-default-500",
-                      }}
-                      avatarProps={{
-                        size: "sm",
-                        src: user.user_metadata?.avatar_url,
-                      }}
-                    />
+                    {isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
                   </DropdownItem>
-                </DropdownSection>
-                <DropdownItem
-                  key="logout"
-                  color="danger"
-                  startContent={<LogOut size={18} />}
-                  onPress={handleLogout}
-                  className={isLoggingOut ? "opacity-50" : ""}
-                >
-                  {isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
-                </DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
+                </DropdownMenu>
+              </Dropdown>
             </NavbarItem>
           </>
         )}
@@ -163,10 +169,10 @@ export default function Navbar({ onOpenSidebar }: Props) {
         {onOpenSidebar ? (
           <NavbarItem>
             <button
-              type="button"
-              className="p-2 rounded-lg hover:bg-default-100"
-              onClick={onOpenSidebar}
               aria-label="Mở menu"
+              className="p-2 rounded-lg hover:bg-default-100"
+              type="button"
+              onClick={onOpenSidebar}
             >
               <Menu size={22} />
             </button>
@@ -199,25 +205,41 @@ export default function Navbar({ onOpenSidebar }: Props) {
           )}
           <div className="mx-4 mt-2 flex flex-col gap-2">
             <NavbarMenuItem>
-              <Link color={pathname === "/" ? "primary" : "foreground"} href="/" size="lg">
+              <Link
+                color={pathname === "/" ? "primary" : "foreground"}
+                href="/"
+                size="lg"
+              >
                 Khoản vay
               </Link>
             </NavbarMenuItem>
             <NavbarMenuItem>
-              <Link color={pathname === "/overdue" ? "primary" : "foreground"} href="/overdue" size="lg">
+              <Link
+                color={pathname === "/overdue" ? "primary" : "foreground"}
+                href="/overdue"
+                size="lg"
+              >
                 Khách quá hạn
               </Link>
             </NavbarMenuItem>
             {profile?.role === ROLES.ADMIN && (
               <NavbarMenuItem>
-                <Link color={pathname === "/users" ? "primary" : "foreground"} href="/users" size="lg">
+                <Link
+                  color={pathname === "/users" ? "primary" : "foreground"}
+                  href="/users"
+                  size="lg"
+                >
                   Quản lý người dùng
                 </Link>
               </NavbarMenuItem>
             )}
             {profile?.role === ROLES.ADMIN && (
               <NavbarMenuItem>
-                <Link color={pathname === "/branches" ? "primary" : "foreground"} href="/branches" size="lg">
+                <Link
+                  color={pathname === "/branches" ? "primary" : "foreground"}
+                  href="/branches"
+                  size="lg"
+                >
                   Chi nhánh
                 </Link>
               </NavbarMenuItem>
@@ -226,8 +248,8 @@ export default function Navbar({ onOpenSidebar }: Props) {
               <NavbarMenuItem>
                 <button
                   className="w-full text-left text-danger font-medium flex items-center gap-2 py-2"
-                  onClick={handleLogout}
                   disabled={isLoggingOut}
+                  onClick={handleLogout}
                 >
                   <LogOut size={18} />
                   {isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}

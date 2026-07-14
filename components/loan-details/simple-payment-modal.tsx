@@ -31,11 +31,13 @@ const SimplePaymentModal = ({
 
   const formatCurrency = (value: string) => {
     const numericValue = value.replace(/[^\d]/g, "");
+
     return new Intl.NumberFormat("vi-VN").format(Number(numericValue));
   };
 
   const handleAmountChange = (value: string) => {
     const numericValue = value.replace(/[^\d]/g, "");
+
     setAmount(numericValue);
   };
 
@@ -46,6 +48,7 @@ const SimplePaymentModal = ({
         description: "Vui lòng nhập số tiền hợp lệ",
         color: "danger",
       });
+
       return;
     }
 
@@ -74,7 +77,7 @@ const SimplePaymentModal = ({
 
         setAmount("");
         onClose();
-        
+
         if (onSuccess) {
           onSuccess();
         }
@@ -106,10 +109,10 @@ const SimplePaymentModal = ({
 
   return (
     <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      size="md"
       hideCloseButton={isLoading}
+      isOpen={isOpen}
+      size="md"
+      onClose={handleClose}
     >
       <ModalContent>
         <ModalHeader className="flex items-center gap-2">
@@ -127,38 +130,38 @@ const SimplePaymentModal = ({
 
           <div className="space-y-4">
             <Input
-              label="Số tiền đóng"
-              placeholder="Nhập số tiền"
-              value={amount ? formatCurrency(amount) : ""}
-              onValueChange={handleAmountChange}
-              endContent={
-                <span className="text-default-500 text-sm font-medium">VNĐ</span>
-              }
-              size="lg"
-              variant="bordered"
               isRequired
               classNames={{
                 input: "text-right text-lg",
               }}
+              endContent={
+                <span className="text-default-500 text-sm font-medium">
+                  VNĐ
+                </span>
+              }
+              label="Số tiền đóng"
+              placeholder="Nhập số tiền"
+              size="lg"
+              value={amount ? formatCurrency(amount) : ""}
+              variant="bordered"
+              onValueChange={handleAmountChange}
             />
 
             <div className="text-xs text-default-500 bg-default-50 p-3 rounded-lg">
-              <p>💡 Bạn có thể nhập bất kỳ số tiền nào để linh hoạt trong việc ghi nhận thanh toán.</p>
+              <p>
+                💡 Bạn có thể nhập bất kỳ số tiền nào để linh hoạt trong việc
+                ghi nhận thanh toán.
+              </p>
             </div>
           </div>
         </ModalBody>
 
         <ModalFooter>
-          <Button
-            variant="flat"
-            onPress={handleClose}
-            isDisabled={isLoading}
-          >
+          <Button isDisabled={isLoading} variant="flat" onPress={handleClose}>
             Hủy
           </Button>
           <Button
             color="primary"
-            onPress={handleSubmit}
             isDisabled={!amount || Number(amount) <= 0 || isLoading}
             startContent={
               isLoading ? (
@@ -167,6 +170,7 @@ const SimplePaymentModal = ({
                 <DollarSign className="w-4 h-4" />
               )
             }
+            onPress={handleSubmit}
           >
             {isLoading ? "Đang xử lý..." : "Xác nhận đóng tiền"}
           </Button>

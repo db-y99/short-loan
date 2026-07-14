@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LOAN_STATUS } from "@/constants/loan";
+import { requireLoanApproverUser } from "@/lib/auth/api-auth";
 import { isRpcNotFoundError, parseRpcResult } from "@/lib/supabase/rpc-result";
 
 /**
@@ -9,30 +11,24 @@ import { isRpcNotFoundError, parseRpcResult } from "@/lib/supabase/rpc-result";
  */
 export async function POST(
   _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createSupabaseServerClient();
     const { id: loanId } = await params;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const admin = await requireLoanApproverUser();
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    if (!admin.ok) return admin.response;
 
     const { data: rpcResult, error: rpcError } = await supabase.rpc(
       "approve_loan",
-      { p_loan_id: loanId }
+      { p_loan_id: loanId },
     );
 
     if (!rpcError && rpcResult) {
       const result = parseRpcResult(rpcResult);
+
       if (result.success) {
         return NextResponse.json({
           success: true,
@@ -40,17 +36,19 @@ export async function POST(
         });
       }
       const status = result.error?.includes("chờ duyệt") ? 400 : 409;
+
       return NextResponse.json(
         { success: false, error: result.error ?? "Không thể duyệt khoản vay" },
-        { status }
+        { status },
       );
     }
 
     if (!isRpcNotFoundError(rpcError)) {
       console.error("[APPROVE_LOAN_RPC_ERROR]", rpcError);
+
       return NextResponse.json(
         { success: false, error: "Lỗi khi duyệt khoản vay" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -67,9 +65,10 @@ export async function POST(
 
     if (updateError) {
       console.error("[APPROVE_LOAN_UPDATE_ERROR]", updateError);
+
       return NextResponse.json(
         { success: false, error: "Lỗi khi cập nhật trạng thái" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -79,7 +78,7 @@ export async function POST(
           success: false,
           error: "Khoản vay không ở trạng thái chờ duyệt hoặc đã được xử lý",
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -89,9 +88,10 @@ export async function POST(
     });
   } catch (error) {
     console.error("[APPROVE_LOAN_ERROR]", error);
+
     return NextResponse.json(
       { success: false, error: "Lỗi server" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

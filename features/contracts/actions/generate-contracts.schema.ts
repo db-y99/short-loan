@@ -1,6 +1,8 @@
-import { z } from "zod";
-import { GENERATABLE_CONTRACT_TYPES } from "@/constants/contracts";
 import type { TContractType } from "@/types/contract.types";
+
+import { z } from "zod";
+
+import { GENERATABLE_CONTRACT_TYPES } from "@/constants/contracts";
 
 const contractTypeSchema = z.enum(
   GENERATABLE_CONTRACT_TYPES as [TContractType, ...TContractType[]],

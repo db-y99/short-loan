@@ -1,5 +1,8 @@
 "use client";
 
+import type { TLoan, TLoanStatus } from "@/types/loan.types";
+import type { TBranch } from "@/types/branch.types";
+
 import {
   Table,
   TableHeader,
@@ -11,15 +14,19 @@ import {
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Chip } from "@heroui/chip";
-import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useTransition,
+} from "react";
 import { Button } from "@heroui/button";
 import { Tooltip } from "@heroui/tooltip";
 import { Search, RefreshCw } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDebounceValue } from "usehooks-ts";
 
-import type { TLoan, TLoanStatus } from "@/types/loan.types";
-import type { TBranch } from "@/types/branch.types";
 import {
   LOANS_TABLE_COLUMNS,
   LOAN_STATUS_LABEL,
@@ -58,13 +65,19 @@ const LOAN_TYPE_OPTIONS = [
   })),
 ];
 
-
-const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [], selectedBranch = "" }: TProps) => {
+const LoansTable = ({
+  loans,
+  onRefresh,
+  onRowClick,
+  onCreateLoan,
+  branches = [],
+  selectedBranch = "",
+}: TProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [isClient, setIsClient] = useState(false);
-  
+
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [debouncedSearch] = useDebounceValue(search, 500);
   const [statusFilter, setStatusFilter] = useState(
@@ -87,8 +100,9 @@ const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [],
   // Update URL when debounced search changes - separate effect to avoid dependency issues
   useEffect(() => {
     if (!isClient || !debouncedSearch) return;
-    
+
     const params = new URLSearchParams(searchParams.toString());
+
     params.set("search", debouncedSearch);
 
     startTransition(() => {
@@ -99,8 +113,9 @@ const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [],
   // Clear search from URL when empty
   useEffect(() => {
     if (!isClient || debouncedSearch) return;
-    
+
     const params = new URLSearchParams(searchParams.toString());
+
     if (params.has("search")) {
       params.delete("search");
       startTransition(() => {
@@ -142,6 +157,7 @@ const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [],
   const handleStatusChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const value = e.target.value || ALL_FILTER_VALUE;
+
       setStatusFilter(value);
       updateFilters({ status: value });
     },
@@ -151,6 +167,7 @@ const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [],
   const handleLoanTypeChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const value = e.target.value || ALL_FILTER_VALUE;
+
       setLoanTypeFilter(value);
       updateFilters({ loanType: value });
     },
@@ -160,6 +177,7 @@ const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [],
   const handleCreatorChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const value = e.target.value || ALL_FILTER_VALUE;
+
       setCreatorFilter(value);
       updateFilters({ creator: value });
     },
@@ -169,16 +187,20 @@ const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [],
   const handleBranchChange = useCallback(
     (e: React.ChangeEvent<HTMLSelectElement>) => {
       const value = e.target.value || ALL_FILTER_VALUE;
+
       setBranchFilter(value);
       updateFilters({ branch: value });
     },
     [updateFilters],
   );
 
-  const branchOptions = useMemo(() => [
-    { key: ALL_FILTER_VALUE, label: "Tất cả chi nhánh" },
-    ...branches.map((b) => ({ key: b.id, label: b.name })),
-  ], [branches]);
+  const branchOptions = useMemo(
+    () => [
+      { key: ALL_FILTER_VALUE, label: "Tất cả chi nhánh" },
+      ...branches.map((b) => ({ key: b.id, label: b.name })),
+    ],
+    [branches],
+  );
 
   const renderCell = useCallback(
     (loan: TLoan, columnKey: string): React.ReactNode => {
@@ -201,7 +223,8 @@ const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [],
               color={LOAN_STATUS_COLOR[loan.status as TLoanStatus] ?? "default"}
               variant="flat"
             >
-              {LOAN_STATUS_LABEL[loan.status as TLoanStatus] ?? "Không xác định"}
+              {LOAN_STATUS_LABEL[loan.status as TLoanStatus] ??
+                "Không xác định"}
             </Chip>
           );
         default:
@@ -241,11 +264,11 @@ const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [],
           <>
             <Select
               className="w-full sm:max-w-[180px]"
-              selectedKeys={[statusFilter]}
+              isDisabled={isPending}
               label="Trạng thái"
               labelPlacement="outside"
+              selectedKeys={[statusFilter]}
               onChange={handleStatusChange}
-              isDisabled={isPending}
             >
               {STATUS_OPTIONS.map((option) => (
                 <SelectItem key={option.key}>{option.label}</SelectItem>
@@ -254,11 +277,11 @@ const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [],
 
             <Select
               className="w-full sm:max-w-[180px]"
-              selectedKeys={[loanTypeFilter]}
+              isDisabled={isPending}
               label="Gói vay"
               labelPlacement="outside"
+              selectedKeys={[loanTypeFilter]}
               onChange={handleLoanTypeChange}
-              isDisabled={isPending}
             >
               {LOAN_TYPE_OPTIONS.map((option) => (
                 <SelectItem key={option.key}>{option.label}</SelectItem>
@@ -267,11 +290,11 @@ const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [],
 
             <Select
               className="w-full sm:max-w-[180px]"
-              selectedKeys={[creatorFilter]}
+              isDisabled={isPending}
               label="Người tạo"
               labelPlacement="outside"
+              selectedKeys={[creatorFilter]}
               onChange={handleCreatorChange}
-              isDisabled={isPending}
             >
               {creatorOptions.map((option) => (
                 <SelectItem key={option.key}>{option.label}</SelectItem>
@@ -281,11 +304,11 @@ const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [],
             {branches.length > 0 && (
               <Select
                 className="w-full sm:max-w-[180px]"
-                selectedKeys={[branchFilter]}
+                isDisabled={isPending}
                 label="Chi nhánh"
                 labelPlacement="outside"
+                selectedKeys={[branchFilter]}
                 onChange={handleBranchChange}
-                isDisabled={isPending}
               >
                 {branchOptions.map((option) => (
                   <SelectItem key={option.key}>{option.label}</SelectItem>
@@ -306,9 +329,9 @@ const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [],
           <Button
             isIconOnly
             aria-label="Làm mới"
+            isLoading={isPending}
             variant="flat"
             onPress={handleRefresh}
-            isLoading={isPending}
           >
             <RefreshCw size={16} />
           </Button>
@@ -324,7 +347,7 @@ const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [],
       </div>
 
       {/* Table */}
-      <Table aria-label="Bảng khoản vay" isHeaderSticky selectionMode="none">
+      <Table isHeaderSticky aria-label="Bảng khoản vay" selectionMode="none">
         <TableHeader columns={[...LOANS_TABLE_COLUMNS]}>
           {(column) => (
             <TableColumn
@@ -337,14 +360,13 @@ const LoansTable = ({ loans, onRefresh, onRowClick, onCreateLoan, branches = [],
         </TableHeader>
         <TableBody
           emptyContent="Không có khoản vay nào"
-          items={loans}
           isLoading={isPending}
+          items={loans}
         >
           {(loan) => (
             <TableRow
               key={loan.id}
               className={
-
                 onRowClick
                   ? "cursor-pointer hover:bg-default-100 transition-colors"
                   : ""

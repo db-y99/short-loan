@@ -1,5 +1,10 @@
+import type { TContractType } from "@/types/contract.types";
+
 import { NextRequest, NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { LOAN_STATUS } from "@/constants/loan";
+import { requireActiveStaffUser } from "@/lib/auth/api-auth";
 import {
   buildAssetPledgeContractData,
   buildAssetLeaseContractData,
@@ -7,10 +12,7 @@ import {
   buildAssetDisposalAuthorizationData,
 } from "@/lib/contract-data";
 import { CONTRACT_TYPE } from "@/types/contract.types";
-import type { TContractType } from "@/types/contract.types";
-import {
-  getGeneratableContractTypesForLoan,
-} from "@/constants/contracts";
+import { getGeneratableContractTypesForLoan } from "@/constants/contracts";
 import { getUnsignedContractTypesFromFiles } from "@/lib/contract-utils";
 
 /**
@@ -19,37 +21,33 @@ import { getUnsignedContractTypesFromFiles } from "@/lib/contract-utils";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createSupabaseServerClient();
     const { id: loanId } = await params;
-    
-    // Get query parameters
+
     const { searchParams } = new URL(request.url);
-    const contractType = searchParams.get('type');
+    const contractType = searchParams.get("type");
 
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
-
-    // Use getLoanDetailsService to get full loan data with currentPeriod
-    const { getLoanDetailsService } = await import("@/services/loans/loans.service");
+    const { getLoanDetailsService } = await import(
+      "@/services/loans/loans.service"
+    );
     const loanDetails = await getLoanDetailsService(loanId);
 
     if (!loanDetails) {
       return NextResponse.json(
         { success: false, error: "Không tìm thấy khoản vay" },
-        { status: 404 }
+        { status: 404 },
       );
+    }
+
+    const isApprovedForSigning = loanDetails.status === LOAN_STATUS.APPROVED;
+
+    if (!isApprovedForSigning) {
+      const staff = await requireActiveStaffUser();
+
+      if (!staff.ok) return staff.response;
     }
 
     // Lấy các loại hợp đồng đã tạo (chưa ký) từ loan_files
@@ -63,10 +61,10 @@ export async function GET(
     ) as TContractType[];
 
     const createdSet = new Set(createdContractTypes);
-    const applicableContractTypes =
-      createdContractTypes.length > 0
-        ? createdContractTypes
-        : getGeneratableContractTypesForLoan(loanDetails.loanType);
+    const applicableContractTypes = getGeneratableContractTypesForLoan(
+      loanDetails.loanType,
+    );
+    const canSign = createdContractTypes.length > 0;
 
     // Build contract data using the same functions as contract generation
     const pledgeData = buildAssetPledgeContractData(loanDetails);
@@ -78,17 +76,20 @@ export async function GET(
       : null;
 
     // Get signed date
-    const signedDate = loanDetails.signedAt ? new Date(loanDetails.signedAt) : new Date();
+    const signedDate = loanDetails.signedAt
+      ? new Date(loanDetails.signedAt)
+      : new Date();
     const ngay = signedDate.getDate();
     const thang = signedDate.getMonth() + 1;
     const nam = signedDate.getFullYear();
-    const signedDateStr = `${String(ngay).padStart(2, '0')}/${String(thang).padStart(2, '0')}/${nam}`;
+    const signedDateStr = `${String(ngay).padStart(2, "0")}/${String(thang).padStart(2, "0")}/${nam}`;
 
     // Return separate contract data objects with proper typing
     const contractData = {
       loanType: loanDetails.loanType,
-      createdContractTypes: applicableContractTypes,
+      createdContractTypes,
       applicableContractTypes,
+      canSign,
       // Asset Pledge Contract Data
       pledgeContract: createdSet.has(CONTRACT_TYPE.ASSET_PLEDGE)
         ? {
@@ -145,32 +146,36 @@ export async function GET(
     // If specific contract type is requested (for contract page), return only that contract
     if (contractType) {
       let specificContract;
+
       switch (contractType) {
-        case 'asset_pledge_contract':
+        case "asset_pledge_contract":
           specificContract = contractData.pledgeContract;
           break;
-        case 'asset_lease_contract':
+        case "asset_lease_contract":
           if (!contractData.leaseContract) {
             return NextResponse.json(
-              { success: false, error: "Gói vay này không có hợp đồng thuê tài sản" },
+              {
+                success: false,
+                error: "Gói vay này không có hợp đồng thuê tài sản",
+              },
               { status: 404 },
             );
           }
           specificContract = contractData.leaseContract;
           break;
-        case 'full_payment_confirmation':
+        case "full_payment_confirmation":
           specificContract = contractData.paymentConfirmation;
           break;
-        case 'asset_disposal_authorization':
+        case "asset_disposal_authorization":
           specificContract = contractData.disposalAuthorization;
           break;
         default:
           return NextResponse.json(
             { success: false, error: "Invalid contract type" },
-            { status: 400 }
+            { status: 400 },
           );
       }
-      
+
       return NextResponse.json({
         success: true,
         data: specificContract,
@@ -184,9 +189,10 @@ export async function GET(
     });
   } catch (error) {
     console.error("Error fetching contract data:", error);
+
     return NextResponse.json(
       { success: false, error: "Lỗi server" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

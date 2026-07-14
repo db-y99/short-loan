@@ -35,18 +35,21 @@ const AddReferenceModal = ({ isOpen, onClose, loanId, onSuccess }: TProps) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate
     if (!formData.fullName.trim()) {
       setMessage({ type: "error", text: "Vui lòng nhập họ tên" });
+
       return;
     }
     if (!formData.phone.trim()) {
       setMessage({ type: "error", text: "Vui lòng nhập số điện thoại" });
+
       return;
     }
     if (!formData.relationship.trim()) {
       setMessage({ type: "error", text: "Vui lòng nhập mối quan hệ" });
+
       return;
     }
 
@@ -70,7 +73,7 @@ const AddReferenceModal = ({ isOpen, onClose, loanId, onSuccess }: TProps) => {
           description: "Thêm tham chiếu thành công!",
           color: "success",
         });
-        
+
         // Reset form
         setFormData({
           fullName: "",
@@ -82,7 +85,7 @@ const AddReferenceModal = ({ isOpen, onClose, loanId, onSuccess }: TProps) => {
         if (onSuccess) {
           onSuccess();
         }
-        
+
         // Close modal immediately
         onClose();
         setMessage(null);
@@ -112,9 +115,9 @@ const AddReferenceModal = ({ isOpen, onClose, loanId, onSuccess }: TProps) => {
   return (
     <Modal
       isOpen={isOpen}
-      onClose={handleClose}
-      size="2xl"
       scrollBehavior="inside"
+      size="2xl"
+      onClose={handleClose}
     >
       <ModalContent>
         <form onSubmit={handleSubmit}>
@@ -142,50 +145,50 @@ const AddReferenceModal = ({ isOpen, onClose, loanId, onSuccess }: TProps) => {
             )}
 
             <Input
+              isRequired
+              isDisabled={isSubmitting}
               label="Họ và tên"
               placeholder="Nhập họ tên người tham chiếu"
               value={formData.fullName}
               onValueChange={(value) =>
                 setFormData({ ...formData, fullName: value })
               }
-              isRequired
-              isDisabled={isSubmitting}
             />
 
             <Input
+              isRequired
+              isDisabled={isSubmitting}
               label="Số điện thoại"
               placeholder="Nhập số điện thoại"
               value={formData.phone}
               onValueChange={(value) =>
                 setFormData({ ...formData, phone: value })
               }
-              isRequired
-              isDisabled={isSubmitting}
             />
 
             <Input
+              isRequired
+              isDisabled={isSubmitting}
               label="Mối quan hệ"
               placeholder="Ví dụ: Bạn bè, Đồng nghiệp, Người thân..."
               value={formData.relationship}
               onValueChange={(value) =>
                 setFormData({ ...formData, relationship: value })
               }
-              isRequired
-              isDisabled={isSubmitting}
             />
           </ModalBody>
 
           <ModalFooter>
             <Button
+              isDisabled={isSubmitting}
               variant="flat"
               onPress={handleClose}
-              isDisabled={isSubmitting}
             >
               Hủy
             </Button>
             <Button
               color="primary"
-              type="submit"
+              isDisabled={isSubmitting}
               startContent={
                 isSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -193,7 +196,7 @@ const AddReferenceModal = ({ isOpen, onClose, loanId, onSuccess }: TProps) => {
                   <UserPlus className="w-4 h-4" />
                 )
               }
-              isDisabled={isSubmitting}
+              type="submit"
             >
               {isSubmitting ? "Đang thêm..." : "Thêm tham chiếu"}
             </Button>

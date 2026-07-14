@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+
 import { createSupabaseServerClient as createClient } from "@/lib/supabase/server";
 import { USER_STATUS } from "@/lib/constants";
 import { getProfileByEmail, getProfileById } from "@/services/profiles.service";
@@ -20,24 +21,34 @@ export async function signInWithEmailPassword(email: string, password: string) {
 
   if (error) {
     console.error("Error signing in with email and password:", error);
+
     return { error: "Email hoặc mật khẩu không đúng." };
   }
 
   if (data.user) {
     const profile = await getProfileById(data.user.id);
+
     if (!profile) {
       await supabase.auth.signOut();
-      return { error: "Tài khoản chưa được cấp trong hệ thống. Vui lòng liên hệ Admin." };
+
+      return {
+        error:
+          "Tài khoản chưa được cấp trong hệ thống. Vui lòng liên hệ Admin.",
+      };
     }
 
     if (profile.deleted_at) {
       await supabase.auth.signOut();
+
       return { error: "Tài khoản đã bị xóa. Vui lòng liên hệ Admin." };
     }
 
     if (profile.status !== USER_STATUS.ACTIVE) {
       await supabase.auth.signOut();
-      return { error: "Tài khoản chưa được kích hoạt. Vui lòng liên hệ Admin." };
+
+      return {
+        error: "Tài khoản chưa được kích hoạt. Vui lòng liên hệ Admin.",
+      };
     }
 
     return { success: true };
@@ -52,7 +63,7 @@ export async function signInWithEmailPassword(email: string, password: string) {
 export async function signUpWithEmailPassword(
   email: string,
   password: string,
-  fullName?: string
+  fullName?: string,
 ) {
   const supabase = await createClient();
 
@@ -136,21 +147,25 @@ export async function getCurrentUser() {
  */
 export async function sendOtpToEmail(email: string) {
   const trimmedEmail = email.trim();
+
   if (!trimmedEmail) {
     return { error: "Vui lòng nhập email." };
   }
 
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   if (!emailRegex.test(trimmedEmail)) {
     return { error: "Định dạng email không hợp lệ." };
   }
 
   // Check if email exists in profiles table using service
   const profile = await getProfileByEmail(trimmedEmail);
+
   if (!profile) {
     return {
-      error: "Email chưa được đăng ký trong hệ thống. Vui lòng liên hệ Admin nếu bạn cần truy cập.",
+      error:
+        "Email chưa được đăng ký trong hệ thống. Vui lòng liên hệ Admin nếu bạn cần truy cập.",
     };
   }
 
@@ -172,15 +187,21 @@ export async function sendOtpToEmail(email: string) {
 
   if (error) {
     // Handle rate limiting
-    if (error.message.includes('rate limit') || error.message.includes('too many')) {
-      return { error: "Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau 1 phút." };
+    if (
+      error.message.includes("rate limit") ||
+      error.message.includes("too many")
+    ) {
+      return {
+        error: "Bạn đã gửi quá nhiều yêu cầu. Vui lòng thử lại sau 1 phút.",
+      };
     }
+
     return { error: error.message };
   }
 
-  return { 
+  return {
     success: true,
-    message: `Mã OTP đã được gửi đến ${trimmedEmail}. Mã có hiệu lực trong 60 phút.`
+    message: `Mã OTP đã được gửi đến ${trimmedEmail}. Mã có hiệu lực trong 60 phút.`,
   };
 }
 
@@ -210,12 +231,13 @@ export async function verifyEmailOtp(email: string, token: string) {
   });
 
   if (error) {
-    if (error.message.includes('expired')) {
+    if (error.message.includes("expired")) {
       return { error: "Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới." };
     }
-    if (error.message.includes('invalid')) {
+    if (error.message.includes("invalid")) {
       return { error: "Mã OTP không đúng. Vui lòng kiểm tra lại." };
     }
+
     return { error: error.message };
   }
 
@@ -225,6 +247,7 @@ export async function verifyEmailOtp(email: string, token: string) {
 
   // Check if user has profile in system using service
   const profile = await getProfileById(session.user.id);
+
   if (!profile) {
     return {
       error: "Tài khoản chưa được cấp trong hệ thống. Vui lòng liên hệ Admin.",
@@ -247,13 +270,13 @@ export async function verifyEmailOtp(email: string, token: string) {
  */
 export async function resendOtp(email: string) {
   const result = await sendOtpToEmail(email);
-  
+
   if (result.success) {
     return {
       success: true,
-      message: "Mã OTP mới đã được gửi lại."
+      message: "Mã OTP mới đã được gửi lại.",
     };
   }
-  
+
   return result;
 }

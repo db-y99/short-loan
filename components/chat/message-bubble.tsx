@@ -1,16 +1,17 @@
 /**
  * MessageBubble Component
  * Feature: chat-va-trao-doi-nhat-ky
- * 
+ *
  * Display a single message with avatar, name, timestamp, and status
  */
 
 "use client";
 
-import { OptimisticMessage } from "@/types/chat.types";
 import { Check, CheckCheck, AlertCircle, RefreshCw } from "lucide-react";
-import { formatTimestamp } from "@/lib/format-timestamp";
 import { Skeleton } from "@heroui/skeleton";
+
+import { OptimisticMessage } from "@/types/chat.types";
+import { formatTimestamp } from "@/lib/format-timestamp";
 
 interface MessageBubbleProps {
   message: OptimisticMessage;
@@ -39,6 +40,7 @@ export function MessageBubble({
     if (message.status === "error") {
       return <AlertCircle className="h-4 w-4 text-danger" />;
     }
+
     return null;
   };
 
@@ -106,7 +108,9 @@ export function MessageBubble({
                   <div key={index} className="relative w-64 h-48">
                     <Skeleton className="w-full h-full rounded-lg" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-sm text-default-500">Đang tải ảnh...</div>
+                      <div className="text-sm text-default-500">
+                        Đang tải ảnh...
+                      </div>
                     </div>
                   </div>
                 );
@@ -116,15 +120,15 @@ export function MessageBubble({
               return (
                 <div key={index} className="relative">
                   <button
-                    type="button"
                     className="block max-w-full rounded-lg p-0 border-0 bg-transparent cursor-pointer hover:opacity-90 transition-opacity"
+                    type="button"
                     onClick={() => onImageClick?.(imageUrl)}
                   >
                     <img
-                      src={`/api/drive/file/${imageUrl}`}
                       alt="Tin nhắn đính kèm"
                       className="max-w-full rounded-lg"
                       loading="lazy"
+                      src={`/api/drive/file/${imageUrl}`}
                     />
                   </button>
                 </div>
@@ -143,8 +147,8 @@ export function MessageBubble({
           {/* Retry button for failed messages */}
           {message.status === "error" && onRetry && (
             <button
-              onClick={() => onRetry(message)}
               className="flex items-center gap-1 text-xs text-danger hover:text-danger-700"
+              onClick={() => onRetry(message)}
             >
               <RefreshCw className="h-3 w-3" />
               Thử lại

@@ -1,6 +1,7 @@
+import type { TContractType } from "@/types/contract.types";
+
 import { LOAN_TYPES } from "@/constants/loan";
 import { CONTRACT_TYPE } from "@/types/contract.types";
-import type { TContractType } from "@/types/contract.types";
 
 export { CONTRACT_TYPE };
 

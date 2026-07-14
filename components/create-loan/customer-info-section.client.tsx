@@ -1,17 +1,20 @@
 "use client";
 
+import type { TCreateLoanForm } from "@/types/loan.types";
+
 import { Input } from "@heroui/input";
 import { Divider } from "@heroui/divider";
 import { DatePicker } from "@heroui/date-picker";
 import { parseDate } from "@internationalized/date";
 import { I18nProvider } from "@react-aria/i18n";
 
-import type { TCreateLoanForm } from "@/types/loan.types";
 import { formatNumberInput } from "@/lib/format";
 import { CCCD_ISSUE_PLACE } from "@/constants/loan";
 
 /** Chỉ parse khi chuỗi đúng ISO yyyy-mm-dd, tránh lỗi "Invalid ISO 8601 date string". */
-function parseDateSafe(value: string | undefined): ReturnType<typeof parseDate> | null {
+function parseDateSafe(
+  value: string | undefined,
+): ReturnType<typeof parseDate> | null {
   if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value.trim())) return null;
   try {
     return parseDate(value.trim());
@@ -41,50 +44,52 @@ const CustomerInfoSection = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
           isRequired
+          errorMessage={fieldErrors.full_name}
+          isInvalid={!!fieldErrors.full_name}
           label="Họ tên"
           placeholder="Nguyễn Văn A"
           value={form.full_name}
-          isInvalid={!!fieldErrors.full_name}
-          errorMessage={fieldErrors.full_name}
           onValueChange={(v) => onChange("full_name", v)}
         />
         <Input
           isRequired
+          errorMessage={fieldErrors.cccd}
+          isInvalid={!!fieldErrors.cccd}
           label="Số CCCD"
           placeholder="001234567890"
           value={form.cccd}
-          isInvalid={!!fieldErrors.cccd}
-          errorMessage={fieldErrors.cccd}
           onValueChange={(v) => onChange("cccd", v)}
         />
         <Input
           isRequired
+          errorMessage={fieldErrors.phone}
+          isInvalid={!!fieldErrors.phone}
           label="Số điện thoại"
           placeholder="0901234567"
           type="tel"
           value={form.phone}
-          isInvalid={!!fieldErrors.phone}
-          errorMessage={fieldErrors.phone}
           onValueChange={(v) => onChange("phone", v)}
         />
         <I18nProvider locale="vi-VN">
           <DatePicker
-            label="Ngày cấp CCCD"
             showMonthAndYearPickers
-            value={parseDateSafe(form.cccd_issue_date)}
+            label="Ngày cấp CCCD"
             popoverProps={{
               portalContainer: datePickerPortalContainer ?? undefined,
             }}
+            value={parseDateSafe(form.cccd_issue_date)}
             onChange={(date) => {
               try {
                 if (!date) {
                   onChange("cccd_issue_date", "");
                   onChange("cccd_issue_place", "");
+
                   return;
                 }
 
                 // Chuyển sang ISO yyyy-mm-dd format
                 const isoDate = `${date.year}-${String(date.month).padStart(2, "0")}-${String(date.day).padStart(2, "0")}`;
+
                 onChange("cccd_issue_date", isoDate);
 
                 // So sánh với 01/07/2024
@@ -94,7 +99,10 @@ const CustomerInfoSection = ({
                 // Kiểm tra valid date trước khi so sánh
                 if (!isNaN(selectedDate.getTime())) {
                   if (selectedDate >= cutoffDate) {
-                    onChange("cccd_issue_place", CCCD_ISSUE_PLACE.MINISTRY_OF_PUBLIC_SECURITY);
+                    onChange(
+                      "cccd_issue_place",
+                      CCCD_ISSUE_PLACE.MINISTRY_OF_PUBLIC_SECURITY,
+                    );
                   } else {
                     onChange("cccd_issue_place", CCCD_ISSUE_PLACE.POLICE_ADMIN);
                   }
@@ -134,11 +142,11 @@ const CustomerInfoSection = ({
       </div>
       <Input
         isRequired
+        errorMessage={fieldErrors.address}
+        isInvalid={!!fieldErrors.address}
         label="Địa chỉ"
         placeholder="123 Đường ABC, Quận 1, TP.HCM"
         value={form.address}
-        isInvalid={!!fieldErrors.address}
-        errorMessage={fieldErrors.address}
         onValueChange={(v) => onChange("address", v)}
       />
     </div>

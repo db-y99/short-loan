@@ -1,15 +1,18 @@
 import type { TAssetPledgeContractData } from "@/types/contract.types";
+
 import { isCollateralHoldLoanType } from "@/constants/contracts";
 
-export function generateAssetPledgeHTML(data: TAssetPledgeContractData): string {
-const isPackage3 = isCollateralHoldLoanType(data.loan_type);
+export function generateAssetPledgeHTML(
+  data: TAssetPledgeContractData,
+): string {
+  const isPackage3 = isCollateralHoldLoanType(data.loan_type);
 
-const draftSignatureHTML = data.DRAFT_SIGNATURE
-  ? `<img src="${data.DRAFT_SIGNATURE}" 
+  const draftSignatureHTML = data.DRAFT_SIGNATURE
+    ? `<img src="${data.DRAFT_SIGNATURE}" 
           alt="Chữ ký nháy" 
           style="max-width: 100%; max-height: 35px; vertical-align: middle; margin-left: 8px; object-fit: contain;" />`
-  : '';
-  
+    : "";
+
   const milestonesHTML = (data.MILESTONES ?? [])
     .map(
       (m) => `
@@ -228,11 +231,15 @@ const draftSignatureHTML = data.DRAFT_SIGNATURE
         <div class="center" style="width: 45%;">
           <p class="bold">BÊN B</p>
           <p>(Ký, ghi rõ họ tên)</p>
-          ${data.OFFICIAL_SIGNATURE ? `
+          ${
+            data.OFFICIAL_SIGNATURE
+              ? `
             <img src="${data.OFFICIAL_SIGNATURE}" alt="Chữ ký" style="max-width: 200px; max-height: 100px; margin: 10px auto; display: block;" />
             <p class="bold" style="margin-top: 10px;">${data.HO_TEN}</p>
             <p style="margin-top: 5px; font-size: 11pt;">Ngày ${data.NGAY}/${data.THANG}/${data.NAM}</p>
-          ` : '<div style="height: 120px;"></div>'}
+          `
+              : '<div style="height: 120px;"></div>'
+          }
         </div>
       </div>
     </div>

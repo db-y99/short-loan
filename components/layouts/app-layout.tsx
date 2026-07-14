@@ -2,10 +2,10 @@
 
 import Navbar from "@/components/navbar";
 
-export default function AppLayout({ 
+export default function AppLayout({
   children,
   onOpenSidebar,
-}: { 
+}: {
   children: React.ReactNode;
   onOpenSidebar?: () => void;
 }) {

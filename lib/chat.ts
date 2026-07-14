@@ -1,16 +1,17 @@
 /**
  * Chat Data Layer
  * Feature: chat-va-trao-doi-nhat-ky
- * 
+ *
  * Core functions for chat messaging and image upload
  */
 
 import { supabaseClient } from "./supabase/client";
+
 import { ActivityLog } from "@/types/chat.types";
 
 /**
  * Insert a text message into activity logs
- * 
+ *
  * @param loanId - The loan ID
  * @param userId - The user ID sending the message
  * @param userName - The user name sending the message
@@ -21,7 +22,7 @@ export async function insertMessage(
   loanId: string,
   userId: string,
   userName: string,
-  content: string
+  content: string,
 ): Promise<ActivityLog> {
   const { data, error } = await supabaseClient
     .from("loan_activity_logs")
@@ -45,7 +46,7 @@ export async function insertMessage(
 
 /**
  * Upload an image to Google Drive via API and return the file ID
- * 
+ *
  * @param loanId - The loan ID
  * @param file - The image file to upload
  * @param driveFolderId - The Google Drive folder ID for this loan
@@ -54,21 +55,24 @@ export async function insertMessage(
 export async function uploadImage(
   loanId: string,
   file: File,
-  driveFolderId: string
+  driveFolderId: string,
 ): Promise<string> {
   // Validate file
   const maxSize = 5 * 1024 * 1024; // 5MB
+
   if (file.size > maxSize) {
     throw new Error("Ảnh quá lớn. Vui lòng chọn ảnh nhỏ hơn 5MB.");
   }
 
   const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
+
   if (!allowedTypes.includes(file.type)) {
     throw new Error("Chỉ hỗ trợ định dạng JPG, PNG, WEBP.");
   }
 
   // Create form data
   const formData = new FormData();
+
   formData.append("file", file);
   formData.append("driveFolderId", driveFolderId);
 
@@ -89,7 +93,7 @@ export async function uploadImage(
 
 /**
  * Insert an image upload log entry
- * 
+ *
  * @param loanId - The loan ID
  * @param userId - The user ID uploading the image
  * @param userName - The user name uploading the image
@@ -100,7 +104,7 @@ export async function insertImageLog(
   loanId: string,
   userId: string,
   userName: string,
-  imageUrl: string
+  imageUrl: string,
 ): Promise<ActivityLog> {
   const { data, error } = await supabaseClient
     .from("loan_activity_logs")
@@ -124,7 +128,7 @@ export async function insertImageLog(
 
 /**
  * Fetch activity logs for a loan with pagination
- * 
+ *
  * @param loanId - The loan ID
  * @param limit - Number of logs to fetch (default: 50)
  * @param offset - Offset for pagination (default: 0)
@@ -133,7 +137,7 @@ export async function insertImageLog(
 export async function fetchActivityLogs(
   loanId: string,
   limit: number = 50,
-  offset: number = 0
+  offset: number = 0,
 ): Promise<ActivityLog[]> {
   const { data, error } = await supabaseClient
     .from("loan_activity_logs")

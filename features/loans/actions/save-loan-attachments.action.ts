@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+
 import { SaveLoanAttachmentsSchema } from "./save-loan-attachments.schema";
+
 import { addLoanAssetsService } from "@/services/loans/loans.service";
 import { TUploadFiles } from "@/types/loan.types";
 
@@ -22,6 +24,7 @@ export const saveLoanAttachmentsAction = async (payload: {
     });
 
     revalidatePath("/");
+
     return { success: true };
   } catch (err) {
     return {

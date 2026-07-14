@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { uploadAssetImagesService } from "@/services/assets/asset-images.service";
 
@@ -23,26 +24,27 @@ export async function POST(req: NextRequest) {
     }
 
     const formData = await req.formData();
-    
+
     const loanId = formData.get("loanId") as string;
+
     if (!loanId) {
       return NextResponse.json(
         { error: "loanId là bắt buộc" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Lấy tất cả files từ FormData
     const files: Array<{ buffer: Buffer; name: string; mimeType: string }> = [];
-    
+
     // Convert FormData entries to array to avoid iterator issues
     const entries = Array.from(formData.entries());
-    
+
     for (const [key, value] of entries) {
       if (key.startsWith("file_") && value instanceof File) {
         const arrayBuffer = await value.arrayBuffer();
         const buffer = Buffer.from(arrayBuffer);
-        
+
         files.push({
           buffer,
           name: value.name,
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest) {
     if (files.length === 0) {
       return NextResponse.json(
         { error: "Không có file nào được chọn" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -62,6 +64,7 @@ export async function POST(req: NextRequest) {
 
     if (!result.success) {
       const status = result.error?.includes("chờ duyệt") ? 400 : 500;
+
       return NextResponse.json(
         { success: false, error: result.error ?? "Lỗi không xác định" },
         { status },
@@ -74,12 +77,12 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("[UPLOAD_IMAGES_API_ERROR]", error);
+
     return NextResponse.json(
       {
-        error:
-          error instanceof Error ? error.message : "Lỗi khi upload ảnh",
+        error: error instanceof Error ? error.message : "Lỗi khi upload ảnh",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -50,6 +50,7 @@ const RejectLoanModal = ({ isOpen, onClose, loanId, onSuccess }: TProps) => {
 
       if (!result.success) {
         setError(result.error || "Không thể từ chối khoản vay");
+
         return;
       }
 
@@ -64,7 +65,7 @@ const RejectLoanModal = ({ isOpen, onClose, loanId, onSuccess }: TProps) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal isOpen={isOpen} size="md" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex items-center gap-2">
           <XCircle className="h-5 w-5 text-danger" />
@@ -82,22 +83,22 @@ const RejectLoanModal = ({ isOpen, onClose, loanId, onSuccess }: TProps) => {
           ) : null}
           <Textarea
             label="Lý do từ chối"
+            maxLength={500}
+            minRows={4}
             placeholder="Nhập lý do (không bắt buộc)..."
             value={reason}
             onValueChange={setReason}
-            minRows={4}
-            maxLength={500}
           />
         </ModalBody>
         <ModalFooter>
-          <Button variant="flat" onPress={onClose} isDisabled={isSubmitting}>
+          <Button isDisabled={isSubmitting} variant="flat" onPress={onClose}>
             Hủy
           </Button>
           <Button
             color="danger"
-            onPress={handleSubmit}
-            isLoading={isSubmitting}
             isDisabled={isSubmitting}
+            isLoading={isSubmitting}
+            onPress={handleSubmit}
           >
             Từ chối
           </Button>

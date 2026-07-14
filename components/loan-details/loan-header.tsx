@@ -1,7 +1,8 @@
+import type { TLoanDetails, TLoanStatus } from "@/types/loan.types";
+
 import { Button, Chip } from "@heroui/react";
 import { FileText } from "lucide-react";
 
-import type { TLoanDetails, TLoanStatus } from "@/types/loan.types";
 import { LOAN_STATUS_COLOR, LOAN_STATUS_LABEL } from "@/constants/loan";
 import { formatCurrencyVND, formatDateTimeVN } from "@/lib/format";
 

@@ -12,6 +12,7 @@ import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { addToast } from "@heroui/toast";
 import { DollarSign, Loader2 } from "lucide-react";
+
 import { formatNumberInput, parseFormattedNumber } from "@/lib/format";
 
 type TProps = {
@@ -47,6 +48,7 @@ const EditLoanAmountModal = ({
         description: "Số tiền vay phải lớn hơn 0",
         color: "danger",
       });
+
       return;
     }
 
@@ -71,6 +73,7 @@ const EditLoanAmountModal = ({
           description: result.error || "Không thể cập nhật số tiền vay",
           color: "danger",
         });
+
         return;
       }
 
@@ -95,7 +98,7 @@ const EditLoanAmountModal = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal isOpen={isOpen} size="md" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex items-center gap-2">
           <DollarSign className="w-5 h-5 text-primary" />
@@ -103,20 +106,19 @@ const EditLoanAmountModal = ({
         </ModalHeader>
         <ModalBody>
           <Input
+            isDisabled={isSubmitting}
             label="Số tiền vay mới"
             placeholder="Nhập số tiền vay"
             value={amountInput}
             onValueChange={(value) => setAmountInput(formatNumberInput(value))}
-            isDisabled={isSubmitting}
           />
         </ModalBody>
         <ModalFooter>
-          <Button variant="flat" onPress={onClose} isDisabled={isSubmitting}>
+          <Button isDisabled={isSubmitting} variant="flat" onPress={onClose}>
             Hủy
           </Button>
           <Button
             color="primary"
-            onPress={handleSubmit}
             isDisabled={isSubmitting}
             startContent={
               isSubmitting ? (
@@ -125,6 +127,7 @@ const EditLoanAmountModal = ({
                 <DollarSign className="w-4 h-4" />
               )
             }
+            onPress={handleSubmit}
           >
             {isSubmitting ? "Đang cập nhật..." : "Cập nhật"}
           </Button>

@@ -21,8 +21,8 @@ const S = {
 
   center: { textAlign: "center" as const },
   bold: { fontWeight: "bold" as const },
-  table: { 
-    width: "100%", 
+  table: {
+    width: "100%",
     borderCollapse: "collapse" as const,
     pageBreakInside: "avoid" as const,
   },
@@ -69,79 +69,73 @@ export function FullPaymentConfirmationView({
         <p style={{ ...S.bold, marginBottom: "8px" }}>
           I. BÊN GIAO TIỀN (Bên nhận cầm cố):
         </p>
-      <div style={{ fontSize: "12pt", lineHeight: 1.6 }}>
-  <ul
-    style={{
-      paddingLeft: "40px",
-      listStyleType: "disc",
-      margin: 0,
-    }}
-  >
-    <li style={{ marginBottom: "6px" }}>
-      Tên đơn vị/Doanh nghiệp:{" "}
-      <strong>{data.BEN_GIAO_TEN}</strong>
-    </li>
+        <div style={{ fontSize: "12pt", lineHeight: 1.6 }}>
+          <ul
+            style={{
+              paddingLeft: "40px",
+              listStyleType: "disc",
+              margin: 0,
+            }}
+          >
+            <li style={{ marginBottom: "6px" }}>
+              Tên đơn vị/Doanh nghiệp: <strong>{data.BEN_GIAO_TEN}</strong>
+            </li>
 
-    <li style={{ marginBottom: "6px" }}>
-      Đại diện Ông/Bà:{" "}
-      <strong>{data.BEN_GIAO_DAI_DIEN}</strong>
-    </li>
+            <li style={{ marginBottom: "6px" }}>
+              Đại diện Ông/Bà: <strong>{data.BEN_GIAO_DAI_DIEN}</strong>
+            </li>
 
-    <li style={{ marginBottom: "6px" }}>
-      Chức vụ:{" "}
-      <strong>{data.BEN_GIAO_CHUC_VU}</strong>
-    </li>
+            <li style={{ marginBottom: "6px" }}>
+              Chức vụ: <strong>{data.BEN_GIAO_CHUC_VU}</strong>
+            </li>
 
-    <li style={{ marginBottom: "6px" }}>
-      Địa chỉ:{" "}
-      <strong>{data.BEN_GIAO_DIA_CHI}</strong>
-    </li>
+            <li style={{ marginBottom: "6px" }}>
+              Địa chỉ: <strong>{data.BEN_GIAO_DIA_CHI}</strong>
+            </li>
 
-    <li style={{ marginBottom: "6px" }}>
-      Mã số thuế/CMND/CCCD số:{" "}
-      <strong>{data.BEN_GIAO_MST}</strong> cấp ngày: 14/01/2025 tại:
-      Ninh Kiều - Thuế cơ sở 1 thành phố Cần Thơ
-    </li>
+            <li style={{ marginBottom: "6px" }}>
+              Mã số thuế/CMND/CCCD số: <strong>{data.BEN_GIAO_MST}</strong> cấp
+              ngày: 14/01/2025 tại: Ninh Kiều - Thuế cơ sở 1 thành phố Cần Thơ
+            </li>
 
-    <li>
-      Số điện thoại:{" "}
-      <strong>{data.BEN_GIAO_SDT}</strong>
-    </li>
-  </ul>
-</div>
+            <li>
+              Số điện thoại: <strong>{data.BEN_GIAO_SDT}</strong>
+            </li>
+          </ul>
+        </div>
       </div>
 
       <div style={S.section}>
         <p style={{ ...S.bold, marginBottom: "8px" }}>
           II. BÊN NHẬN TIỀN (Bên cầm cố):
         </p>
-       <div style={{ fontSize: "12pt", lineHeight: 1.6 }}>
-  <ul
-    style={{
-      paddingLeft: "40px",
-      listStyleType: "disc",
-      margin: 0,
-    }}
-  >
-    <li style={{ marginBottom: "6px" }}>
-      Họ và tên: <strong>{data.HO_TEN}</strong>
-    </li>
+        <div style={{ fontSize: "12pt", lineHeight: 1.6 }}>
+          <ul
+            style={{
+              paddingLeft: "40px",
+              listStyleType: "disc",
+              margin: 0,
+            }}
+          >
+            <li style={{ marginBottom: "6px" }}>
+              Họ và tên: <strong>{data.HO_TEN}</strong>
+            </li>
 
-    <li style={{ marginBottom: "6px" }}>
-      CCCD: <strong>{data.CCCD}</strong>; Ngày cấp:{" "}
-      <strong>{data.NGAY_CAP}</strong>; Nơi cấp:{" "}
-      <strong>{data.NOI_CAP}</strong>.
-    </li>
+            <li style={{ marginBottom: "6px" }}>
+              CCCD: <strong>{data.CCCD}</strong>; Ngày cấp:{" "}
+              <strong>{data.NGAY_CAP}</strong>; Nơi cấp:{" "}
+              <strong>{data.NOI_CAP}</strong>.
+            </li>
 
-    <li style={{ marginBottom: "6px" }}>
-      Địa chỉ thường trú: <strong>{data.DIA_CHI}</strong>
-    </li>
+            <li style={{ marginBottom: "6px" }}>
+              Địa chỉ thường trú: <strong>{data.DIA_CHI}</strong>
+            </li>
 
-    <li>
-      Số điện thoại liên hệ: <strong>{data.SDT}</strong>.
-    </li>
-  </ul>
-</div>
+            <li>
+              Số điện thoại liên hệ: <strong>{data.SDT}</strong>.
+            </li>
+          </ul>
+        </div>
       </div>
 
       <div style={S.section}>
@@ -166,9 +160,7 @@ export function FullPaymentConfirmationView({
         <p style={{ marginBottom: "8px" }}>
           ✓ Chuyển khoản qua tài khoản ngân hàng
         </p>
-        <p style={{ marginLeft: "20px" }}>
-          + Ngân hàng: {data.NGAN_HANG}
-        </p>
+        <p style={{ marginLeft: "20px" }}>+ Ngân hàng: {data.NGAN_HANG}</p>
         <p style={{ marginLeft: "20px" }}>
           + Số tài khoản: {data.SO_TAI_KHOAN}
         </p>
@@ -180,35 +172,36 @@ export function FullPaymentConfirmationView({
       <div style={S.section}>
         <p style={{ ...S.bold, marginBottom: "8px" }}>IV. CAM KẾT:</p>
         <div style={{ fontSize: "12pt", lineHeight: 1.6 }}>
-  <ol
-    style={{
-      paddingLeft: "40px",
-      listStyleType: "decimal",
-      marginBottom: "8px",
-    }}
-  >
-    <li style={{ marginBottom: "6px" }}>
-      Bên Nhận Tiền xác nhận đã nhận đủ số tiền nêu trên và không có bất kỳ
-      khiếu nại nào về số tiền đã nhận.
-    </li>
+          <ol
+            style={{
+              paddingLeft: "40px",
+              listStyleType: "decimal",
+              marginBottom: "8px",
+            }}
+          >
+            <li style={{ marginBottom: "6px" }}>
+              Bên Nhận Tiền xác nhận đã nhận đủ số tiền nêu trên và không có bất
+              kỳ khiếu nại nào về số tiền đã nhận.
+            </li>
 
-    <li style={{ marginBottom: "6px" }}>
-      Việc giao nhận tiền hoàn toàn tự nguyện, không bị ép buộc hay lừa dối.
-    </li>
+            <li style={{ marginBottom: "6px" }}>
+              Việc giao nhận tiền hoàn toàn tự nguyện, không bị ép buộc hay lừa
+              dối.
+            </li>
 
-    <li>
-      Giấy xác nhận này là một bộ phận không tách rời của Hợp đồng cầm cố
-      đã ký giữa hai bên.
-    </li>
-  </ol>
-</div>
+            <li>
+              Giấy xác nhận này là một bộ phận không tách rời của Hợp đồng cầm
+              cố đã ký giữa hai bên.
+            </li>
+          </ol>
+        </div>
       </div>
 
       <div style={S.section}>
         <p style={{ ...S.bold, marginBottom: "8px" }}>V. HIỆU LỰC:</p>
         <p style={{ fontSize: "12pt", marginBottom: "60px" }}>
-          Văn bản này được lập thành 02 bản, mỗi bên giữ 01 bản, có giá trị
-          pháp lý như nhau và có hiệu lực kể từ thời điểm ký kết.
+          Văn bản này được lập thành 02 bản, mỗi bên giữ 01 bản, có giá trị pháp
+          lý như nhau và có hiệu lực kể từ thời điểm ký kết.
         </p>
 
         {/* Signatures - keep with section */}
@@ -220,9 +213,7 @@ export function FullPaymentConfirmationView({
           }}
         >
           <div style={{ ...S.center, width: "45%" }}>
-            <p style={{ ...S.bold }}>
-              ĐẠI DIỆN BÊN GIAO TIỀN
-            </p>
+            <p style={{ ...S.bold }}>ĐẠI DIỆN BÊN GIAO TIỀN</p>
             <p>(Ký, ghi rõ họ tên)</p>
           </div>
           <div style={{ ...S.center, width: "45%" }}>

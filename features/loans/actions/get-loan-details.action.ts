@@ -1,16 +1,24 @@
 "use server";
 
-import { getLoanDetailsService } from "@/services/loans/loans.service";
 import type { TLoanDetails } from "@/types/loan.types";
+
+import { getLoanDetailsService } from "@/services/loans/loans.service";
+import { requireActionStaffUser } from "@/lib/auth/action-auth";
 
 type TGetLoanDetailsResult =
   | { success: true; data: TLoanDetails }
   | { success: false; error: string; data?: null };
 
 export const getLoanDetailsAction = async (
-  loanId: string
+  loanId: string,
 ): Promise<TGetLoanDetailsResult> => {
   try {
+    const auth = await requireActionStaffUser();
+
+    if (!auth.ok) {
+      return { success: false, error: auth.error };
+    }
+
     if (!loanId?.trim()) {
       return { success: false, error: "ID khoản vay không hợp lệ" };
     }
@@ -24,7 +32,10 @@ export const getLoanDetailsAction = async (
     return { success: true, data };
   } catch (err) {
     const message =
-      err instanceof Error ? err.message : "Đã xảy ra lỗi khi tải chi tiết khoản vay";
+      err instanceof Error
+        ? err.message
+        : "Đã xảy ra lỗi khi tải chi tiết khoản vay";
+
     return { success: false, error: message };
   }
 };

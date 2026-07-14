@@ -1,12 +1,18 @@
 // app/api/drive/upload/route.ts
 import { NextRequest, NextResponse } from "next/server";
+
 import { uploadToDrive } from "@/lib/google-drive";
 import { env } from "@/config/env";
+import { requireActiveStaffUser } from "@/lib/auth/api-auth";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
+    const staff = await requireActiveStaffUser();
+
+    if (!staff.ok) return staff.response;
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const feature = formData.get("feature") as string | null;
@@ -25,7 +31,9 @@ export async function POST(req: NextRequest) {
     }
 
     // Get folder ID
-    const folderId = folderIdFromClient || env.SHORT_LOAN_GOOGLE_DRIVE_FOLDER_ID;
+    const folderId =
+      folderIdFromClient || env.SHORT_LOAN_GOOGLE_DRIVE_FOLDER_ID;
+
     if (!folderId) {
       return NextResponse.json(
         { error: `Feature không hợp lệ: ${feature}` },

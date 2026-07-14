@@ -10,8 +10,16 @@ import {
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
-import { Loader2, KeyRound, XCircle, Eye, EyeOff, RefreshCw } from "lucide-react";
+import {
+  Loader2,
+  KeyRound,
+  XCircle,
+  Eye,
+  EyeOff,
+  RefreshCw,
+} from "lucide-react";
 import { addToast } from "@heroui/toast";
+
 import { Profile } from "@/services/profiles.service";
 
 type TProps = {
@@ -27,8 +35,13 @@ const ResetPasswordModal = ({ isOpen, onClose, user }: TProps) => {
   const [error, setError] = useState<string | null>(null);
 
   const generatePassword = () => {
-    const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$!";
-    const generated = Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+    const chars =
+      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$!";
+    const generated = Array.from(
+      { length: 12 },
+      () => chars[Math.floor(Math.random() * chars.length)],
+    ).join("");
+
     setPassword(generated);
     setShowPassword(true);
   };
@@ -36,10 +49,12 @@ const ResetPasswordModal = ({ isOpen, onClose, user }: TProps) => {
   const handleSubmit = async () => {
     if (!password.trim()) {
       setError("Vui lòng nhập mật khẩu mới");
+
       return;
     }
     if (password.length < 6) {
       setError("Mật khẩu phải có ít nhất 6 ký tự");
+
       return;
     }
 
@@ -83,7 +98,7 @@ const ResetPasswordModal = ({ isOpen, onClose, user }: TProps) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="sm">
+    <Modal isOpen={isOpen} size="sm" onClose={handleClose}>
       <ModalContent>
         <ModalHeader className="flex items-center gap-2">
           <KeyRound className="w-5 h-5 text-warning" />
@@ -98,51 +113,69 @@ const ResetPasswordModal = ({ isOpen, onClose, user }: TProps) => {
           )}
 
           <div className="text-sm text-default-600 bg-default-50 dark:bg-default-100/10 p-3 rounded-lg space-y-1">
-            <p><span className="font-medium">Người dùng:</span> {user.full_name}</p>
-            <p><span className="font-medium">Email:</span> {user.email}</p>
+            <p>
+              <span className="font-medium">Người dùng:</span> {user.full_name}
+            </p>
+            <p>
+              <span className="font-medium">Email:</span> {user.email}
+            </p>
           </div>
 
           <Input
-            label="Mật khẩu mới"
-            placeholder="Nhập mật khẩu mới"
-            value={password}
-            onValueChange={setPassword}
-            type={showPassword ? "text" : "password"}
             isRequired
-            isDisabled={isSubmitting}
             description="Tối thiểu 6 ký tự"
             endContent={
               <div className="flex items-center gap-1">
                 <button
-                  type="button"
-                  onClick={() => setShowPassword((v) => !v)}
                   className="text-default-400 hover:text-default-600 p-1"
                   tabIndex={-1}
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
                 <button
-                  type="button"
-                  onClick={generatePassword}
                   className="text-default-400 hover:text-primary p-1"
                   tabIndex={-1}
                   title="Tạo mật khẩu ngẫu nhiên"
+                  type="button"
+                  onClick={generatePassword}
                 >
                   <RefreshCw className="w-4 h-4" />
                 </button>
               </div>
             }
+            isDisabled={isSubmitting}
+            label="Mật khẩu mới"
+            placeholder="Nhập mật khẩu mới"
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onValueChange={setPassword}
           />
         </ModalBody>
         <ModalFooter>
-          <Button variant="flat" onPress={handleClose} isDisabled={isSubmitting}>
+          <Button
+            isDisabled={isSubmitting}
+            variant="flat"
+            onPress={handleClose}
+          >
             Hủy
           </Button>
           <Button
             color="warning"
-            onPress={handleSubmit}
             isDisabled={isSubmitting || !password.trim()}
-            startContent={isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <KeyRound className="w-4 h-4" />}
+            startContent={
+              isSubmitting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <KeyRound className="w-4 h-4" />
+              )
+            }
+            onPress={handleSubmit}
           >
             {isSubmitting ? "Đang đặt lại..." : "Đặt lại mật khẩu"}
           </Button>

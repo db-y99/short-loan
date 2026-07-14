@@ -69,12 +69,12 @@ export function calculateAppraisalFee(
 
 /**
  * Tính toán chi tiết cho Gói 1: Vay trả góp (3 kỳ)
- * 
+ *
  * Logic:
  * - Kỳ 1 (ngày 7): Gốc 20%, Lãi = Vay × 0.033% × 7 ngày
  * - Kỳ 2 (ngày 18): Gốc 30%, Lãi = (Vay - G1) × 0.033% × 11 ngày
  * - Kỳ 3 (ngày 30): Gốc 50%, Lãi = (Vay - G1 - G2) × 0.033% × 12 ngày
- * 
+ *
  * Phí thuê = Mục tiêu lợi nhuận - Tiền lãi thực tế
  * - Kỳ 1: (Vay × 3%) - L1
  * - Kỳ 2: (Vay × 5%) - L2
@@ -145,11 +145,11 @@ export function calculateInstallment3Periods(
  * Gói 2: Gốc cuối kỳ (Theo mốc)
  * Dành cho khách giữ lại tài sản để sử dụng (xe máy/ô tô)
  * Phí cao hơn vì khách được sử dụng tài sản
- * 
+ *
  * Tách riêng:
  * - Lãi suất: 0.033%/ngày (pháp lý)
  * - Phí thuê: Để đạt tổng mục tiêu 5% - 8% - 12%
- * 
+ *
  * - Mốc 7 ngày: Tổng 5% (Lãi 0.231% + Phí 4.769%)
  * - Mốc 18 ngày: Tổng 8% (Lãi 0.594% + Phí 7.406%)
  * - Mốc 30 ngày: Tổng 12% (Lãi 0.99% + Phí 11.01%)
@@ -207,13 +207,13 @@ export function calculateBulletPaymentByMilestone(
 /**
  * Gói 3: Gốc cuối kỳ + Giữ tài sản
  * Tài sản được lưu kho tại cửa hàng → Phí thấp hơn Gói 2
- * 
+ *
  * Công thức mới:
  * - Lãi suất: 0.033%/ngày (pháp lý)
  * - Phí thuê = (Vay × %) - Lãi
  * - Phí dịch vụ = 30,000 đ (nếu Vay ≤ 2,000,000)
  * - Tổng chuộc = Vay + Lãi + Phí thuê + Phí dịch vụ
- * 
+ *
  * - Mốc 7 ngày: Lãi = Vay × 0.033% × 7, Phí thuê = (Vay × 1.25%) - Lãi
  * - Mốc 18 ngày: Lãi = Vay × 0.033% × 18, Phí thuê = (Vay × 3.5%) - Lãi
  * - Mốc 30 ngày: Lãi = Vay × 0.033% × 30, Phí thuê = (Vay × 5%) - Lãi
@@ -279,11 +279,11 @@ export function calculateBulletPaymentWithCollateralHold(
 
 /**
  * Tính phí khi thanh toán trễ hạn cho Gói 3
- * 
+ *
  * Trễ qua 31 ngày (ngày 31):
  * - Phí = Vay × (5% + 1.25%) = Vay × 6.25%
  * - Tổng chuộc = Vay + Phí
- * 
+ *
  * Trễ từ ngày 36 trở đi (ngày thứ 6 của tháng mới):
  * - Phí = Vay × (5% + 1.25% + 2%) = Vay × 8.25%
  * - Tổng chuộc = Vay + Phí

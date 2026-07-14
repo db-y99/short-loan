@@ -1,4 +1,3 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type {
   TLoan,
   TLoanDetails,
@@ -12,6 +11,8 @@ import type {
   TCreateLoanInput,
   TUploadFiles,
 } from "@/types/loan.types";
+
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   LOAN_TYPE_LABEL,
   ASSET_TYPE_LABEL,
@@ -22,9 +23,7 @@ import {
 import { formatDateShortVN } from "@/lib/format";
 import { calculatePaymentPeriods } from "@/lib/payment-calculator";
 import { getPaymentPeriodsService } from "@/services/payments/payment-periods.service";
-import {
-  splitLoanContractFiles,
-} from "@/lib/contract-utils";
+import { splitLoanContractFiles } from "@/lib/contract-utils";
 
 export type TLoanFilters = {
   search?: string;
@@ -89,6 +88,7 @@ export const getLoansService = async (
   // Client-side filters (search, creator)
   if (filters?.search) {
     const keyword = filters.search.toLowerCase();
+
     results = results.filter((row) => {
       const cust = row.customers as
         | { full_name: string }
@@ -119,8 +119,12 @@ export const getLoansService = async (
         | null;
       const profile = Array.isArray(prof) ? prof[0] : prof;
 
-      const branch = row.branches as { name: string } | { name: string }[] | null;
-      const branchName = (Array.isArray(branch) ? branch[0] : branch)?.name ?? null;
+      const branch = row.branches as
+        | { name: string }
+        | { name: string }[]
+        | null;
+      const branchName =
+        (Array.isArray(branch) ? branch[0] : branch)?.name ?? null;
 
       const loanTypeKey = row.loan_type as TLoanType;
       const creator = profile?.full_name ?? profile?.email ?? "—";
@@ -267,6 +271,7 @@ export const updateLoanDriveFolderIdService = async ({
     .eq("id", loanId);
 
   if (error) throw new Error(error.message);
+
   return true;
 };
 
@@ -306,7 +311,9 @@ export const addLoanAssetsService = async ({
   }));
 
   const { error } = await supabase.from("loan_assets").insert(assetRows);
+
   if (error) throw new Error(error.message);
+
   return true;
 };
 
@@ -497,18 +504,17 @@ export const getLoanDetailsService = async (
     if (cycle) {
       // Lấy payment periods từ DB
       const periods = await getPaymentPeriodsService(loanId, cycle.id);
+
       currentPeriod = periods.currentPeriod;
       nextPeriod = periods.nextPeriod;
-
-      console.log("✅ Payment periods loaded from DB");
     } else {
       // Fallback: Tính động nếu không thể tạo cycle
-      console.log("⚠️ Using calculated payment periods");
       const calculated = calculatePaymentPeriods(
         Number(loan.amount),
         loanTypeStr,
         loan.signed_at ?? loan.created_at,
       );
+
       currentPeriod = calculated.currentPeriod;
       nextPeriod = calculated.nextPeriod;
     }
@@ -520,6 +526,7 @@ export const getLoanDetailsService = async (
       loanTypeStr,
       loan.signed_at ?? loan.created_at,
     );
+
     currentPeriod = calculated.currentPeriod;
     nextPeriod = calculated.nextPeriod;
   }
@@ -605,6 +612,7 @@ export const generateLoanCodeService = async (
 
   if (error) throw new Error(error.message);
   const num = typeof seq === "number" ? seq : parseInt(String(seq), 10);
+
   if (Number.isNaN(num) || num < 1) {
     throw new Error("Invalid contract sequence from get_next_contract_seq");
   }

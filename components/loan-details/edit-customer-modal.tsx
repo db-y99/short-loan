@@ -1,5 +1,7 @@
 "use client";
 
+import type { TCustomerFormData } from "@/types/customer.types";
+
 import { useState, useEffect } from "react";
 import {
   Modal,
@@ -13,10 +15,10 @@ import { Input } from "@heroui/input";
 import { DatePicker } from "@heroui/date-picker";
 import { Loader2, UserCog, CheckCircle, XCircle } from "lucide-react";
 import { getLocalTimeZone, today } from "@internationalized/date";
+
 import { CCCD_ISSUE_PLACE } from "@/constants/loan";
 import { formatNumberInput } from "@/lib/format";
-import type { TCustomerFormData } from "@/types/customer.types";
-import {parseDateString} from "@/lib/format"
+import { parseDateString } from "@/lib/format";
 
 type TProps = {
   isOpen: boolean;
@@ -48,9 +50,10 @@ const EditCustomerModal = ({
     cccd_issue_place: customerData.cccdIssuePlace,
     facebook_link: customerData.facebookUrl || "",
     job: customerData.job,
-    income: customerData.income ? formatNumberInput(String(customerData.income)) : "",
+    income: customerData.income
+      ? formatNumberInput(String(customerData.income))
+      : "",
   });
-
 
   // Update form when customerData changes
   useEffect(() => {
@@ -63,7 +66,9 @@ const EditCustomerModal = ({
       cccd_issue_place: customerData.cccdIssuePlace,
       facebook_link: customerData.facebookUrl || "",
       job: customerData.job,
-      income: customerData.income ? formatNumberInput(String(customerData.income)) : "",
+      income: customerData.income
+        ? formatNumberInput(String(customerData.income))
+        : "",
     });
   }, [customerData]);
 
@@ -73,14 +78,17 @@ const EditCustomerModal = ({
     // Validate
     if (!formData.full_name.trim()) {
       setMessage({ type: "error", text: "Vui lòng nhập họ tên" });
+
       return;
     }
     if (!formData.cccd.trim()) {
       setMessage({ type: "error", text: "Vui lòng nhập số CCCD" });
+
       return;
     }
     if (!formData.phone.trim()) {
       setMessage({ type: "error", text: "Vui lòng nhập số điện thoại" });
+
       return;
     }
 
@@ -102,7 +110,9 @@ const EditCustomerModal = ({
           cccd_issue_place: formData.cccd_issue_place,
           facebook_link: formData.facebook_link,
           job: formData.job,
-          income: formData.income ? parseFloat(formData.income.replace(/[.,]/g, "")) : null,
+          income: formData.income
+            ? parseFloat(formData.income.replace(/[.,]/g, ""))
+            : null,
         }),
       });
 
@@ -116,9 +126,9 @@ const EditCustomerModal = ({
 
         // Call success callback
         if (onSuccess) {
-            onSuccess();
-            onClose();
-            setMessage(null);
+          onSuccess();
+          onClose();
+          setMessage(null);
         }
       } else {
         setMessage({ type: "error", text: result.error || "Có lỗi xảy ra" });
@@ -141,6 +151,7 @@ const EditCustomerModal = ({
   const handleDateChange = (date: any) => {
     if (!date) {
       setFormData({ ...formData, cccd_issue_date: "" });
+
       return;
     }
 
@@ -153,7 +164,8 @@ const EditCustomerModal = ({
     const selectedDate = new Date(isoDate);
 
     if (selectedDate >= cutoffDate) {
-      updatedData.cccd_issue_place = CCCD_ISSUE_PLACE.MINISTRY_OF_PUBLIC_SECURITY;
+      updatedData.cccd_issue_place =
+        CCCD_ISSUE_PLACE.MINISTRY_OF_PUBLIC_SECURITY;
     } else {
       updatedData.cccd_issue_place = CCCD_ISSUE_PLACE.POLICE_ADMIN;
     }
@@ -164,9 +176,9 @@ const EditCustomerModal = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={handleClose}
-      size="3xl"
       scrollBehavior="inside"
+      size="3xl"
+      onClose={handleClose}
     >
       <ModalContent>
         <form onSubmit={handleSubmit}>
@@ -195,28 +207,30 @@ const EditCustomerModal = ({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
+                isRequired
+                isDisabled={isSubmitting}
                 label="Họ tên"
                 placeholder="Nguyễn Văn A"
                 value={formData.full_name}
                 onValueChange={(value) =>
                   setFormData({ ...formData, full_name: value })
                 }
-                isRequired
-                isDisabled={isSubmitting}
               />
 
               <Input
+                isRequired
+                isDisabled={isSubmitting}
                 label="Số CCCD"
                 placeholder="001234567890"
                 value={formData.cccd}
                 onValueChange={(value) =>
                   setFormData({ ...formData, cccd: value })
                 }
-                isRequired
-                isDisabled={isSubmitting}
               />
 
               <Input
+                isRequired
+                isDisabled={isSubmitting}
                 label="Số điện thoại"
                 placeholder="0901234567"
                 type="tel"
@@ -224,30 +238,33 @@ const EditCustomerModal = ({
                 onValueChange={(value) =>
                   setFormData({ ...formData, phone: value })
                 }
-                isRequired
-                isDisabled={isSubmitting}
               />
 
               <DatePicker
-                label="Ngày cấp CCCD"
                 showMonthAndYearPickers
-                maxValue={today(getLocalTimeZone())}
-                value={formData.cccd_issue_date ? parseDateString(formData.cccd_issue_date) : null}
-                onChange={handleDateChange}
                 isDisabled={isSubmitting}
+                label="Ngày cấp CCCD"
+                maxValue={today(getLocalTimeZone())}
+                value={
+                  formData.cccd_issue_date
+                    ? parseDateString(formData.cccd_issue_date)
+                    : null
+                }
+                onChange={handleDateChange}
               />
 
               <Input
+                isDisabled={isSubmitting}
                 label="Nơi cấp"
                 placeholder="Cục Cảnh sát QLHC về TTXH"
                 value={formData.cccd_issue_place}
                 onValueChange={(value) =>
                   setFormData({ ...formData, cccd_issue_place: value })
                 }
-                isDisabled={isSubmitting}
               />
 
               <Input
+                isDisabled={isSubmitting}
                 label="Link Facebook"
                 placeholder="https://facebook.com/..."
                 type="url"
@@ -255,52 +272,51 @@ const EditCustomerModal = ({
                 onValueChange={(value) =>
                   setFormData({ ...formData, facebook_link: value })
                 }
-                isDisabled={isSubmitting}
               />
 
               <Input
+                isDisabled={isSubmitting}
                 label="Công việc"
                 placeholder="Nhân viên văn phòng"
                 value={formData.job}
                 onValueChange={(value) =>
                   setFormData({ ...formData, job: value })
                 }
-                isDisabled={isSubmitting}
               />
 
               <Input
+                isDisabled={isSubmitting}
                 label="Thu nhập"
                 placeholder="10.000.000"
                 value={formData.income}
                 onValueChange={(value) =>
                   setFormData({ ...formData, income: formatNumberInput(value) })
                 }
-                isDisabled={isSubmitting}
               />
             </div>
 
             <Input
+              isDisabled={isSubmitting}
               label="Địa chỉ"
               placeholder="123 Đường ABC, Quận 1, TP.HCM"
               value={formData.address}
               onValueChange={(value) =>
                 setFormData({ ...formData, address: value })
               }
-              isDisabled={isSubmitting}
             />
           </ModalBody>
 
           <ModalFooter>
             <Button
+              isDisabled={isSubmitting}
               variant="flat"
               onPress={handleClose}
-              isDisabled={isSubmitting}
             >
               Hủy
             </Button>
             <Button
               color="primary"
-              type="submit"
+              isDisabled={isSubmitting}
               startContent={
                 isSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -308,7 +324,7 @@ const EditCustomerModal = ({
                   <UserCog className="w-4 h-4" />
                 )
               }
-              isDisabled={isSubmitting}
+              type="submit"
             >
               {isSubmitting ? "Đang cập nhật..." : "Cập nhật"}
             </Button>

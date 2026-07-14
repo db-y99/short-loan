@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LOAN_STATUS } from "@/constants/loan";
-import { getCurrentUser } from "@/lib/actions/auth";
+import { requireLoanApproverUser } from "@/lib/auth/api-auth";
 import { isRpcNotFoundError, parseRpcResult } from "@/lib/supabase/rpc-result";
 
 async function recordFlexiblePaymentFallback({
@@ -26,7 +27,11 @@ async function recordFlexiblePaymentFallback({
     .single();
 
   if (loanError || !loan) {
-    return { success: false as const, error: "Không tìm thấy khoản vay", status: 404 };
+    return {
+      success: false as const,
+      error: "Không tìm thấy khoản vay",
+      status: 404,
+    };
   }
 
   if (loan.status !== LOAN_STATUS.DISBURSED) {
@@ -80,6 +85,7 @@ async function recordFlexiblePaymentFallback({
       currentCycle = existingCycle;
     } else if (cycleError || !newCycle) {
       console.error("[FLEXIBLE_PAYMENT_CYCLE_ERROR]", cycleError);
+
       return {
         success: false as const,
         error: "Lỗi khi tạo chu kỳ thanh toán",
@@ -112,6 +118,7 @@ async function recordFlexiblePaymentFallback({
 
   if (paymentError) {
     console.error("[FLEXIBLE_PAYMENT_INSERT_ERROR]", paymentError);
+
     return {
       success: false as const,
       error: "Lỗi khi tạo bản ghi thanh toán",
@@ -150,13 +157,11 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
+    const staff = await requireLoanApproverUser();
+
+    if (!staff.ok) return staff.response;
+
+    const { user } = staff;
 
     const { amount, note } = await request.json();
 
@@ -183,9 +188,13 @@ export async function POST(
 
     if (!rpcError) {
       const result = parseRpcResult(rpcData);
+
       if (!result.success) {
         return NextResponse.json(
-          { success: false, error: result.error || "Không thể ghi nhận thanh toán" },
+          {
+            success: false,
+            error: result.error || "Không thể ghi nhận thanh toán",
+          },
           { status: 400 },
         );
       }
@@ -202,6 +211,7 @@ export async function POST(
 
     if (!isRpcNotFoundError(rpcError)) {
       console.error("[FLEXIBLE_PAYMENT_RPC_ERROR]", rpcError);
+
       return NextResponse.json(
         { success: false, error: "Lỗi khi ghi nhận thanh toán" },
         { status: 500 },
@@ -230,6 +240,7 @@ export async function POST(
     });
   } catch (error) {
     console.error("[FLEXIBLE_PAYMENT_API_ERROR]", error);
+
     return NextResponse.json(
       { success: false, error: "Lỗi server" },
       { status: 500 },

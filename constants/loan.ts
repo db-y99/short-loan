@@ -1,4 +1,5 @@
 import type { TActivityLogType, TLoanStatus } from "@/types/loan.types";
+
 import {
   MessageCircle,
   AlertCircle,
@@ -113,12 +114,14 @@ export function getContractCodeSuffix(loanPackage: string | null): string {
     return CONTRACT_CODE_SUFFIX.Y99DNGD;
   }
   const lower = loanPackage.toLowerCase();
+
   if (lower.includes("giữ ts") || lower.includes("giữ tài sản")) {
     return CONTRACT_CODE_SUFFIX.Y99GTS;
   }
   if (lower.includes("gốc cuối kỳ")) {
     return CONTRACT_CODE_SUFFIX.Y99GCK;
   }
+
   return CONTRACT_CODE_SUFFIX.Y99DNGD;
 }
 

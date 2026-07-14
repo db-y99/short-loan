@@ -1,11 +1,14 @@
 "use client";
 
+import type { TCreateLoanForm } from "@/types/loan.types";
+
 import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Textarea } from "@heroui/input";
 import { Divider } from "@heroui/divider";
 
-import type { TCreateLoanForm } from "@/types/loan.types";
+import LoanPreviewSection from "./loan-preview-section.client";
+
 import { formatNumberInput } from "@/lib/format";
 import {
   ASSET_TYPES,
@@ -13,7 +16,6 @@ import {
   LOAN_TYPES,
   LOAN_TYPE_LABEL,
 } from "@/constants/loan";
-import LoanPreviewSection from "./loan-preview-section.client";
 
 type TProps = {
   form: TCreateLoanForm;
@@ -31,7 +33,10 @@ const LOAN_TYPE_OPTIONS = Object.values(LOAN_TYPES).map((type) => ({
   label: LOAN_TYPE_LABEL[type],
 }));
 
-const VEHICLE_TYPES: readonly string[] = [ASSET_TYPES.MOTORBIKE, ASSET_TYPES.CAR];
+const VEHICLE_TYPES: readonly string[] = [
+  ASSET_TYPES.MOTORBIKE,
+  ASSET_TYPES.CAR,
+];
 const DEVICE_TYPES: readonly string[] = [ASSET_TYPES.PHONE, ASSET_TYPES.LAPTOP];
 
 const LoanInfoSection = ({ form, onChange, fieldErrors = {} }: TProps) => {
@@ -46,11 +51,11 @@ const LoanInfoSection = ({ form, onChange, fieldErrors = {} }: TProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Select
           isRequired
+          errorMessage={fieldErrors.asset_type}
+          isInvalid={!!fieldErrors.asset_type}
           label="Loại tài sản"
           placeholder="Chọn loại tài sản"
           selectedKeys={form.asset_type ? [form.asset_type] : []}
-          isInvalid={!!fieldErrors.asset_type}
-          errorMessage={fieldErrors.asset_type}
           onChange={(e) => onChange("asset_type", e.target.value)}
         >
           {ASSET_TYPE_OPTIONS.map((option) => (
@@ -60,11 +65,11 @@ const LoanInfoSection = ({ form, onChange, fieldErrors = {} }: TProps) => {
 
         <Input
           isRequired
+          errorMessage={fieldErrors.asset_name}
+          isInvalid={!!fieldErrors.asset_name}
           label="Tên tài sản"
           placeholder="Honda Wave RSX 2024"
           value={form.asset_name}
-          isInvalid={!!fieldErrors.asset_name}
-          errorMessage={fieldErrors.asset_name}
           onValueChange={(v) => onChange("asset_name", v)}
         />
 
@@ -106,21 +111,21 @@ const LoanInfoSection = ({ form, onChange, fieldErrors = {} }: TProps) => {
 
         <Input
           isRequired
+          errorMessage={fieldErrors.loan_amount}
+          isInvalid={!!fieldErrors.loan_amount}
           label="Số tiền vay"
           placeholder="5.000.000"
           value={form.loan_amount}
-          isInvalid={!!fieldErrors.loan_amount}
-          errorMessage={fieldErrors.loan_amount}
           onValueChange={(v) => onChange("loan_amount", formatNumberInput(v))}
         />
 
         <Select
           isRequired
+          errorMessage={fieldErrors.loan_type}
+          isInvalid={!!fieldErrors.loan_type}
           label="Hình thức"
           placeholder="Chọn gói vay"
           selectedKeys={form.loan_type ? [form.loan_type] : []}
-          isInvalid={!!fieldErrors.loan_type}
-          errorMessage={fieldErrors.loan_type}
           onChange={(e) => onChange("loan_type", e.target.value)}
         >
           {LOAN_TYPE_OPTIONS.map((option) => (
@@ -132,10 +137,10 @@ const LoanInfoSection = ({ form, onChange, fieldErrors = {} }: TProps) => {
       <LoanPreviewSection form={form} />
       <Textarea
         label="Tình trạng tài sản"
+        minRows={2}
         placeholder="Ví dụ: Còn mới, hoạt động tốt, có vài vết xước nhỏ..."
         value={form.asset_condition || ""}
         onValueChange={(v) => onChange("asset_condition", v)}
-        minRows={2}
       />
 
       <Textarea

@@ -1,13 +1,12 @@
 /**
  * SystemEventBubble Component
  * Feature: chat-va-trao-doi-nhat-ky
- * 
+ *
  * Display system events (approval, disbursement, etc.)
  */
 
 "use client";
 
-import { ActivityLog } from "@/types/chat.types";
 import {
   CheckCircle,
   XCircle,
@@ -16,6 +15,8 @@ import {
   DollarSign,
   Info,
 } from "lucide-react";
+
+import { ActivityLog } from "@/types/chat.types";
 import { formatTimestamp } from "@/lib/format-timestamp";
 
 interface SystemEventBubbleProps {

@@ -1,14 +1,17 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { ROUTES, isLoanSignPublicRoute } from "@/constants/routes";
+import { env } from "@/config/env";
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
   });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -16,38 +19,48 @@ export async function updateSession(request: NextRequest) {
         },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
+            request.cookies.set(name, value),
           );
           supabaseResponse = NextResponse.next({
             request,
           });
           cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
+            supabaseResponse.cookies.set(name, value, options),
           );
         },
       },
-    }
+    },
   );
 
-  // Refreshing the auth token
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protected routes - redirect to login if not authenticated
   const { pathname } = request.nextUrl;
-  const isPublicRoute = pathname === "/login" || pathname.startsWith("/auth");
+
+  // API routes tự guard auth — tránh redirect HTML khi fetch
+  if (pathname.startsWith("/api/")) {
+    return supabaseResponse;
+  }
+
+  const isPublicRoute =
+    pathname === ROUTES.LOGIN ||
+    pathname.startsWith("/auth") ||
+    isLoanSignPublicRoute(pathname);
 
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+
+    url.pathname = ROUTES.LOGIN;
+
     return NextResponse.redirect(url);
   }
 
-  // Redirect to home if already logged in and trying to access login
-  if (user && pathname === "/login") {
+  if (user && pathname === ROUTES.LOGIN) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+
+    url.pathname = ROUTES.HOME;
+
     return NextResponse.redirect(url);
   }
 

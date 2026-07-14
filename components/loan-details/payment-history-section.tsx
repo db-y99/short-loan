@@ -3,6 +3,7 @@
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { History, DollarSign, Calendar, FileText } from "lucide-react";
+
 import { formatCurrencyVND, formatDateTimeVN } from "@/lib/format";
 
 type TPaymentTransaction = {
@@ -25,7 +26,7 @@ const PaymentHistorySection = ({ payments, totalInterestPaid }: TProps) => {
   }
 
   return (
-    <Card shadow="sm" className="col-span-2">
+    <Card className="col-span-2" shadow="sm">
       <CardHeader className="flex items-center justify-between pb-2">
         <div className="flex items-center gap-2">
           <History className="w-5 h-5 text-primary" />
@@ -33,7 +34,7 @@ const PaymentHistorySection = ({ payments, totalInterestPaid }: TProps) => {
           <span className="text-sm text-default-500">({payments.length})</span>
         </div>
         {totalInterestPaid !== undefined && totalInterestPaid > 0 && (
-          <Chip color="success" variant="flat" size="sm">
+          <Chip color="success" size="sm" variant="flat">
             Tổng: {formatCurrencyVND(totalInterestPaid)}
           </Chip>
         )}
@@ -51,8 +52,10 @@ const PaymentHistorySection = ({ payments, totalInterestPaid }: TProps) => {
                   <p className="font-semibold text-success">
                     {formatCurrencyVND(payment.amount)}
                   </p>
-                  <Chip size="sm" variant="flat" color="primary">
-                    {payment.payment_method === "cash" ? "Tiền mặt" : payment.payment_method}
+                  <Chip color="primary" size="sm" variant="flat">
+                    {payment.payment_method === "cash"
+                      ? "Tiền mặt"
+                      : payment.payment_method}
                   </Chip>
                 </div>
 

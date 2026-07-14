@@ -1,16 +1,21 @@
 "use client";
 
+import type {
+  TOverdueData,
+  TOverdueCustomer,
+} from "@/services/payments/overdue.service";
+import type { TLoanDetails } from "@/types/loan.types";
+
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
 import { Phone, Calendar, DollarSign, Package, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useTransition, useState, useCallback } from "react";
+
 import { formatCurrencyVND, formatDateShortVN } from "@/lib/format";
 import { LOAN_TYPE_LABEL } from "@/constants/loan";
-import type { TOverdueData, TOverdueCustomer } from "@/services/payments/overdue.service";
 import LoanDetailsModal from "@/components/loan-details/loan-details-modal.client";
-import type { TLoanDetails } from "@/types/loan.types";
 
 type TProps = {
   data: TOverdueData;
@@ -70,9 +75,9 @@ function CustomerCard({ customer, onOpenDetails }: TCustomerCardProps) {
             <p className="text-xs text-default-500">{customer.loan_code}</p>
           </div>
           <Chip
+            color={customer.days_overdue < 0 ? "warning" : "danger"}
             size="sm"
             variant="flat"
-            color={customer.days_overdue < 0 ? "warning" : "danger"}
           >
             {customer.days_overdue < 0
               ? `Còn ${Math.abs(customer.days_overdue)} ngày`
@@ -101,7 +106,8 @@ function CustomerCard({ customer, onOpenDetails }: TCustomerCardProps) {
         </div>
 
         <div className="text-xs text-default-400 mt-1">
-          Kỳ {customer.period_number} • {LOAN_TYPE_LABEL[customer.loan_type as keyof typeof LOAN_TYPE_LABEL]}
+          Kỳ {customer.period_number} •{" "}
+          {LOAN_TYPE_LABEL[customer.loan_type as keyof typeof LOAN_TYPE_LABEL]}
         </div>
       </CardBody>
     </Card>
@@ -131,7 +137,7 @@ function KanbanColumn({
         <CardHeader className="flex flex-col items-start gap-1 pb-2">
           <div className="flex justify-between items-center w-full">
             <h3 className="text-base font-bold">{title}</h3>
-            <Chip size="sm" color={color} variant="flat">
+            <Chip color={color} size="sm" variant="flat">
               {customers.length}
             </Chip>
           </div>
@@ -144,7 +150,11 @@ function KanbanColumn({
             </div>
           ) : (
             customers.map((customer) => (
-              <CustomerCard key={customer.id} customer={customer} onOpenDetails={onOpenDetails} />
+              <CustomerCard
+                key={customer.id}
+                customer={customer}
+                onOpenDetails={onOpenDetails}
+              />
             ))
           )}
         </CardBody>
@@ -220,10 +230,10 @@ export default function OverdueKanban({ data }: TProps) {
           </div>
           <Button
             color="primary"
-            variant="flat"
-            startContent={<RefreshCw className="w-4 h-4" />}
-            onPress={handleRefresh}
             isLoading={isPending}
+            startContent={<RefreshCw className="w-4 h-4" />}
+            variant="flat"
+            onPress={handleRefresh}
           >
             Làm mới
           </Button>
@@ -254,11 +264,11 @@ export default function OverdueKanban({ data }: TProps) {
       </div>
 
       <LoanDetailsModal
-        isOpen={selectedLoanId !== null}
-        onClose={handleCloseDetails}
-        loanDetails={loanDetails}
-        isLoading={isLoadingDetails}
         error={detailsError}
+        isLoading={isLoadingDetails}
+        isOpen={selectedLoanId !== null}
+        loanDetails={loanDetails}
+        onClose={handleCloseDetails}
         onRefresh={handleRefreshDetails}
       />
     </>

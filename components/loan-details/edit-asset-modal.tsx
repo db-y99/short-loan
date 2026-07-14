@@ -13,6 +13,7 @@ import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { addToast } from "@heroui/toast";
 import { Loader2, Smartphone } from "lucide-react";
+
 import { ASSET_TYPES, ASSET_TYPE_LABEL } from "@/constants/loan";
 
 const ASSET_TYPE_OPTIONS = Object.values(ASSET_TYPES).map((type) => ({
@@ -20,7 +21,10 @@ const ASSET_TYPE_OPTIONS = Object.values(ASSET_TYPES).map((type) => ({
   label: ASSET_TYPE_LABEL[type],
 }));
 
-const VEHICLE_TYPES: readonly string[] = [ASSET_TYPES.MOTORBIKE, ASSET_TYPES.CAR];
+const VEHICLE_TYPES: readonly string[] = [
+  ASSET_TYPES.MOTORBIKE,
+  ASSET_TYPES.CAR,
+];
 const DEVICE_TYPES: readonly string[] = [ASSET_TYPES.PHONE, ASSET_TYPES.LAPTOP];
 
 type TProps = {
@@ -38,7 +42,13 @@ type TProps = {
   onSuccess?: () => void;
 };
 
-const EditAssetModal = ({ isOpen, onClose, loanId, assetData, onSuccess }: TProps) => {
+const EditAssetModal = ({
+  isOpen,
+  onClose,
+  loanId,
+  assetData,
+  onSuccess,
+}: TProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     assetType: "",
@@ -74,6 +84,7 @@ const EditAssetModal = ({ isOpen, onClose, loanId, assetData, onSuccess }: TProp
         description: "Vui lòng nhập loại tài sản và tên tài sản",
         color: "danger",
       });
+
       return;
     }
 
@@ -88,12 +99,14 @@ const EditAssetModal = ({ isOpen, onClose, loanId, assetData, onSuccess }: TProp
       });
 
       const result = await response.json();
+
       if (!result.success) {
         addToast({
           title: "Lỗi",
           description: result.error || "Không thể cập nhật thông tin tài sản",
           color: "danger",
         });
+
         return;
       }
 
@@ -117,7 +130,7 @@ const EditAssetModal = ({ isOpen, onClose, loanId, assetData, onSuccess }: TProp
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="3xl" scrollBehavior="inside">
+    <Modal isOpen={isOpen} scrollBehavior="inside" size="3xl" onClose={onClose}>
       <ModalContent>
         <form onSubmit={handleSubmit}>
           <ModalHeader className="flex items-center gap-2">
@@ -127,75 +140,74 @@ const EditAssetModal = ({ isOpen, onClose, loanId, assetData, onSuccess }: TProp
           <ModalBody className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Select
               isRequired
+              isDisabled={isSubmitting}
               label="Loại tài sản"
               placeholder="Chọn loại tài sản"
               selectedKeys={formData.assetType ? [formData.assetType] : []}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, assetType: e.target.value }))
               }
-              isDisabled={isSubmitting}
             >
               {ASSET_TYPE_OPTIONS.map((option) => (
                 <SelectItem key={option.key}>{option.label}</SelectItem>
               ))}
             </Select>
             <Input
+              isRequired
+              isDisabled={isSubmitting}
               label="Tên tài sản"
               value={formData.assetName}
               onValueChange={(value) =>
                 setFormData((prev) => ({ ...prev, assetName: value }))
               }
-              isRequired
-              isDisabled={isSubmitting}
             />
             {isDevice && (
               <>
                 <Input
+                  isDisabled={isSubmitting}
                   label="IMEI"
                   value={formData.imei}
                   onValueChange={(value) =>
                     setFormData((prev) => ({ ...prev, imei: value }))
                   }
-                  isDisabled={isSubmitting}
                 />
                 <Input
+                  isDisabled={isSubmitting}
                   label="Serial"
                   value={formData.serial}
                   onValueChange={(value) =>
                     setFormData((prev) => ({ ...prev, serial: value }))
                   }
-                  isDisabled={isSubmitting}
                 />
               </>
             )}
             {isVehicle && (
               <>
                 <Input
+                  isDisabled={isSubmitting}
                   label="Số khung"
                   value={formData.chassisNumber}
                   onValueChange={(value) =>
                     setFormData((prev) => ({ ...prev, chassisNumber: value }))
                   }
-                  isDisabled={isSubmitting}
                 />
                 <Input
+                  isDisabled={isSubmitting}
                   label="Số máy"
                   value={formData.engineNumber}
                   onValueChange={(value) =>
                     setFormData((prev) => ({ ...prev, engineNumber: value }))
                   }
-                  isDisabled={isSubmitting}
                 />
               </>
             )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={onClose} isDisabled={isSubmitting}>
+            <Button isDisabled={isSubmitting} variant="flat" onPress={onClose}>
               Hủy
             </Button>
             <Button
               color="primary"
-              type="submit"
               isDisabled={isSubmitting}
               startContent={
                 isSubmitting ? (
@@ -204,6 +216,7 @@ const EditAssetModal = ({ isOpen, onClose, loanId, assetData, onSuccess }: TProp
                   <Smartphone className="w-4 h-4" />
                 )
               }
+              type="submit"
             >
               {isSubmitting ? "Đang cập nhật..." : "Cập nhật"}
             </Button>

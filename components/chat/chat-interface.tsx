@@ -1,21 +1,23 @@
 /**
  * ChatInterface Component
  * Feature: chat-va-trao-doi-nhat-ky
- * 
+ *
  * Main chat interface with realtime messaging and image upload
  */
 
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRealtimeActivityLogs } from "@/hooks/use-realtime-activity-logs";
-import { insertMessage, uploadImage, insertImageLog } from "@/lib/chat";
-import { OptimisticMessage } from "@/types/chat.types";
+import { AlertCircle, Wifi, WifiOff } from "lucide-react";
+
 import { MessageInput } from "./message-input";
 import { MessageBubble } from "./message-bubble";
 import { SystemEventBubble } from "./system-event-bubble";
 import { ImageViewer } from "./image-viewer";
-import { AlertCircle, Wifi, WifiOff } from "lucide-react";
+
+import { useRealtimeActivityLogs } from "@/hooks/use-realtime-activity-logs";
+import { insertMessage, uploadImage, insertImageLog } from "@/lib/chat";
+import { OptimisticMessage } from "@/types/chat.types";
 
 interface ChatInterfaceProps {
   loanId: string;
@@ -30,8 +32,11 @@ export function ChatInterface({
   currentUserId,
   currentUserName,
 }: ChatInterfaceProps) {
-  const { messages: realtimeMessages, connectionStatus, refetch } =
-    useRealtimeActivityLogs(loanId);
+  const {
+    messages: realtimeMessages,
+    connectionStatus,
+    refetch,
+  } = useRealtimeActivityLogs(loanId);
 
   const [optimisticMessages, setOptimisticMessages] = useState<
     OptimisticMessage[]
@@ -51,7 +56,7 @@ export function ChatInterface({
     ...optimisticMessages,
   ].sort(
     (a, b) =>
-      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
   );
 
   // Check if user is at bottom of messages
@@ -59,6 +64,7 @@ export function ChatInterface({
     if (!messagesContainerRef.current) return true;
     const { scrollTop, scrollHeight, clientHeight } =
       messagesContainerRef.current;
+
     return scrollHeight - scrollTop - clientHeight < 100;
   }, []);
 
@@ -72,6 +78,7 @@ export function ChatInterface({
   // Update auto-scroll based on scroll position
   useEffect(() => {
     const container = messagesContainerRef.current;
+
     if (!container) return;
 
     const handleScroll = () => {
@@ -79,6 +86,7 @@ export function ChatInterface({
     };
 
     container.addEventListener("scroll", handleScroll);
+
     return () => container.removeEventListener("scroll", handleScroll);
   }, [checkIfAtBottom]);
 
@@ -110,7 +118,7 @@ export function ChatInterface({
       await insertMessage(loanId, currentUserId, currentUserName, content);
       // Remove optimistic message after successful send
       setOptimisticMessages((prev) =>
-        prev.filter((msg) => msg.tempId !== tempId)
+        prev.filter((msg) => msg.tempId !== tempId),
       );
       // Save to localStorage for recovery
       localStorage.removeItem(`failed-message-${tempId}`);
@@ -119,13 +127,13 @@ export function ChatInterface({
       // Update status to error
       setOptimisticMessages((prev) =>
         prev.map((msg) =>
-          msg.tempId === tempId ? { ...msg, status: "error" } : msg
-        )
+          msg.tempId === tempId ? { ...msg, status: "error" } : msg,
+        ),
       );
       // Save to localStorage
       localStorage.setItem(
         `failed-message-${tempId}`,
-        JSON.stringify(optimisticMsg)
+        JSON.stringify(optimisticMsg),
       );
     }
   };
@@ -133,7 +141,7 @@ export function ChatInterface({
   // Handle send images (multiple)
   const handleSendImages = async (files: File[]) => {
     const tempIds = files.map((_, index) => `temp-${Date.now()}-${index}`);
-    
+
     // Create optimistic messages for each image
     const optimisticMsgs: OptimisticMessage[] = files.map((file, index) => ({
       id: tempIds[index],
@@ -160,23 +168,24 @@ export function ChatInterface({
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const tempId = tempIds[i];
-      
+
       try {
         // Upload image
         const imageUrl = await uploadImage(loanId, file, driveFolderId);
+
         // Insert log
         await insertImageLog(loanId, currentUserId, currentUserName, imageUrl);
         // Remove optimistic message
         setOptimisticMessages((prev) =>
-          prev.filter((msg) => msg.tempId !== tempId)
+          prev.filter((msg) => msg.tempId !== tempId),
         );
       } catch (error) {
         console.error(`Failed to send image ${i + 1}:`, error);
         // Update status to error
         setOptimisticMessages((prev) =>
           prev.map((msg) =>
-            msg.tempId === tempId ? { ...msg, status: "error" } : msg
-          )
+            msg.tempId === tempId ? { ...msg, status: "error" } : msg,
+          ),
         );
       }
     }
@@ -209,19 +218,20 @@ export function ChatInterface({
     try {
       // Upload image
       const imageUrl = await uploadImage(loanId, file, driveFolderId);
+
       // Insert log
       await insertImageLog(loanId, currentUserId, currentUserName, imageUrl);
       // Remove optimistic message
       setOptimisticMessages((prev) =>
-        prev.filter((msg) => msg.tempId !== tempId)
+        prev.filter((msg) => msg.tempId !== tempId),
       );
     } catch (error) {
       console.error("Failed to send image:", error);
       // Update status to error
       setOptimisticMessages((prev) =>
         prev.map((msg) =>
-          msg.tempId === tempId ? { ...msg, status: "error" } : msg
-        )
+          msg.tempId === tempId ? { ...msg, status: "error" } : msg,
+        ),
       );
     }
   };
@@ -231,7 +241,7 @@ export function ChatInterface({
     if (message.type === "message" && message.content) {
       // Remove failed message
       setOptimisticMessages((prev) =>
-        prev.filter((msg) => msg.tempId !== message.tempId)
+        prev.filter((msg) => msg.tempId !== message.tempId),
       );
       // Resend
       await handleSendMessage(message.content);
@@ -302,10 +312,10 @@ export function ChatInterface({
           return (
             <MessageBubble
               key={message.id}
-              message={message}
               isOwnMessage={message.user_id === currentUserId}
-              onRetry={handleRetry}
+              message={message}
               onImageClick={handleImageClick}
+              onRetry={handleRetry}
             />
           );
         })}
@@ -315,10 +325,10 @@ export function ChatInterface({
 
       {/* Input */}
       <MessageInput
-        onSendMessage={handleSendMessage}
+        disabled={connectionStatus === "error"}
         onSendImage={handleSendImage}
         onSendImages={handleSendImages}
-        disabled={connectionStatus === "error"}
+        onSendMessage={handleSendMessage}
       />
 
       {/* Image viewer */}

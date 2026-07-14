@@ -1,10 +1,11 @@
 "use client";
 
+import type { TReference } from "@/types/loan.types";
+
 import { Input } from "@heroui/input";
 import { Button } from "@heroui/button";
 import { Divider } from "@heroui/divider";
 import { Trash2, UserPlus } from "lucide-react";
-import type { TReference } from "@/types/loan.types";
 
 type TProps = {
   references: TReference[];

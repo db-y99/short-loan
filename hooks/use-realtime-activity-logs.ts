@@ -1,7 +1,7 @@
 /**
  * Realtime Activity Logs Hook
  * Feature: chat-va-trao-doi-nhat-ky
- * 
+ *
  * Subscribe to realtime changes in loan_activity_logs table
  */
 
@@ -9,6 +9,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { RealtimeChannel } from "@supabase/supabase-js";
+
 import { supabaseClient } from "@/lib/supabase/client";
 import { ActivityLog, ConnectionStatus } from "@/types/chat.types";
 import { fetchActivityLogs } from "@/lib/chat";
@@ -21,12 +22,12 @@ interface UseRealtimeActivityLogsResult {
 
 /**
  * Hook to subscribe to realtime activity log changes for a loan
- * 
+ *
  * @param loanId - The loan ID to subscribe to
  * @returns Messages array, connection status, and refetch function
  */
 export function useRealtimeActivityLogs(
-  loanId: string
+  loanId: string,
 ): UseRealtimeActivityLogsResult {
   const [messages, setMessages] = useState<ActivityLog[]>([]);
   const [connectionStatus, setConnectionStatus] =
@@ -37,6 +38,7 @@ export function useRealtimeActivityLogs(
   const refetch = useCallback(async () => {
     try {
       const logs = await fetchActivityLogs(loanId);
+
       setMessages(logs);
     } catch (error) {
       console.error("Failed to fetch activity logs:", error);
@@ -65,15 +67,17 @@ export function useRealtimeActivityLogs(
         },
         (payload) => {
           const newLog = payload.new as ActivityLog;
+
           setMessages((prev) => {
             // Check if message already exists (avoid duplicates)
             if (prev.some((msg) => msg.id === newLog.id)) {
               return prev;
             }
+
             // Add new message at the end (sorted by created_at ASC)
             return [...prev, newLog];
           });
-        }
+        },
       )
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {

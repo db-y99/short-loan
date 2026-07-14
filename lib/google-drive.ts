@@ -5,8 +5,10 @@
  * Folder tách theo feature: bulletin (BULLETIN_GOOGLE_DRIVE_FOLDER_ID), approve (APPROVE_GOOGLE_DRIVE_FOLDER_ID).
  */
 
-import { google } from "googleapis";
 import { Readable } from "stream";
+
+import { google } from "googleapis";
+
 import { env } from "@/config/env";
 import { StreamFileResult } from "@/types/google-drive.types";
 
@@ -81,6 +83,7 @@ export async function uploadToDrive(
   } catch (err) {
     const status = (err as { code?: number })?.code;
     const message = (err as Error)?.message ?? "";
+
     if (status === 404 || /not found|file not found/i.test(message)) {
       throw new Error(
         `Folder Drive không tìm thấy (404). Nếu folder trong Shared Drive: đã bật supportsAllDrives. Kiểm tra: (1) BULLETIN_GOOGLE_DRIVE_FOLDER_ID đúng folder ID từ URL, (2) Service Account trong .env (client_email) trùng với tài khoản đã share folder. Xem docs/GOOGLE_DRIVE_UPLOAD_SETUP.md`,
@@ -113,6 +116,7 @@ export async function streamFileFromDrive(
   );
 
   const stream = res.data as Readable;
+
   if (!stream) return null;
 
   return {
@@ -191,4 +195,3 @@ export async function getFileFromDrive(fileId: string): Promise<Buffer> {
 
   return Buffer.from(res.data as ArrayBuffer);
 }
-

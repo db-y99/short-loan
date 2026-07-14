@@ -13,5 +13,6 @@ export const SaveLoanAttachmentsSchema = z.object({
     .default([]),
 });
 
-export type TSaveLoanAttachmentsInput = z.infer<typeof SaveLoanAttachmentsSchema>;
-
+export type TSaveLoanAttachmentsInput = z.infer<
+  typeof SaveLoanAttachmentsSchema
+>;

@@ -17,7 +17,9 @@ export const zodIssuesToFieldErrors = (
     const pathKey = issue.path.map(String).join(".");
     const fieldKey =
       NESTED_PATH_TO_FORM_FIELD[pathKey] ??
-      (issue.path.length > 0 ? String(issue.path[issue.path.length - 1]) : "_form");
+      (issue.path.length > 0
+        ? String(issue.path[issue.path.length - 1])
+        : "_form");
 
     if (!errors[fieldKey]) {
       errors[fieldKey] = issue.message;

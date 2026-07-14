@@ -1,6 +1,8 @@
+import type { TLoanDetails } from "@/types/loan.types";
+
 import { Card, CardBody, CardHeader, Divider } from "@heroui/react";
 import { Calculator } from "lucide-react";
-import type { TLoanDetails } from "@/types/loan.types";
+
 import { formatCurrencyVND } from "@/lib/format";
 import SectionHeader from "@/components/section-header";
 import { calculateAppraisalFee } from "@/lib/loan-calculation";
@@ -12,7 +14,7 @@ type TProps = {
 
 const LoanAmountSummary = ({ loanDetails }: TProps) => {
   // Xác định loan type từ enum - cast trực tiếp vì giờ đã là enum
-  const loanType = (loanDetails.loanType as TLoanType)
+  const loanType = loanDetails.loanType as TLoanType;
 
   // Tính phí thẩm định theo công thức mới
   const appraisalFee =
@@ -25,7 +27,7 @@ const LoanAmountSummary = ({ loanDetails }: TProps) => {
   const showAppraisalFee = appraisalFee > 0;
 
   return (
-    <Card shadow="sm" className="col-span-2">
+    <Card className="col-span-2" shadow="sm">
       <CardHeader className="pb-2">
         <SectionHeader icon={Calculator} title="Thông tin số tiền" />
       </CardHeader>

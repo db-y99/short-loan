@@ -1,14 +1,21 @@
+import type {
+  TCreateLoanForm,
+  TLoanDetails,
+  TUploadFiles,
+} from "@/types/loan.types";
+
 import { LOAN_TYPES } from "@/constants/loan";
 import { formatNumberInput } from "@/lib/format";
-import type { TCreateLoanForm, TLoanDetails, TUploadFiles } from "@/types/loan.types";
 
 const toIsoDate = (dateStr: string): string => {
   if (!dateStr) return "";
   if (dateStr.includes("-")) return dateStr;
   const parts = dateStr.split("/");
+
   if (parts.length === 3) {
     return `${parts[2]}-${parts[1]}-${parts[0]}`;
   }
+
   return dateStr;
 };
 

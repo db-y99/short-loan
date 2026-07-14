@@ -27,7 +27,10 @@ export default function ContractErrorDetails({ error }: TErrorDetailsProps) {
       };
     }
 
-    if (lowerError.includes("folder drive") || lowerError.includes("drivefolder")) {
+    if (
+      lowerError.includes("folder drive") ||
+      lowerError.includes("drivefolder")
+    ) {
       return {
         title: "Chưa có folder Drive",
         suggestions: [

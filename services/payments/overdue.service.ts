@@ -4,7 +4,6 @@
  */
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { TLoan } from "@/types/loan.types";
 
 export type TOverdueCustomer = {
   id: string;
@@ -23,7 +22,11 @@ export type TOverdueCustomer = {
   asset_name: string;
 };
 
-export type TOverdueCategory = "upcoming" | "overdue_1_7" | "overdue_8_15" | "overdue_15_plus";
+export type TOverdueCategory =
+  | "upcoming"
+  | "overdue_1_7"
+  | "overdue_8_15"
+  | "overdue_15_plus";
 
 export type TOverdueData = {
   upcoming: TOverdueCustomer[];
@@ -63,7 +66,7 @@ export async function getOverdueCustomersService(): Promise<TOverdueData> {
           phone
         )
       )
-    `
+    `,
     )
     .eq("status", "pending")
     .in("loans.status", ["disbursed"])
@@ -75,6 +78,7 @@ export async function getOverdueCustomersService(): Promise<TOverdueData> {
   }
 
   const today = new Date();
+
   today.setHours(0, 0, 0, 0);
 
   const result: TOverdueData = {
@@ -86,8 +90,9 @@ export async function getOverdueCustomersService(): Promise<TOverdueData> {
 
   data?.forEach((period: any) => {
     const dueDate = new Date(period.due_date);
+
     dueDate.setHours(0, 0, 0, 0);
-    
+
     const diffTime = today.getTime() - dueDate.getTime();
     const daysOverdue = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 

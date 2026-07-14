@@ -23,6 +23,6 @@ export function getLoanInterestRateDescription(): string {
   // Tính lãi suất theo tháng (30 ngày)
   const monthlyRate = DAILY_INTEREST_RATE * STANDARD_LOAN_DAYS * 100; // Chuyển sang %
   const formattedRate = monthlyRate.toFixed(2).replace(".", ","); // Format theo VN: 0,99
-  
+
   return `${formattedRate}%/${STANDARD_LOAN_DAYS} ngày`;
 }

@@ -7,9 +7,13 @@ import type {
   TPledgeMilestone,
   TLeaseMilestone,
 } from "@/types/contract.types";
+
 import { formatDateShortVN } from "@/lib/format";
 import { COMPANY_INFO } from "@/constants/company";
-import { getLoanInterestRateDescription, DAILY_INTEREST_RATE } from "@/lib/loan-constants";
+import {
+  getLoanInterestRateDescription,
+  DAILY_INTEREST_RATE,
+} from "@/lib/loan-constants";
 import { LOAN_TYPES, ASSET_TYPES, type TLoanType } from "@/constants/loan";
 import {
   calculateAppraisalFee,
@@ -35,16 +39,24 @@ function buildAssetIdentityInfo(loan: TLoanDetails): {
   field2Value: string;
 } {
   const assetType = loan.asset.type;
-  
+
   // So sánh với label tiếng Việt vì loan.asset.type đã được convert sang label
-  const isVehicle = assetType === 'Xe máy' || assetType === 'Ô tô' || 
-                    assetType === ASSET_TYPES.MOTORBIKE || assetType === ASSET_TYPES.CAR;
-  const isDevice = assetType === 'Điện thoại' || assetType === 'Laptop' ||
-                   assetType === ASSET_TYPES.PHONE || assetType === ASSET_TYPES.LAPTOP;
+  const isVehicle =
+    assetType === "Xe máy" ||
+    assetType === "Ô tô" ||
+    assetType === ASSET_TYPES.MOTORBIKE ||
+    assetType === ASSET_TYPES.CAR;
+  const isDevice =
+    assetType === "Điện thoại" ||
+    assetType === "Laptop" ||
+    assetType === ASSET_TYPES.PHONE ||
+    assetType === ASSET_TYPES.LAPTOP;
 
   if (isVehicle) {
     // Xe máy, Ô tô: hiển thị số khung và số máy
-    const chassisStr = loan.asset.chassisNumber ? ` (Số khung: ${loan.asset.chassisNumber}` : "";
+    const chassisStr = loan.asset.chassisNumber
+      ? ` (Số khung: ${loan.asset.chassisNumber}`
+      : "";
     const engineStr = loan.asset.engineNumber
       ? chassisStr
         ? ` - Số máy: ${loan.asset.engineNumber})`
@@ -52,7 +64,7 @@ function buildAssetIdentityInfo(loan: TLoanDetails): {
       : chassisStr
         ? ")"
         : "";
-    
+
     return {
       chiTiet: `${loan.asset.name || ""}${chassisStr}${engineStr}`.trim(),
       field1Label: "Số khung",
@@ -70,7 +82,7 @@ function buildAssetIdentityInfo(loan: TLoanDetails): {
       : imeiStr
         ? ")"
         : "";
-    
+
     return {
       chiTiet: `${loan.asset.name || ""}${imeiStr}${serialStr}`.trim(),
       field1Label: "IMEI",
@@ -88,7 +100,7 @@ function buildAssetIdentityInfo(loan: TLoanDetails): {
       : imeiStr
         ? ")"
         : "";
-    
+
     return {
       chiTiet: `${loan.asset.name || ""}${imeiStr}${serialStr}`.trim(),
       field1Label: "IMEI",
@@ -147,17 +159,20 @@ function buildPledgeMilestones(loan: TLoanDetails): TPledgeMilestone[] {
  */
 function buildLeaseMilestones(loan: TLoanDetails): TLeaseMilestone[] {
   const loanAmount = loan.loanAmount;
-  
+
   // Xác định loan type để tính phí thuê
-  let isPackage1 = loan.loanType === LOAN_TYPES.INSTALLMENT_3_PERIODS || 
-                   loan.loanType.includes("trả góp") || 
-                   loan.loanType.includes("3 kỳ");
-  
-  let isPackage2 = loan.loanType === LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE || 
-                   loan.loanType.includes("Theo mốc");
-  
-  let isPackage3 = loan.loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD || 
-                   loan.loanType.includes("Giữ TS");
+  let isPackage1 =
+    loan.loanType === LOAN_TYPES.INSTALLMENT_3_PERIODS ||
+    loan.loanType.includes("trả góp") ||
+    loan.loanType.includes("3 kỳ");
+
+  let isPackage2 =
+    loan.loanType === LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE ||
+    loan.loanType.includes("Theo mốc");
+
+  let isPackage3 =
+    loan.loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD ||
+    loan.loanType.includes("Giữ TS");
 
   if (isPackage1) {
     // Package 1: Phí thuê = Target profit - Interest
@@ -165,17 +180,35 @@ function buildLeaseMilestones(loan: TLoanDetails): TLeaseMilestone[] {
       {
         moc: 1,
         ngay: 7,
-        phiThue: formatVND(Math.max(0, Math.round(loanAmount * 0.03) - Math.round(loanAmount * DAILY_INTEREST_RATE * 7))),
+        phiThue: formatVND(
+          Math.max(
+            0,
+            Math.round(loanAmount * 0.03) -
+              Math.round(loanAmount * DAILY_INTEREST_RATE * 7),
+          ),
+        ),
       },
       {
         moc: 2,
         ngay: 18,
-        phiThue: formatVND(Math.max(0, Math.round(loanAmount * 0.05) - Math.round((loanAmount * 0.8) * DAILY_INTEREST_RATE * 11))),
+        phiThue: formatVND(
+          Math.max(
+            0,
+            Math.round(loanAmount * 0.05) -
+              Math.round(loanAmount * 0.8 * DAILY_INTEREST_RATE * 11),
+          ),
+        ),
       },
       {
         moc: 3,
         ngay: 30,
-        phiThue: formatVND(Math.max(0, Math.round(loanAmount * 0.07) - Math.round((loanAmount * 0.5) * DAILY_INTEREST_RATE * 12))),
+        phiThue: formatVND(
+          Math.max(
+            0,
+            Math.round(loanAmount * 0.07) -
+              Math.round(loanAmount * 0.5 * DAILY_INTEREST_RATE * 12),
+          ),
+        ),
       },
     ];
   } else if (isPackage2) {
@@ -184,17 +217,29 @@ function buildLeaseMilestones(loan: TLoanDetails): TLeaseMilestone[] {
       {
         moc: 1,
         ngay: 7,
-        phiThue: formatVND(Math.round(loanAmount * 1.05) - loanAmount - Math.round(loanAmount * DAILY_INTEREST_RATE * 7)),
+        phiThue: formatVND(
+          Math.round(loanAmount * 1.05) -
+            loanAmount -
+            Math.round(loanAmount * DAILY_INTEREST_RATE * 7),
+        ),
       },
       {
         moc: 2,
         ngay: 18,
-        phiThue: formatVND(Math.round(loanAmount * 1.08) - loanAmount - Math.round(loanAmount * DAILY_INTEREST_RATE * 18)),
+        phiThue: formatVND(
+          Math.round(loanAmount * 1.08) -
+            loanAmount -
+            Math.round(loanAmount * DAILY_INTEREST_RATE * 18),
+        ),
       },
       {
         moc: 3,
         ngay: 30,
-        phiThue: formatVND(Math.round(loanAmount * 1.12) - loanAmount - Math.round(loanAmount * DAILY_INTEREST_RATE * 30)),
+        phiThue: formatVND(
+          Math.round(loanAmount * 1.12) -
+            loanAmount -
+            Math.round(loanAmount * DAILY_INTEREST_RATE * 30),
+        ),
       },
     ];
   } else {
@@ -203,17 +248,29 @@ function buildLeaseMilestones(loan: TLoanDetails): TLeaseMilestone[] {
       {
         moc: 1,
         ngay: 7,
-        phiThue: formatVND(Math.round(loanAmount * 1.0125) - loanAmount - Math.round(loanAmount * DAILY_INTEREST_RATE * 7)),
+        phiThue: formatVND(
+          Math.round(loanAmount * 1.0125) -
+            loanAmount -
+            Math.round(loanAmount * DAILY_INTEREST_RATE * 7),
+        ),
       },
       {
         moc: 2,
         ngay: 18,
-        phiThue: formatVND(Math.round(loanAmount * 1.035) - loanAmount - Math.round(loanAmount * DAILY_INTEREST_RATE * 18)),
+        phiThue: formatVND(
+          Math.round(loanAmount * 1.035) -
+            loanAmount -
+            Math.round(loanAmount * DAILY_INTEREST_RATE * 18),
+        ),
       },
       {
         moc: 3,
         ngay: 30,
-        phiThue: formatVND(Math.round(loanAmount * 1.05) - loanAmount - Math.round(loanAmount * DAILY_INTEREST_RATE * 30)),
+        phiThue: formatVND(
+          Math.round(loanAmount * 1.05) -
+            loanAmount -
+            Math.round(loanAmount * DAILY_INTEREST_RATE * 30),
+        ),
       },
     ];
   }
@@ -270,10 +327,10 @@ export function buildAssetLeaseContractData(
   driveFolderId = "",
 ): TAssetLeaseContractData {
   const signedDate = new Date(loan.signedAt ?? loan.id);
-  
+
   /** Tính các mốc thanh toán cho Hợp đồng thuê (Phí thuê) */
   const milestones = buildLeaseMilestones(loan);
-  
+
   /** Chi tiết tài sản: tên + thông tin định danh theo loại */
   const assetInfo = buildAssetIdentityInfo(loan);
 
@@ -312,9 +369,9 @@ export function buildFullPaymentConfirmationData(
 ): TFullPaymentConfirmationData {
   const d = new Date();
 
-   const assetInfo = buildAssetIdentityInfo(loan);
+  const assetInfo = buildAssetIdentityInfo(loan);
 
-   const assets = `${loan.asset.type}, ${assetInfo.chiTiet}`;
+  const assets = `${loan.asset.type}, ${assetInfo.chiTiet}`;
 
   const loanType = loan.loanType as TLoanType;
   const appraisalFee =
@@ -354,7 +411,7 @@ export function buildAssetDisposalAuthorizationData(
   driveFolderId = "",
 ): TAssetDisposalAuthorizationData {
   const signedDate = new Date(loan.signedAt ?? loan.id);
-  
+
   /** Chi tiết tài sản: tên + thông tin định danh theo loại */
   const assetInfo = buildAssetIdentityInfo(loan);
 

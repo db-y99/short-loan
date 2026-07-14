@@ -21,7 +21,7 @@ const ReferencesSection = ({ references }: TProps) => {
   }
 
   return (
-    <Card shadow="sm" className="col-span-2">
+    <Card className="col-span-2" shadow="sm">
       <CardHeader className="flex items-center gap-2 pb-2">
         <Users className="w-5 h-5 text-primary" />
         <h3 className="text-lg font-semibold">Người tham chiếu</h3>
@@ -42,7 +42,7 @@ const ReferencesSection = ({ references }: TProps) => {
                     {ref.relationship}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center gap-2 text-sm text-default-600">
                   <Phone className="w-3.5 h-3.5" />
                   <span>{ref.phone}</span>

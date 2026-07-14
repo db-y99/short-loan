@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireAdminForCustomerEdit } from "@/lib/auth/api-auth";
 
 /**
  * PATCH /api/customers/[id]
@@ -7,23 +9,15 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createSupabaseServerClient();
     const { id: customerId } = await params;
 
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const admin = await requireAdminForCustomerEdit(customerId);
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    if (!admin.ok) return admin.response;
 
     // Parse request body
     const body = await request.json();
@@ -43,28 +37,30 @@ export async function PATCH(
     if (!full_name?.trim()) {
       return NextResponse.json(
         { success: false, error: "Họ tên không được để trống" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!cccd?.trim()) {
       return NextResponse.json(
         { success: false, error: "Số CCCD không được để trống" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!phone?.trim()) {
       return NextResponse.json(
         { success: false, error: "Số điện thoại không được để trống" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Convert DD/MM/YYYY to YYYY-MM-DD if needed
     let formattedDate = cccd_issue_date;
-    if (cccd_issue_date && cccd_issue_date.includes('/')) {
-      const parts = cccd_issue_date.split('/');
+
+    if (cccd_issue_date && cccd_issue_date.includes("/")) {
+      const parts = cccd_issue_date.split("/");
+
       if (parts.length === 3) {
         formattedDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
       }
@@ -90,9 +86,10 @@ export async function PATCH(
 
     if (error) {
       console.error("[UPDATE_CUSTOMER_ERROR]", error);
+
       return NextResponse.json(
         { success: false, error: "Không thể cập nhật thông tin khách hàng" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -102,12 +99,13 @@ export async function PATCH(
     });
   } catch (error) {
     console.error("[UPDATE_CUSTOMER_ERROR]", error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

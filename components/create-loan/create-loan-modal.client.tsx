@@ -1,5 +1,12 @@
 "use client";
 
+import type {
+  TCreateLoanForm,
+  TReference,
+  TUploadFiles,
+} from "@/types/loan.types";
+import type { TBranch } from "@/types/branch.types";
+
 import {
   Modal,
   ModalContent,
@@ -9,25 +16,24 @@ import {
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { useCallback, useEffect, useState } from "react";
+import { Select, SelectItem } from "@heroui/select";
+import { Divider } from "@heroui/divider";
+import { Chip } from "@heroui/chip";
 
 import CustomerInfoSection from "./customer-info-section.client";
 import BankInfoSection from "./bank-info-section.client";
 import LoanInfoSection from "./loan-info-section.client";
 import ReferencesSection from "./references-section.client";
 import AttachmentsSection from "./attachments-section.client";
+
 import { createLoanAction } from "@/features/loans/actions/create-loan.action";
 import { CreateLoanSchema } from "@/features/loans/actions/create-loan.schema";
 import { saveLoanAttachmentsAction } from "@/features/loans/actions/save-loan-attachments.action";
 import { cleanupDriveFilesAction } from "@/features/loans/actions/cleanup-drive-files.action";
-import type { TCreateLoanForm, TReference, TUploadFiles } from "@/types/loan.types";
-import type { TBranch } from "@/types/branch.types";
 import { useFileUpload } from "@/hooks/use-file-upload";
 import { PROVIDER_TYPES } from "@/constants/google-drive";
 import { LOAN_TYPES } from "@/constants/loan";
 import { zodIssuesToFieldErrors } from "@/lib/zod-field-errors";
-import { Select, SelectItem } from "@heroui/select";
-import { Divider } from "@heroui/divider";
-import { Chip } from "@heroui/chip";
 import ConfirmModal from "@/components/confirm-modal";
 
 type TProps = {
@@ -106,6 +112,7 @@ const isCreateLoanFormDirty = (
 
   for (const field of FORM_TEXT_FIELDS) {
     const value = form[field];
+
     if (typeof value === "string" && value.trim() !== "") return true;
   }
 
@@ -160,7 +167,9 @@ const CreateContractModal = ({
       setFieldErrors((prev) => {
         if (!prev[field]) return prev;
         const next = { ...prev };
+
         delete next[field];
+
         return next;
       });
     },
@@ -236,6 +245,7 @@ const CreateContractModal = ({
 
     if (isCreateLoanFormDirty(form, selectedBranchId, isAdmin)) {
       setShowDiscardConfirm(true);
+
       return;
     }
 
@@ -270,7 +280,7 @@ const CreateContractModal = ({
       loan_amount: form.loan_amount,
       loan_type: form.loan_type,
       notes: form.notes,
-      branch_id: isAdmin ? (selectedBranchId || null) : null,
+      branch_id: isAdmin ? selectedBranchId || null : null,
       references: form.references.map((r) => ({
         full_name: r.full_name,
         phone: r.phone,
@@ -279,8 +289,10 @@ const CreateContractModal = ({
     };
 
     const parseResult = CreateLoanSchema.safeParse(payload);
+
     if (!parseResult.success) {
       setFieldErrors(zodIssuesToFieldErrors(parseResult.error.issues));
+
       return;
     }
     setFieldErrors({});
@@ -314,20 +326,28 @@ const CreateContractModal = ({
             loanId: result.data.id,
             attachments: uploadedFiles,
           });
+
           if (!saveRes.success) {
             await cleanupDriveFilesAction(
               uploadedFiles.map((file) => file.file_id),
             ).catch((cleanupError) => {
-              console.error("[CREATE_LOAN_ATTACHMENT_CLEANUP_ERROR]", cleanupError);
+              console.error(
+                "[CREATE_LOAN_ATTACHMENT_CLEANUP_ERROR]",
+                cleanupError,
+              );
             });
             setError(saveRes.error);
+
             return;
           }
         }
 
         handleClose();
         onSuccess?.();
-      } else if (result.fieldErrors && Object.keys(result.fieldErrors).length > 0) {
+      } else if (
+        result.fieldErrors &&
+        Object.keys(result.fieldErrors).length > 0
+      ) {
         setFieldErrors(result.fieldErrors);
       } else {
         setError(result.error ?? "Đã xảy ra lỗi khi tạo hợp đồng");
@@ -338,8 +358,15 @@ const CreateContractModal = ({
       setIsSubmitting(false);
       setUploadProgress("");
     }
-  }, [form, keptAssetImages, handleClose, onSuccess, uploadFiles, isAdmin, selectedBranchId]);
-
+  }, [
+    form,
+    keptAssetImages,
+    handleClose,
+    onSuccess,
+    uploadFiles,
+    isAdmin,
+    selectedBranchId,
+  ]);
 
   const isLoading = isSubmitting || isUploading;
 
@@ -351,117 +378,121 @@ const CreateContractModal = ({
 
   return (
     <>
-    <Modal
-      isOpen={isOpen}
-      scrollBehavior="inside"
-      size="4xl"
-      isDismissable={false}
-      isKeyboardDismissDisabled
-      onClose={handleRequestClose}
-    >
-      <ModalContent>
-        <ModalHeader className="flex gap-2">
-          <div>
-            {sourceLoanCode
-              ? `Tạo đơn vay mới (từ ${sourceLoanCode})`
-              : "Tạo hợp đồng mới"}
-          </div>
-          <Chip variant="bordered" color={userBranchName ? "primary" : "default"}>
-            {userBranchName ?? "Chưa được gán chi nhánh"}
-          </Chip>
-        </ModalHeader>
-
-        <ModalBody className="flex flex-col gap-8" ref={setModalContentRef}>
-          {sourceLoanCode && (
-            <div className="rounded-lg bg-primary-50 px-4 py-3 text-sm text-primary-700">
-              Thông tin khách hàng, tài sản và ngân hàng đã được điền sẵn từ hợp đồng cũ.
-              {keepAssetImages
-                ? " Ảnh tài sản cũ đã được giữ lại — bạn có thể bổ sung thêm ảnh mới nếu cần."
-                : " Vui lòng kiểm tra lại và tải ảnh tài sản mới trước khi tạo đơn."}
+      <Modal
+        isKeyboardDismissDisabled
+        isDismissable={false}
+        isOpen={isOpen}
+        scrollBehavior="inside"
+        size="4xl"
+        onClose={handleRequestClose}
+      >
+        <ModalContent>
+          <ModalHeader className="flex gap-2">
+            <div>
+              {sourceLoanCode
+                ? `Tạo đơn vay mới (từ ${sourceLoanCode})`
+                : "Tạo hợp đồng mới"}
             </div>
-          )}
-          {error ? (
-            <p className="text-sm text-danger">{error}</p>
-          ) : null}
+            <Chip
+              color={userBranchName ? "primary" : "default"}
+              variant="bordered"
+            >
+              {userBranchName ?? "Chưa được gán chi nhánh"}
+            </Chip>
+          </ModalHeader>
 
-          {/* Chi nhánh */}
+          <ModalBody ref={setModalContentRef} className="flex flex-col gap-8">
+            {sourceLoanCode && (
+              <div className="rounded-lg bg-primary-50 px-4 py-3 text-sm text-primary-700">
+                Thông tin khách hàng, tài sản và ngân hàng đã được điền sẵn từ
+                hợp đồng cũ.
+                {keepAssetImages
+                  ? " Ảnh tài sản cũ đã được giữ lại — bạn có thể bổ sung thêm ảnh mới nếu cần."
+                  : " Vui lòng kiểm tra lại và tải ảnh tài sản mới trước khi tạo đơn."}
+              </div>
+            )}
+            {error ? <p className="text-sm text-danger">{error}</p> : null}
+
+            {/* Chi nhánh */}
             {isAdmin ? (
               <div className="flex flex-col gap-4">
-            <h3 className="text-lg font-semibold">Chi nhánh</h3>
-            <Divider />
-              <Select
-                label="Chi nhánh"
-                placeholder="Chọn chi nhánh"
-                selectedKeys={selectedBranchId ? [selectedBranchId] : []}
-                onSelectionChange={(keys) => setSelectedBranchId(Array.from(keys)[0] as string || "")}
-                className="max-w-xs"
-              >
-                {branches.map((b) => (
-                  <SelectItem key={b.id}>{b.name}</SelectItem>
-                ))}
-              </Select>
-                </div>
+                <h3 className="text-lg font-semibold">Chi nhánh</h3>
+                <Divider />
+                <Select
+                  className="max-w-xs"
+                  label="Chi nhánh"
+                  placeholder="Chọn chi nhánh"
+                  selectedKeys={selectedBranchId ? [selectedBranchId] : []}
+                  onSelectionChange={(keys) =>
+                    setSelectedBranchId((Array.from(keys)[0] as string) || "")
+                  }
+                >
+                  {branches.map((b) => (
+                    <SelectItem key={b.id}>{b.name}</SelectItem>
+                  ))}
+                </Select>
+              </div>
             ) : (
               <></>
             )}
 
-          <CustomerInfoSection
-            form={form}
-            onChange={handleFieldChange}
-            fieldErrors={fieldErrors}
-            datePickerPortalContainer={datePickerPortalContainer}
-          />
-          <BankInfoSection form={form} onChange={handleFieldChange} />
-          <LoanInfoSection
-            form={form}
-            onChange={handleFieldChange}
-            fieldErrors={fieldErrors}
-          />
-          <ReferencesSection
-            references={form.references}
-            onAdd={handleAddReference}
-            onChangeRef={handleChangeReference}
-            onRemove={handleRemoveReference}
-          />
-          <AttachmentsSection
-            attachments={form.attachments}
-            existingImages={keptAssetImages}
-            onAdd={handleAddAttachments}
-            onRemove={handleRemoveAttachment}
-            onRemoveExisting={handleRemoveKeptAssetImage}
-          />
-        </ModalBody>
+            <CustomerInfoSection
+              datePickerPortalContainer={datePickerPortalContainer}
+              fieldErrors={fieldErrors}
+              form={form}
+              onChange={handleFieldChange}
+            />
+            <BankInfoSection form={form} onChange={handleFieldChange} />
+            <LoanInfoSection
+              fieldErrors={fieldErrors}
+              form={form}
+              onChange={handleFieldChange}
+            />
+            <ReferencesSection
+              references={form.references}
+              onAdd={handleAddReference}
+              onChangeRef={handleChangeReference}
+              onRemove={handleRemoveReference}
+            />
+            <AttachmentsSection
+              attachments={form.attachments}
+              existingImages={keptAssetImages}
+              onAdd={handleAddAttachments}
+              onRemove={handleRemoveAttachment}
+              onRemoveExisting={handleRemoveKeptAssetImage}
+            />
+          </ModalBody>
 
-        <ModalFooter>
-          <Button
-            variant="flat"
-            onPress={handleRequestClose}
-            isDisabled={isLoading}
-          >
-            Hủy
-          </Button>
-          <Button
-            color="primary"
-            onPress={handleSubmit}
-            isLoading={isLoading}
-            isDisabled={isLoading}
-          >
-            {isLoading ? "Đang tạo hợp đồng..." : "Tạo hợp đồng"}
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+          <ModalFooter>
+            <Button
+              isDisabled={isLoading}
+              variant="flat"
+              onPress={handleRequestClose}
+            >
+              Hủy
+            </Button>
+            <Button
+              color="primary"
+              isDisabled={isLoading}
+              isLoading={isLoading}
+              onPress={handleSubmit}
+            >
+              {isLoading ? "Đang tạo hợp đồng..." : "Tạo hợp đồng"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
-    <ConfirmModal
-      isOpen={showDiscardConfirm}
-      onClose={() => setShowDiscardConfirm(false)}
-      onConfirm={handleClose}
-      title="Hủy tạo hợp đồng?"
-      message="Bạn đã nhập dữ liệu. Nếu thoát, mọi thông tin sẽ bị mất và không thể khôi phục."
-      confirmText="Thoát và xóa dữ liệu"
-      cancelText="Tiếp tục nhập"
-      confirmColor="danger"
-    />
+      <ConfirmModal
+        cancelText="Tiếp tục nhập"
+        confirmColor="danger"
+        confirmText="Thoát và xóa dữ liệu"
+        isOpen={showDiscardConfirm}
+        message="Bạn đã nhập dữ liệu. Nếu thoát, mọi thông tin sẽ bị mất và không thể khôi phục."
+        title="Hủy tạo hợp đồng?"
+        onClose={() => setShowDiscardConfirm(false)}
+        onConfirm={handleClose}
+      />
     </>
   );
 };

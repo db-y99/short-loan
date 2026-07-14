@@ -1,4 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+
+import {
+  requireActiveStaffUser,
+  verifyStaffCanAccessDriveFile,
+} from "@/lib/auth/api-auth";
 import { streamFileFromDrive } from "@/lib/google-drive";
 
 export async function GET(
@@ -8,11 +13,15 @@ export async function GET(
   const { fileId } = await ctx.params;
 
   try {
-    /**
-     * TODO:
-     * - verify session
-     * - verify fileId thuộc bulletin / approve / loan của user
-     */
+    const staff = await requireActiveStaffUser();
+
+    if (!staff.ok) return staff.response;
+
+    const canAccess = await verifyStaffCanAccessDriveFile(fileId);
+
+    if (!canAccess) {
+      return new NextResponse("Forbidden", { status: 403 });
+    }
 
     const result = await streamFileFromDrive(fileId);
 
@@ -29,6 +38,7 @@ export async function GET(
     });
   } catch (err) {
     console.error("[DRIVE_IMAGE_STREAM]", err);
+
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 }

@@ -84,23 +84,24 @@ export const formatActivityTimeVN = (dateString: string): string => {
   }).format(new Date(dateString));
 };
 
-
-
-  // Helper function to parse date string to DateValue
- export const parseDateString = (dateStr: string) => {
-    try {
-      // Try parsing as ISO date first (YYYY-MM-DD)
-      if (dateStr.includes('-')) {
-        return parseDate(dateStr) as any;
-      }
-      // If it's in DD/MM/YYYY format, convert to YYYY-MM-DD
-      const parts = dateStr.split('/');
-      if (parts.length === 3) {
-        const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
-        return parseDate(isoDate) as any;
-      }
-      return null;
-    } catch {
-      return null;
+// Helper function to parse date string to DateValue
+export const parseDateString = (dateStr: string) => {
+  try {
+    // Try parsing as ISO date first (YYYY-MM-DD)
+    if (dateStr.includes("-")) {
+      return parseDate(dateStr) as any;
     }
-  };
+    // If it's in DD/MM/YYYY format, convert to YYYY-MM-DD
+    const parts = dateStr.split("/");
+
+    if (parts.length === 3) {
+      const isoDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+
+      return parseDate(isoDate) as any;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+};

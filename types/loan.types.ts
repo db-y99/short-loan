@@ -1,11 +1,11 @@
 export type TLoanStatus =
-  | "pending"      // Chờ duyệt
-  | "approved"     // Đã duyệt (Chờ ký)
-  | "signed"       // Đã ký (Chờ giải ngân)
-  | "disbursed"    // Đang cầm
-  | "redeemed"     // Đã chuộc
-  | "rejected"     // Từ chối
-  | "completed"    // Hoàn thành (legacy - chỉ dữ liệu cũ)
+  | "pending" // Chờ duyệt
+  | "approved" // Đã duyệt (Chờ ký)
+  | "signed" // Đã ký (Chờ giải ngân)
+  | "disbursed" // Đang cầm
+  | "redeemed" // Đã chuộc
+  | "rejected" // Từ chối
+  | "completed" // Hoàn thành (legacy - chỉ dữ liệu cũ)
   | "liquidated"; // Thanh lý (legacy - chỉ dữ liệu cũ)
 
 /** Loan row từ DB (loans + customer full_name) - dùng cho danh sách */

@@ -1,52 +1,68 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import {
+  isValidInternalApiSecret,
+  requireActiveStaffUser,
+} from "@/lib/auth/api-auth";
+
 export const maxDuration = 60;
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 // Function to find Chrome executable on Windows
 function findChromeExecutable(): string | null {
   const possiblePaths = [
-    'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-    'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
-    process.env.LOCALAPPDATA + '\\Google\\Chrome\\Application\\chrome.exe',
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    process.env.LOCALAPPDATA + "\\Google\\Chrome\\Application\\chrome.exe",
   ];
-  
-  const fs = require('fs');
+
+  const fs = require("fs");
+
   for (const path of possiblePaths) {
     if (path && fs.existsSync(path)) {
       return path;
     }
   }
+
   return null;
 }
 
 export async function POST(request: NextRequest) {
+  const internalSecret = request.headers.get("x-internal-secret");
+  const hasInternalAuth = isValidInternalApiSecret(internalSecret);
+
+  if (!hasInternalAuth) {
+    const staff = await requireActiveStaffUser();
+
+    if (!staff.ok) return staff.response;
+  }
+
   let browser;
-  
+
   try {
     const { html, fileName } = await request.json();
 
     if (!html) {
       return NextResponse.json(
         { error: "HTML content is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const isDev = process.env.NODE_ENV === "development";
-    
+
     let puppeteer;
     let chromium;
-    
+
     if (isDev) {
       // Use full puppeteer in development
       try {
         puppeteer = (await import("puppeteer")).default;
         console.log("Using puppeteer in development mode");
-        
+
         // Try to find Chrome on system
         const chromePath = findChromeExecutable();
-        
+
         const launchOptions: any = {
           headless: true,
           args: [
@@ -55,18 +71,20 @@ export async function POST(request: NextRequest) {
             "--disable-dev-shm-usage",
           ],
         };
-        
+
         if (chromePath) {
           console.log("Using system Chrome at:", chromePath);
           launchOptions.executablePath = chromePath;
         } else {
           console.log("Using bundled Chromium");
         }
-        
+
         browser = await puppeteer.launch(launchOptions);
       } catch (error) {
         console.error("Failed to launch puppeteer:", error);
-        throw new Error(`Puppeteer launch failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+        throw new Error(
+          `Puppeteer launch failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
       }
     } else {
       // Use puppeteer-core with Chromium in production
@@ -76,6 +94,7 @@ export async function POST(request: NextRequest) {
         console.log("Using puppeteer-core with Chromium in production mode");
 
         const executablePath = await chromium.executablePath();
+
         console.log("Chromium executable path:", executablePath);
 
         browser = await puppeteer.launch({
@@ -95,13 +114,16 @@ export async function POST(request: NextRequest) {
         });
       } catch (error) {
         console.error("Failed to launch puppeteer-core:", error);
-        throw new Error(`Puppeteer-core launch failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+        throw new Error(
+          `Puppeteer-core launch failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
       }
     }
 
     console.log("Browser launched successfully");
 
     const page = await browser.newPage();
+
     console.log("New page created");
 
     // Set content with proper encoding and wait for fonts
@@ -134,6 +156,7 @@ export async function POST(request: NextRequest) {
         left: "0mm",
       },
     });
+
     console.log("PDF generated successfully, size:", pdf.length, "bytes");
 
     await browser.close();
@@ -148,8 +171,11 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("PDF generation error:", error);
-    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
-    
+    console.error(
+      "Error stack:",
+      error instanceof Error ? error.stack : "No stack trace",
+    );
+
     // Ensure browser is closed on error
     if (browser) {
       try {
@@ -159,14 +185,17 @@ export async function POST(request: NextRequest) {
         console.error("Error closing browser:", closeError);
       }
     }
-    
+
     return NextResponse.json(
-      { 
-        error: "Failed to generate PDF", 
+      {
+        error: "Failed to generate PDF",
         details: error instanceof Error ? error.message : "Unknown error",
-        stack: process.env.NODE_ENV === "development" && error instanceof Error ? error.stack : undefined,
+        stack:
+          process.env.NODE_ENV === "development" && error instanceof Error
+            ? error.stack
+            : undefined,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,6 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { CONTRACT_TYPE } from "@/types/contract.types";
 import type { TContractData } from "@/types/contract.types";
+
+import { NextRequest, NextResponse } from "next/server";
+
+import { env } from "@/config/env";
+import { requireActiveStaffUser } from "@/lib/auth/api-auth";
+import { CONTRACT_TYPE } from "@/types/contract.types";
 import {
   generateAssetPledgeHTML,
   generateAssetLeaseHTML,
@@ -15,6 +19,10 @@ export const runtime = "nodejs";
  * Generate HTML directly then convert to PDF
  */
 export async function POST(req: NextRequest) {
+  const staff = await requireActiveStaffUser();
+
+  if (!staff.ok) return staff.response;
+
   try {
     const body = await req.json();
     const { contractData, contractType } = body as {
@@ -31,6 +39,7 @@ export async function POST(req: NextRequest) {
 
     // Step 1: Generate HTML from contract data
     let html: string;
+
     switch (contractType) {
       case CONTRACT_TYPE.ASSET_PLEDGE:
         html = generateAssetPledgeHTML(contractData as any);
@@ -52,25 +61,23 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 2: Generate PDF from HTML using Puppeteer
-    const internalSecret = process.env.INTERNAL_API_SECRET || "dev-secret-key";
-    
-    const pdfResponse = await fetch(
-      `${req.nextUrl.origin}/api/generate-pdf`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-internal-secret": internalSecret, // Add internal auth
-        },
-        body: JSON.stringify({
-          html,
-          fileName: `contract-${contractType}.pdf`,
-        }),
+    const internalSecret = env.INTERNAL_API_SECRET;
+
+    const pdfResponse = await fetch(`${req.nextUrl.origin}/api/generate-pdf`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-secret": internalSecret, // Add internal auth
       },
-    );
+      body: JSON.stringify({
+        html,
+        fileName: `contract-${contractType}.pdf`,
+      }),
+    });
 
     if (!pdfResponse.ok) {
       const error = await pdfResponse.json();
+
       throw new Error(error.error || "Failed to generate PDF");
     }
 
@@ -85,6 +92,7 @@ export async function POST(req: NextRequest) {
     });
   } catch (error) {
     console.error("[GENERATE_CONTRACT_PDF_ERROR]", error);
+
     return NextResponse.json(
       {
         error:

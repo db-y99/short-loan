@@ -1,36 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { LOAN_STATUS } from "@/constants/loan";
+import { requireAdminForPendingLoan } from "@/lib/auth/api-auth";
 
 const getPendingLoan = async (loanId: string) => {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const admin = await requireAdminForPendingLoan(loanId);
 
-  if (!user) {
-    return { supabase, error: "Unauthorized", status: 401 as const };
+  if (!admin.ok) {
+    return { ok: false as const, response: admin.response };
   }
 
-  const { data: loan, error: loanError } = await supabase
-    .from("loans")
-    .select("id, status")
-    .eq("id", loanId)
-    .single();
-
-  if (loanError || !loan) {
-    return { supabase, error: "Không tìm thấy khoản vay", status: 404 as const };
-  }
-
-  if (loan.status !== LOAN_STATUS.PENDING) {
-    return {
-      supabase,
-      error: "Chỉ được sửa/xóa tham chiếu khi khoản vay ở trạng thái chờ duyệt",
-      status: 400 as const,
-    };
-  }
-
-  return { supabase, error: null, status: 200 as const };
+  return { ok: true as const };
 };
 
 export async function PATCH(
@@ -41,13 +21,11 @@ export async function PATCH(
     const { id: loanId, referenceId } = await params;
     const precheck = await getPendingLoan(loanId);
 
-    if (precheck.error) {
-      return NextResponse.json(
-        { success: false, error: precheck.error },
-        { status: precheck.status },
-      );
+    if (!precheck.ok) {
+      return precheck.response;
     }
 
+    const supabase = await createSupabaseServerClient();
     const { fullName, phone, relationship } = await request.json();
 
     if (!fullName || !phone || !relationship) {
@@ -57,7 +35,7 @@ export async function PATCH(
       );
     }
 
-    const { data, error } = await precheck.supabase
+    const { data, error } = await supabase
       .from("loan_references")
       .update({
         full_name: fullName,
@@ -82,6 +60,7 @@ export async function PATCH(
     });
   } catch (error) {
     console.error("[UPDATE_REFERENCE_ERROR]", error);
+
     return NextResponse.json(
       {
         success: false,
@@ -100,14 +79,13 @@ export async function DELETE(
     const { id: loanId, referenceId } = await params;
     const precheck = await getPendingLoan(loanId);
 
-    if (precheck.error) {
-      return NextResponse.json(
-        { success: false, error: precheck.error },
-        { status: precheck.status },
-      );
+    if (!precheck.ok) {
+      return precheck.response;
     }
 
-    const { error } = await precheck.supabase
+    const supabase = await createSupabaseServerClient();
+
+    const { error } = await supabase
       .from("loan_references")
       .delete()
       .eq("id", referenceId)
@@ -125,6 +103,7 @@ export async function DELETE(
     });
   } catch (error) {
     console.error("[DELETE_REFERENCE_ERROR]", error);
+
     return NextResponse.json(
       {
         success: false,

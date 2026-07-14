@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { deleteAssetImageService } from "@/services/assets/asset-images.service";
 
@@ -38,6 +39,7 @@ export async function DELETE(
 
     if (!result.success) {
       const status = result.error?.includes("chờ duyệt") ? 400 : 404;
+
       return NextResponse.json(
         { success: false, error: result.error ?? "Lỗi khi xóa ảnh" },
         { status },
@@ -47,11 +49,11 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[DELETE_ASSET_IMAGE_API_ERROR]", error);
+
     return NextResponse.json(
       {
         success: false,
-        error:
-          error instanceof Error ? error.message : "Lỗi khi xóa ảnh",
+        error: error instanceof Error ? error.message : "Lỗi khi xóa ảnh",
       },
       { status: 500 },
     );

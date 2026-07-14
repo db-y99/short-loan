@@ -1,6 +1,16 @@
 "use client";
 
-import { Card, CardBody, CardHeader, Chip, Divider, Link, Button } from "@heroui/react";
+import type { TLoanDetails } from "@/types/loan.types";
+
+import {
+  Card,
+  CardBody,
+  CardHeader,
+  Chip,
+  Divider,
+  Link,
+  Button,
+} from "@heroui/react";
 import {
   User,
   CreditCard,
@@ -18,13 +28,11 @@ import {
   Trash2,
 } from "lucide-react";
 
-import type { TLoanDetails } from "@/types/loan.types";
 import { formatCurrencyVND } from "@/lib/format";
 import AssetGallery from "@/components/loan-details/asset-gallery.client";
 import SectionHeader from "@/components/section-header";
 import InfoRow from "@/components/info-row";
 import { LOAN_TYPE_LABEL, type TLoanType, ASSET_TYPES } from "@/constants/loan";
-
 
 type TProps = {
   loanDetails: TLoanDetails;
@@ -54,10 +62,16 @@ const LoanInfoCards = ({
   // Xác định loại tài sản để hiển thị đúng thông tin định danh
   // So sánh với cả label tiếng Việt và key tiếng Anh
   const assetType = loanDetails.asset.type;
-  const isVehicle = assetType === 'Xe máy' || assetType === 'Ô tô' ||
-                    assetType === ASSET_TYPES.MOTORBIKE || assetType === ASSET_TYPES.CAR;
-  const isDevice = assetType === 'Điện thoại' || assetType === 'Laptop' ||
-                   assetType === ASSET_TYPES.PHONE || assetType === ASSET_TYPES.LAPTOP;
+  const isVehicle =
+    assetType === "Xe máy" ||
+    assetType === "Ô tô" ||
+    assetType === ASSET_TYPES.MOTORBIKE ||
+    assetType === ASSET_TYPES.CAR;
+  const isDevice =
+    assetType === "Điện thoại" ||
+    assetType === "Laptop" ||
+    assetType === ASSET_TYPES.PHONE ||
+    assetType === ASSET_TYPES.LAPTOP;
 
   return (
     <div className="gap-4 flex flex-col">
@@ -76,7 +90,11 @@ const LoanInfoCards = ({
             label="CCCD"
             value={loanDetails.customer.cccd}
           />
-          <InfoRow icon={Phone} label="SĐT" value={loanDetails.customer.phone} />
+          <InfoRow
+            icon={Phone}
+            label="SĐT"
+            value={loanDetails.customer.phone}
+          />
 
           <InfoRow
             icon={Briefcase}
@@ -90,15 +108,13 @@ const LoanInfoCards = ({
           />
           {loanDetails.customer.facebookUrl && (
             <InfoRow
+              isLink
               href={loanDetails.customer.facebookUrl}
               icon={Facebook}
-              isLink
               label="Facebook"
               value="Xem Facebook"
             />
           )}
-
-
         </CardBody>
       </Card>
 
@@ -108,10 +124,10 @@ const LoanInfoCards = ({
         </CardHeader>
         <CardBody className="pt-0 space-y-2 gap-2 grid grid-cols-2">
           <InfoRow
+            className="col-span-2"
             icon={MapPin}
             label="Địa chỉ"
             value={loanDetails.customer.address}
-            className="col-span-2"
           />
           <InfoRow
             icon={Calendar}
@@ -131,9 +147,9 @@ const LoanInfoCards = ({
           {onEditBank && (
             <Button
               color="primary"
-              variant="light"
               size="sm"
               startContent={<Edit className="w-4 h-4" />}
+              variant="light"
               onPress={onEditBank}
             >
               Sửa
@@ -164,9 +180,9 @@ const LoanInfoCards = ({
           {onAddReference && (
             <Button
               color="primary"
-              variant="light"
               size="sm"
               startContent={<UserPlus className="w-4 h-4" />}
+              variant="light"
               onPress={onAddReference}
             >
               Thêm
@@ -203,7 +219,10 @@ const LoanInfoCards = ({
                     >
                       <td className="py-2 px-2 font-medium">{ref.full_name}</td>
                       <td className="py-2 px-2">
-                        <Link href={`tel:${ref.phone}`} className="text-primary hover:underline">
+                        <Link
+                          className="text-primary hover:underline"
+                          href={`tel:${ref.phone}`}
+                        >
                           {ref.phone}
                         </Link>
                       </td>
@@ -217,9 +236,9 @@ const LoanInfoCards = ({
                           <div className="flex items-center justify-end gap-1">
                             {onEditReference && (
                               <Button
+                                isIconOnly
                                 size="sm"
                                 variant="light"
-                                isIconOnly
                                 onPress={() => onEditReference(ref.id)}
                               >
                                 <Edit className="w-4 h-4" />
@@ -227,10 +246,10 @@ const LoanInfoCards = ({
                             )}
                             {onDeleteReference && (
                               <Button
+                                isIconOnly
+                                color="danger"
                                 size="sm"
                                 variant="light"
-                                color="danger"
-                                isIconOnly
                                 onPress={() => onDeleteReference(ref.id)}
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -252,19 +271,21 @@ const LoanInfoCards = ({
         </CardBody>
       </Card>
 
-      <Card shadow="sm" className="col-span-2">
+      <Card className="col-span-2" shadow="sm">
         <CardHeader className="pb-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <SectionHeader icon={Smartphone} title="Tài sản" />
-            <Chip size="sm" variant="flat">{loanDetails.asset.type}</Chip>
+            <Chip size="sm" variant="flat">
+              {loanDetails.asset.type}
+            </Chip>
           </div>
           <div className="flex items-center gap-1">
             {onEditAsset && (
               <Button
                 color="primary"
-                variant="light"
                 size="sm"
                 startContent={<Edit className="w-4 h-4" />}
+                variant="light"
                 onPress={onEditAsset}
               >
                 Sửa tài sản
@@ -273,9 +294,9 @@ const LoanInfoCards = ({
             {onUpdateAssetCondition && (
               <Button
                 color="secondary"
-                variant="light"
                 size="sm"
                 startContent={<UserPlus className="w-4 h-4" />}
+                variant="light"
                 onPress={onUpdateAssetCondition}
               >
                 Cập nhật tình trạng
@@ -286,7 +307,7 @@ const LoanInfoCards = ({
         <CardBody className="pt-0">
           <div className="bg-default-50 rounded-lg p-2 mb-3 flex flex-col gap-1">
             <p className="font-semibold">{loanDetails.asset.name}</p>
-            
+
             {/* Hiển thị IMEI và Serial cho điện thoại/laptop */}
             {isDevice && (
               <>
@@ -302,7 +323,7 @@ const LoanInfoCards = ({
                 )}
               </>
             )}
-            
+
             {/* Hiển thị số khung và số máy cho xe máy/ô tô */}
             {isVehicle && (
               <>
@@ -318,7 +339,7 @@ const LoanInfoCards = ({
                 )}
               </>
             )}
-            
+
             {/* Hiển thị IMEI/Serial cho các loại khác (mặc định) */}
             {!isDevice && !isVehicle && (
               <>
@@ -334,7 +355,7 @@ const LoanInfoCards = ({
                 )}
               </>
             )}
-            
+
             {loanDetails.assetCondition && (
               <>
                 <Divider className="my-2" />
@@ -342,25 +363,25 @@ const LoanInfoCards = ({
                   <p className="text-xs font-semibold text-warning-700 dark:text-warning-400 mb-1">
                     Tình trạng tài sản:
                   </p>
-                  <p className="text-sm">
-                    {loanDetails.assetCondition}
-                  </p>
+                  <p className="text-sm">{loanDetails.assetCondition}</p>
                 </div>
               </>
             )}
             <Divider className="my-2" />
             <div className="flex items-center gap-2 justify-between">
-              <div>Hình thức: {LOAN_TYPE_LABEL[loanDetails.loanType as TLoanType] || loanDetails.loanType}</div>
-              <div className="text-sm text-success-500">
-                (Kỳ đầu tiên)
+              <div>
+                Hình thức:{" "}
+                {LOAN_TYPE_LABEL[loanDetails.loanType as TLoanType] ||
+                  loanDetails.loanType}
               </div>
+              <div className="text-sm text-success-500">(Kỳ đầu tiên)</div>
             </div>
           </div>
           {showAssetGallery && (
             <AssetGallery
               assetImages={loanDetails.asset.images}
-              loanId={loanDetails.id}
               canManageImages={canManageImages}
+              loanId={loanDetails.id}
               onRefresh={onRefresh}
             />
           )}

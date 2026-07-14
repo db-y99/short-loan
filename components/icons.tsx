@@ -2,7 +2,12 @@ import * as React from "react";
 
 import { IconSvgProps } from "@/types";
 
-export const NotificationIcon: React.FC<IconSvgProps> = ({ size, height, width, ...props }) => {
+export const NotificationIcon: React.FC<IconSvgProps> = ({
+  size,
+  height,
+  width,
+  ...props
+}) => {
   return (
     <svg
       fill="none"
@@ -238,4 +243,3 @@ export const GoogleIcon: React.FC<IconSvgProps> = ({
     </svg>
   );
 };
-
