@@ -1,5 +1,6 @@
 import type { TLoanDetails, TReuseLoanOptions } from "@/types/loan.types";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import {
   Modal,
@@ -26,31 +27,78 @@ import { addToast } from "@heroui/toast";
 import { LOAN_STATUS } from "@/constants/loan";
 import ContractHeader from "@/components/loan-details/loan-header";
 import LoanAmountSummary from "@/components/loan-details/loan-amount-summary";
-import { ChatInterface } from "@/components/chat/chat-interface";
 import LoanInfoCards from "@/components/loan-details/loan-info-cards.client";
 import LoanProfileSection from "@/components/loan-details/loan-profile-section";
 import PaymentPeriods from "@/components/loan-details/payment-periods";
 import ContractsSection from "@/components/loan-details/contracts-section";
-import PayInterestModal from "@/components/loan-details/pay-interest-modal.client";
-import PaymentHistoryModal from "@/components/loan-details/payment-history-modal";
-import RedeemModal from "@/components/loan-details/redeem-modal.client";
-import AddReferenceModal from "@/components/loan-details/add-reference-modal";
-import UpdateAssetConditionModal from "@/components/loan-details/update-asset-condition-modal";
-import EditCustomerModal from "@/components/loan-details/edit-customer-modal";
-import EditBankModal from "@/components/loan-details/edit-bank-modal";
-import EditLoanAmountModal from "@/components/loan-details/edit-loan-amount-modal";
-import EditReferenceModal from "@/components/loan-details/edit-reference-modal";
-import EditAssetModal from "@/components/loan-details/edit-asset-modal";
-import SimplePaymentModal from "@/components/loan-details/simple-payment-modal";
 import ConfirmModal from "@/components/confirm-modal";
-import RejectLoanModal from "@/components/loan-details/reject-loan-modal.client";
-import ReuseLoanConfirmModal from "@/components/reuse-loan-confirm-modal.client";
 import {
   ROLES,
   isLoanApproverRole,
   isPaymentOperatorRole,
 } from "@/constants/roles";
 import { useAuth } from "@/lib/contexts/auth-context";
+
+const modalLoading = () => null;
+
+const ChatInterface = dynamic(
+  () =>
+    import("@/components/chat/chat-interface").then((m) => m.ChatInterface),
+  { loading: modalLoading },
+);
+
+const PayInterestModal = dynamic(
+  () => import("@/components/loan-details/pay-interest-modal.client"),
+  { loading: modalLoading },
+);
+const PaymentHistoryModal = dynamic(
+  () => import("@/components/loan-details/payment-history-modal"),
+  { loading: modalLoading },
+);
+const RedeemModal = dynamic(
+  () => import("@/components/loan-details/redeem-modal.client"),
+  { loading: modalLoading },
+);
+const AddReferenceModal = dynamic(
+  () => import("@/components/loan-details/add-reference-modal"),
+  { loading: modalLoading },
+);
+const UpdateAssetConditionModal = dynamic(
+  () => import("@/components/loan-details/update-asset-condition-modal"),
+  { loading: modalLoading },
+);
+const EditCustomerModal = dynamic(
+  () => import("@/components/loan-details/edit-customer-modal"),
+  { loading: modalLoading },
+);
+const EditBankModal = dynamic(
+  () => import("@/components/loan-details/edit-bank-modal"),
+  { loading: modalLoading },
+);
+const EditLoanAmountModal = dynamic(
+  () => import("@/components/loan-details/edit-loan-amount-modal"),
+  { loading: modalLoading },
+);
+const EditReferenceModal = dynamic(
+  () => import("@/components/loan-details/edit-reference-modal"),
+  { loading: modalLoading },
+);
+const EditAssetModal = dynamic(
+  () => import("@/components/loan-details/edit-asset-modal"),
+  { loading: modalLoading },
+);
+const SimplePaymentModal = dynamic(
+  () => import("@/components/loan-details/simple-payment-modal"),
+  { loading: modalLoading },
+);
+const RejectLoanModal = dynamic(
+  () => import("@/components/loan-details/reject-loan-modal.client"),
+  { loading: modalLoading },
+);
+const ReuseLoanConfirmModal = dynamic(
+  () => import("@/components/reuse-loan-confirm-modal.client"),
+  { loading: modalLoading },
+);
 
 type TProps = {
   isOpen: boolean;

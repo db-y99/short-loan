@@ -5,8 +5,6 @@ import type {
   TPaymentMilestone,
   TPaymentPeriod,
   TReference,
-  TActivityLogEntry,
-  TActivityLogType,
   TLoanFile,
   TCreateLoanInput,
   TUploadFiles,
@@ -377,7 +375,7 @@ export const getLoanDetailsService = async (
 
   if (loanError || !loan) return null;
 
-  const [refsRes, filesRes, assetsRes, logsRes] = await Promise.all([
+  const [refsRes, filesRes, assetsRes, cycleRes] = await Promise.all([
     supabase
       .from("loan_references")
       .select("id, full_name, phone, relationship")
@@ -397,13 +395,13 @@ export const getLoanDetailsService = async (
       .is("deleted_at", null)
       .order("position", { ascending: true }),
 
+    // Chạy song song với các query khác — chat tự fetch activity logs riêng
     supabase
-      .from("loan_activity_logs")
-      .select(
-        "id, type, user_id, user_name, created_at, content, images, links, system_message, mentions",
-      )
+      .from("loan_payment_cycles")
+      .select("id")
       .eq("loan_id", loanId)
-      .order("created_at", { ascending: true }),
+      .eq("cycle_number", loan.current_cycle)
+      .maybeSingle(),
   ]);
 
   /* =========================
@@ -456,23 +454,6 @@ export const getLoanDetailsService = async (
   }));
 
   /* =========================
-     ACTIVITY LOG
-  ========================== */
-
-  const activityLog: TActivityLogEntry[] = (logsRes.data ?? []).map((l) => ({
-    id: l.id,
-    type: l.type as TActivityLogType,
-    userId: l.user_id,
-    userName: l.user_name,
-    timestamp: l.created_at,
-    content: l.content ?? undefined,
-    images: l.images ?? undefined,
-    links: l.links ?? undefined,
-    systemMessage: l.system_message ?? undefined,
-    mentions: l.mentions ?? undefined,
-  }));
-
-  /* =========================
      ASSET IDENTITY (jsonb)
   ========================== */
 
@@ -494,12 +475,7 @@ export const getLoanDetailsService = async (
   let nextPeriod: TPaymentPeriod | undefined;
 
   try {
-    const { data: cycle } = await supabase
-      .from("loan_payment_cycles")
-      .select("id")
-      .eq("loan_id", loanId)
-      .eq("cycle_number", loan.current_cycle)
-      .maybeSingle();
+    const cycle = cycleRes.data;
 
     if (cycle) {
       // Lấy payment periods từ DB
@@ -593,8 +569,6 @@ export const getLoanDetailsService = async (
 
     currentPeriod,
     nextPeriod,
-
-    activityLog: activityLog.length ? activityLog : undefined,
   } satisfies TLoanDetails;
 };
 

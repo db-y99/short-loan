@@ -376,6 +376,7 @@ const AssetGallery = ({
                     wrapper: "!max-w-full h-full",
                     img: "w-full h-full object-cover",
                   }}
+                  loading={index < 3 ? "eager" : "lazy"}
                   src={`/api/drive/image/${image.fileId}`}
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />

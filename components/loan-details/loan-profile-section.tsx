@@ -2,6 +2,7 @@
 
 import type { TLoanDetails } from "@/types/loan.types";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { Link, Button } from "@heroui/react";
 import { addToast } from "@heroui/toast";
@@ -13,12 +14,20 @@ import {
   X,
   AlertCircle,
 } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
 
 import { LOAN_STATUS } from "@/constants/loan";
 import { formatDateTimeVN } from "@/lib/format";
-import ContractSigningModal from "@/components/contracts/contract-signing-modal";
 import { sortContractsByType } from "@/lib/contract-utils";
+
+const ContractSigningModal = dynamic(
+  () => import("@/components/contracts/contract-signing-modal"),
+  { loading: () => null },
+);
+
+const QRCodeSVG = dynamic(
+  () => import("qrcode.react").then((m) => m.QRCodeSVG),
+  { loading: () => null },
+);
 
 type TProps = {
   loanDetails: TLoanDetails;

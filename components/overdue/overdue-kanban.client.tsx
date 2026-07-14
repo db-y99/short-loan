@@ -6,6 +6,7 @@ import type {
 } from "@/services/payments/overdue.service";
 import type { TLoanDetails } from "@/types/loan.types";
 
+import dynamic from "next/dynamic";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
@@ -15,7 +16,11 @@ import { useTransition, useState, useCallback } from "react";
 
 import { formatCurrencyVND, formatDateShortVN } from "@/lib/format";
 import { LOAN_TYPE_LABEL } from "@/constants/loan";
-import LoanDetailsModal from "@/components/loan-details/loan-details-modal.client";
+
+const LoanDetailsModal = dynamic(
+  () => import("@/components/loan-details/loan-details-modal.client"),
+  { loading: () => null },
+);
 
 type TProps = {
   data: TOverdueData;

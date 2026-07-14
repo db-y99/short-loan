@@ -9,6 +9,7 @@ import type {
 } from "@/types/loan.types";
 import type { TBranch } from "@/types/branch.types";
 
+import dynamic from "next/dynamic";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDisclosure } from "@heroui/modal";
@@ -22,7 +23,17 @@ import {
 } from "@/lib/loan-form-mapper";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { ROLES } from "@/constants/roles";
-import LoanDetailsModal from "@/components/loan-details/loan-details-modal.client";
+
+const LoanDetailsModal = dynamic(
+  () => import("@/components/loan-details/loan-details-modal.client"),
+  {
+    loading: () => null,
+  },
+);
+
+const preloadLoanDetailsModal = () => {
+  void import("@/components/loan-details/loan-details-modal.client");
+};
 
 type TProps = {
   loans: TLoan[];
@@ -152,6 +163,7 @@ const LoansPageClient = ({
         onCreateLoan={handleOpenCreateBlank}
         onRefresh={handleRefresh}
         onRowClick={handleRowClick}
+        onRowHover={preloadLoanDetailsModal}
       />
 
       {isModalOpen && (

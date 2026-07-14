@@ -42,6 +42,7 @@ type TProps = {
   loans: TLoan[];
   onRefresh?: () => void;
   onRowClick?: (loan: TLoan) => void;
+  onRowHover?: () => void;
   onCreateLoan?: () => void;
   branches?: TBranch[];
   selectedBranch?: string;
@@ -69,6 +70,7 @@ const LoansTable = ({
   loans,
   onRefresh,
   onRowClick,
+  onRowHover,
   onCreateLoan,
   branches = [],
   selectedBranch = "",
@@ -372,6 +374,7 @@ const LoansTable = ({
                   : ""
               }
               onClick={() => onRowClick?.(loan)}
+              onMouseEnter={onRowHover}
             >
               {(columnKey) => (
                 <TableCell className="py-4">
