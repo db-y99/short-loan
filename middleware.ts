@@ -10,11 +10,10 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (public folder)
+     * - _next/static, _next/image, favicon
+     * - public static images
+     * - upload APIs (body lớn — tránh middleware buffer → 413)
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/drive/upload|api/assets/upload-images|api/loans/.*/upload-image|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

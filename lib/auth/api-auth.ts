@@ -227,6 +227,15 @@ export async function verifyStaffCanAccessDriveFile(
 
   if (loanFile) return true;
 
+  // Ảnh tài sản lưu ở loan_assets (không phải loan_files)
+  const { data: assetImage } = await supabase
+    .from("loan_assets")
+    .select("id")
+    .eq("file_id", fileId)
+    .maybeSingle();
+
+  if (assetImage) return true;
+
   const { data: loan } = await supabase
     .from("loans")
     .select("id")
