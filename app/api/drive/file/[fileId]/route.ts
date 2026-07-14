@@ -12,6 +12,7 @@ import {
   requireActiveStaffUser,
   verifyStaffCanAccessDriveFile,
 } from "@/lib/auth/api-auth";
+import { create as createContentDisposition } from "content-disposition";
 
 export async function GET(
   request: NextRequest,
@@ -58,7 +59,9 @@ export async function GET(
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": mimeType,
-        "Content-Disposition": `inline; filename="${fileName}"`,
+        "Content-Disposition": createContentDisposition(fileName, {
+          type: "inline",
+        }),
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });

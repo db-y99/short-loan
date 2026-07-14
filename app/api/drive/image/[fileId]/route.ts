@@ -1,3 +1,6 @@
+import { Readable } from "stream";
+
+import { create as createContentDisposition } from "content-disposition";
 import { NextRequest, NextResponse } from "next/server";
 
 import {
@@ -7,7 +10,7 @@ import {
 import { streamFileFromDrive } from "@/lib/google-drive";
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   ctx: { params: Promise<{ fileId: string }> },
 ) {
   const { fileId } = await ctx.params;
@@ -29,11 +32,15 @@ export async function GET(
       return new NextResponse("File not found", { status: 404 });
     }
 
-    return new NextResponse(result.stream as any, {
+    const webStream = Readable.toWeb(result.stream) as ReadableStream;
+
+    return new NextResponse(webStream, {
       headers: {
-        "Content-Type": result.mimeType,
+        "Content-Type": result.mimeType || "application/octet-stream",
         "Cache-Control": "private, max-age=3600",
-        "Content-Disposition": `inline; filename="${result.fileName}"`,
+        "Content-Disposition": createContentDisposition(result.fileName, {
+          type: "inline",
+        }),
       },
     });
   } catch (err) {

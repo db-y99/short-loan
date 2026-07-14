@@ -6,7 +6,8 @@ import { uploadAssetImagesService } from "@/services/assets/asset-images.service
 export const runtime = "nodejs";
 
 /**
- * Upload nhiều ảnh tài sản
+ * Upload ảnh tài sản (1 hoặc nhiều file trong 1 request).
+ * Client nên chia batch theo UPLOAD_MAX_PAYLOAD_BYTES để tránh 413.
  * POST /api/assets/upload-images
  */
 export async function POST(req: NextRequest) {
@@ -34,23 +35,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Lấy tất cả files từ FormData
     const files: Array<{ buffer: Buffer; name: string; mimeType: string }> = [];
-
-    // Convert FormData entries to array to avoid iterator issues
     const entries = Array.from(formData.entries());
 
     for (const [key, value] of entries) {
-      if (key.startsWith("file_") && value instanceof File) {
-        const arrayBuffer = await value.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
+      const isFileField = key === "file" || key.startsWith("file_");
 
-        files.push({
-          buffer,
-          name: value.name,
-          mimeType: value.type,
-        });
-      }
+      if (!isFileField || !(value instanceof File)) continue;
+
+      const arrayBuffer = await value.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      files.push({
+        buffer,
+        name: value.name,
+        mimeType: value.type,
+      });
     }
 
     if (files.length === 0) {

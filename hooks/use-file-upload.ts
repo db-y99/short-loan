@@ -2,8 +2,15 @@
 import type { TUploadResult } from "@/types/google-drive.types";
 
 import { useState } from "react";
+import pMap from "p-map";
 
-import { FOLDER_NAMES } from "@/constants/google-drive";
+import { FOLDER_NAMES, UPLOAD_CONCURRENCY } from "@/constants/google-drive";
+
+type TUploadFilesOptions = {
+  feature?: string;
+  folderId?: string;
+  onProgress?: (current: number, total: number) => void;
+};
 
 export const useFileUpload = () => {
   const [isUploading, setIsUploading] = useState(false);
@@ -11,48 +18,54 @@ export const useFileUpload = () => {
 
   const uploadFiles = async (
     files: File[],
-    options?: {
-      feature?: string;
-      folderId?: string;
-    },
+    options?: TUploadFilesOptions,
   ): Promise<TUploadResult[]> => {
     const feature = options?.feature ?? FOLDER_NAMES.SHORT_LOAN;
     const folderId = options?.folderId;
+    const onProgress = options?.onProgress;
 
     setIsUploading(true);
     setUploadError(null);
 
     try {
-      const uploadPromises = files.map(async (file) => {
-        const formData = new FormData();
+      let completedCount = 0;
 
-        formData.append("file", file);
-        formData.append("feature", feature);
-        if (folderId) {
-          formData.append("folderId", folderId);
-        }
+      // 1 file / request, song song có giới hạn concurrency (p-map)
+      const results = await pMap(
+        files,
+        async (file) => {
+          const formData = new FormData();
 
-        const res = await fetch("/api/drive/upload", {
-          method: "POST",
-          body: formData,
-        });
+          formData.append("file", file);
+          formData.append("feature", feature);
+          if (folderId) {
+            formData.append("folderId", folderId);
+          }
 
-        if (!res.ok) {
-          const error = await res.json();
+          const res = await fetch("/api/drive/upload", {
+            method: "POST",
+            body: formData,
+          });
 
-          throw new Error(error.error || `Upload failed for ${file.name}`);
-        }
+          if (!res.ok) {
+            const error = await res.json();
 
-        const data = await res.json();
+            throw new Error(error.error || `Upload failed for ${file.name}`);
+          }
 
-        return {
-          fileId: data.fileId,
-          fileName: data.fileName,
-          uploadedName: data.uploadedName,
-        } as TUploadResult;
-      });
+          const data = await res.json();
 
-      const results = await Promise.all(uploadPromises);
+          completedCount += 1;
+          onProgress?.(completedCount, files.length);
+
+          return {
+            fileId: data.fileId,
+            fileName: data.fileName,
+            uploadedName: data.uploadedName,
+          } as TUploadResult;
+        },
+        { concurrency: UPLOAD_CONCURRENCY },
+      );
 
       return results;
     } catch (err) {

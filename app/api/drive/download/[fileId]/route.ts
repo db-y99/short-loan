@@ -1,3 +1,5 @@
+import { Readable } from "stream";
+
 import { NextResponse } from "next/server";
 
 import { streamFileFromDrive } from "@/lib/google-drive";
@@ -6,6 +8,7 @@ import {
   requireActiveStaffUser,
   verifyStaffCanAccessDriveFile,
 } from "@/lib/auth/api-auth";
+import { create as createContentDisposition } from "content-disposition";
 
 export async function GET(
   req: Request,
@@ -70,7 +73,9 @@ export async function GET(
         headers: {
           "Content-Type":
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          "Content-Disposition": `attachment; filename="${json.fileName}"`,
+          "Content-Disposition": createContentDisposition(
+            String(json.fileName || "document.docx"),
+          ),
         },
       });
     } catch (err) {
@@ -87,11 +92,12 @@ export async function GET(
     return new NextResponse("File not found", { status: 404 });
   }
   const { stream, fileName, mimeType } = result;
+  const webStream = Readable.toWeb(stream) as ReadableStream;
 
-  return new NextResponse(stream as any, {
+  return new NextResponse(webStream, {
     headers: {
       "Content-Type": mimeType || "application/octet-stream",
-      "Content-Disposition": `attachment; filename="${fileName}"`,
+      "Content-Disposition": createContentDisposition(fileName),
     },
   });
 }

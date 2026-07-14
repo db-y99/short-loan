@@ -15,9 +15,11 @@ import {
   Trash2,
 } from "lucide-react";
 import { addToast } from "@heroui/toast";
+import pMap from "p-map";
 
 import { TAssetImage } from "@/types/loan.types";
 import ConfirmModal from "@/components/confirm-modal";
+import { UPLOAD_CONCURRENCY } from "@/constants/google-drive";
 
 type TProps = {
   assetImages: TAssetImage[];
@@ -40,6 +42,10 @@ const AssetGallery = ({
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({
+    current: 0,
+    total: 0,
+  });
   const [isDeleting, setIsDeleting] = useState(false);
   const [localImages, setLocalImages] = useState<TAssetImage[]>(assetImages);
   const [deleteTarget, setDeleteTarget] = useState<TAssetImage | null>(null);
@@ -247,49 +253,73 @@ const AssetGallery = ({
   const handleConfirmUpload = async () => {
     if (previewImages.length === 0) return;
 
+    const total = previewImages.length;
+
     setIsUploading(true);
+    setUploadProgress({ current: 0, total });
     setMessage(null);
 
+    let completedCount = 0;
+
     try {
-      const formData = new FormData();
+      // 1 file / request, chạy song song (p-map) — tránh payload lớn + nhanh hơn
+      const results = await pMap(
+        previewImages,
+        async (img) => {
+          const formData = new FormData();
 
-      formData.append("loanId", loanId);
-      previewImages.forEach((img, index) => {
-        formData.append(`file_${index}`, img.file);
+          formData.append("loanId", loanId);
+          formData.append("file", img.file);
+
+          const response = await fetch("/api/assets/upload-images", {
+            method: "POST",
+            body: formData,
+          });
+
+          const result = await response.json();
+
+          if (!response.ok || !result.success) {
+            throw new Error(
+              result.error || `Lỗi khi upload ảnh: ${img.file.name}`,
+            );
+          }
+
+          completedCount += 1;
+          setUploadProgress({ current: completedCount, total });
+
+          return (result.data ?? []) as TAssetImage[];
+        },
+        { concurrency: UPLOAD_CONCURRENCY },
+      );
+
+      const uploadedImages = results.flat();
+
+      addToast({
+        title: "Thành công",
+        description: `Đã upload ${uploadedImages.length} ảnh thành công!`,
+        color: "success",
       });
 
-      const response = await fetch("/api/assets/upload-images", {
-        method: "POST",
-        body: formData,
-      });
+      setLocalImages((prev) => [...prev, ...uploadedImages]);
 
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        addToast({
-          title: "Thành công",
-          description: `Đã upload ${result.data.length} ảnh thành công!`,
-          color: "success",
-        });
-
-        setLocalImages([...localImages, ...result.data]);
-
-        previewImages.forEach((img) => URL.revokeObjectURL(img.preview));
-        setPreviewImages([]);
-        setIsUploadModalOpen(false);
-        setMessage(null);
-        onRefresh?.();
-      } else {
-        setMessage({
-          type: "error",
-          text: result.error || "Lỗi khi upload ảnh",
-        });
-      }
+      previewImages.forEach((img) => URL.revokeObjectURL(img.preview));
+      setPreviewImages([]);
+      setIsUploadModalOpen(false);
+      setMessage(null);
+      onRefresh?.();
     } catch (error) {
-      setMessage({ type: "error", text: "Lỗi khi upload ảnh" });
+      setMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : "Lỗi khi upload ảnh",
+      });
       console.error(error);
+      // Partial uploads đã vào DB/Drive — refresh để đồng bộ UI
+      if (completedCount > 0) {
+        onRefresh?.();
+      }
     } finally {
       setIsUploading(false);
+      setUploadProgress({ current: 0, total: 0 });
     }
   };
 
@@ -486,7 +516,7 @@ const AssetGallery = ({
                 onPress={handleConfirmUpload}
               >
                 {isUploading
-                  ? `Đang upload ${previewImages.length} ảnh...`
+                  ? `Đang upload ${uploadProgress.current}/${uploadProgress.total}...`
                   : `Upload ${previewImages.length} ảnh`}
               </Button>
             </div>

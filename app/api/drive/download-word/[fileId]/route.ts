@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
-
 import { env } from "@/config/env";
 import {
   requireActiveStaffUser,
   verifyStaffCanAccessDriveFile,
 } from "@/lib/auth/api-auth";
+import { create as createContentDisposition } from "content-disposition";
+import { NextResponse } from "next/server";
 
 export async function GET(
   _req: Request,
@@ -64,7 +64,9 @@ export async function GET(
       headers: {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "Content-Disposition": `attachment; filename="${json.fileName}"`,
+        "Content-Disposition": createContentDisposition(
+          String(json.fileName || "document.docx"),
+        ),
       },
     });
   } catch (err) {

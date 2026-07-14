@@ -307,9 +307,14 @@ const CreateContractModal = ({
         let uploadedFiles: TUploadFiles[] = [...keptAssetImages];
 
         if (form.attachments.length > 0) {
-          setUploadProgress(`Đang upload ${form.attachments.length} file...`);
+          setUploadProgress(
+            `Đang upload 0/${form.attachments.length} file...`,
+          );
           const results = await uploadFiles(form.attachments, {
             folderId: result.data.folderId,
+            onProgress: (current, total) => {
+              setUploadProgress(`Đang upload ${current}/${total} file...`);
+            },
           });
 
           uploadedFiles = results.map((r) => ({
