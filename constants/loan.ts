@@ -49,9 +49,9 @@ export const LOAN_STATUS_COLOR: Record<
 > = {
   [LOAN_STATUS.PENDING]: "warning",
   [LOAN_STATUS.APPROVED]: "primary",
-  [LOAN_STATUS.SIGNED]: "secondary",
+  [LOAN_STATUS.SIGNED]: "default",
   [LOAN_STATUS.DISBURSED]: "success",
-  [LOAN_STATUS.REDEEMED]: "success",
+  [LOAN_STATUS.REDEEMED]: "secondary",
   [LOAN_STATUS.REJECTED]: "danger",
   [LOAN_STATUS.COMPLETED]: "default",
   [LOAN_STATUS.LIQUIDATED]: "default",
