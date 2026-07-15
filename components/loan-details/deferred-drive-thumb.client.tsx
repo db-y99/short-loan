@@ -33,44 +33,52 @@ const releaseThumbSlot = () => {
 type TProps = {
   fileId: string;
   alt: string;
-  /** Ảnh đầu viewport — bắt đầu load ngay, không xếp hàng */
-  priority?: boolean;
 };
 
 /**
- * Thumbnail Drive có giới hạn concurrency — tránh 50 request cùng đập API/auth/Drive
- * (modal xem 1 ảnh vẫn nhanh vì không bị tranh bandwidth).
+ * Thumbnail Drive có giới hạn concurrency — tránh 50 request cùng đập API/auth/Drive.
+ * Effects chạy theo thứ tự grid → vài ảnh đầu thường lấy slot trước.
+ * Modal full-size dùng URL không qua component này → không chung hàng đợi.
  */
-const DeferredDriveThumb = ({ fileId, alt, priority = false }: TProps) => {
+const DeferredDriveThumb = ({ fileId, alt }: TProps) => {
   const [src, setSrc] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
-  const holdsSlotRef = useRef(false);
-  const releasedRef = useRef(false);
-
-  const releaseOnce = () => {
-    if (!holdsSlotRef.current || releasedRef.current) return;
-    releasedRef.current = true;
-    holdsSlotRef.current = false;
-    releaseThumbSlot();
-  };
+  /** Release gắn lifecycle hiện tại — tránh stale closure / double-free */
+  const releaseRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     let cancelled = false;
+    let holdsSlot = false;
+    let released = false;
 
-    releasedRef.current = false;
-    holdsSlotRef.current = false;
+    const releaseOnce = () => {
+      if (!holdsSlot || released) return;
+      released = true;
+      holdsSlot = false;
+      releaseThumbSlot();
+    };
+
+    releaseRef.current = releaseOnce;
+
     setFailed(false);
     setSrc(null);
 
     const start = async () => {
-      if (!priority) {
-        await acquireThumbSlot();
-        if (cancelled) {
-          releaseThumbSlot();
+      await acquireThumbSlot();
 
-          return;
-        }
-        holdsSlotRef.current = true;
+      // Race: cleanup có thể chạy giữa acquire và gán holdsSlot
+      if (cancelled) {
+        releaseThumbSlot();
+
+        return;
+      }
+
+      holdsSlot = true;
+
+      if (cancelled) {
+        releaseOnce();
+
+        return;
       }
 
       setSrc(`/api/drive/image/${fileId}?thumb=1`);
@@ -81,8 +89,9 @@ const DeferredDriveThumb = ({ fileId, alt, priority = false }: TProps) => {
     return () => {
       cancelled = true;
       releaseOnce();
+      releaseRef.current = () => {};
     };
-  }, [fileId, priority]);
+  }, [fileId]);
 
   if (failed) {
     return (
@@ -106,9 +115,9 @@ const DeferredDriveThumb = ({ fileId, alt, priority = false }: TProps) => {
       src={src}
       onError={() => {
         setFailed(true);
-        releaseOnce();
+        releaseRef.current();
       }}
-      onLoad={releaseOnce}
+      onLoad={() => releaseRef.current()}
     />
   );
 };

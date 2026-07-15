@@ -469,9 +469,11 @@ export async function recalculatePendingLoanPaymentScheduleService({
 
 /**
  * Xóa lịch thanh toán nếu chưa có giao dịch (dùng khi hoàn tác ký / tạo lại HĐ).
+ * @param failIfHasTransactions - nếu true, throw khi đã có giao dịch (bắt buộc cho regenerate đã ký)
  */
 export async function clearLoanPaymentScheduleIfNoTransactionsService(
   loanId: string,
+  options?: { failIfHasTransactions?: boolean },
 ): Promise<void> {
   const supabase = await createSupabaseServerClient();
 
@@ -485,6 +487,12 @@ export async function clearLoanPaymentScheduleIfNoTransactionsService(
   }
 
   if (count && count > 0) {
+    if (options?.failIfHasTransactions) {
+      throw new Error(
+        "Không thể xóa lịch thanh toán vì đã có giao dịch. Không thể tạo lại hợp đồng khi đã có thanh toán.",
+      );
+    }
+
     return;
   }
 

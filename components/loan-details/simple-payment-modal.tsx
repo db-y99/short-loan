@@ -149,8 +149,8 @@ const SimplePaymentModal = ({
 
             <div className="text-xs text-default-500 bg-default-50 p-3 rounded-lg">
               <p>
-                💡 Bạn có thể nhập bất kỳ số tiền nào để linh hoạt trong việc
-                ghi nhận thanh toán.
+                Nhập số tiền khách trả — ghi nhận đúng số bạn nhập. Có thể đóng
+                nhiều lần; mỗi lần mở lại form và nhập tiếp.
               </p>
             </div>
           </div>

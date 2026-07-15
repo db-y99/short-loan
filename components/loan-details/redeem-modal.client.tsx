@@ -11,16 +11,7 @@ import {
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Textarea } from "@heroui/input";
-import { Card, CardBody } from "@heroui/card";
-import { Divider } from "@heroui/divider";
-import {
-  Loader2,
-  ShoppingCart,
-  Info,
-  CheckCircle,
-  XCircle,
-  AlertTriangle,
-} from "lucide-react";
+import { ShoppingCart, CheckCircle, XCircle } from "lucide-react";
 import { addToast } from "@heroui/toast";
 
 import { formatCurrencyVND } from "@/lib/format";
@@ -31,130 +22,37 @@ type TProps = {
   onClose: () => void;
   loanId: string;
   loanAmount: number;
-  loanType?: string; // Thêm loanType để phân biệt logic
+  /** Giữ prop để không phá call site — không còn phân nhánh theo gói */
+  loanType?: string;
   onSuccess?: () => void;
 };
 
+/**
+ * Chuộc đồ — kế toán chỉ nhập số tiền lãi/phí cần thu.
+ * Gốc luôn bằng số tiền vay (RPC yêu cầu). Không validate theo gói.
+ */
 const RedeemModal = ({
   isOpen,
   onClose,
   loanId,
   loanAmount,
-  loanType,
   onSuccess,
 }: TProps) => {
-  const [principalAmount, setPrincipalAmount] = useState("");
   const [interestAmount, setInterestAmount] = useState("");
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoadingProgress, setIsLoadingProgress] = useState(false);
-  const [totalInterestDue, setTotalInterestDue] = useState(0);
-  const [totalInterestPaid, setTotalInterestPaid] = useState(0);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const [confirmMessage, setConfirmMessage] = useState("");
   const [message, setMessage] = useState<{
-    type: "success" | "error" | "info" | "warning";
+    type: "success" | "error";
     text: string;
   } | null>(null);
 
-  // Xác định loại gói
-  const isInstallmentType =
-    loanType === "installment_3_periods" ||
-    loanType?.includes("trả góp") ||
-    loanType?.includes("Gói 1");
-
-  const isBulletPaymentType =
-    loanType === "bullet_payment_by_milestone" ||
-    loanType === "bullet_payment_with_collateral_hold" ||
-    loanType?.includes("Gói 2") ||
-    loanType?.includes("Gói 3");
-
-  // Reset form và fetch data khi mở modal
   useEffect(() => {
-    if (isOpen) {
-      // Gói 1: Không cần nhập tiền gốc riêng (đã bao gồm trong tổng 3 kỳ)
-      // Gói 2, 3: Cần nhập tiền gốc
-      if (isInstallmentType) {
-        setPrincipalAmount("0"); // Gói 1 không cần gốc riêng
-      } else {
-        setPrincipalAmount(loanAmount.toLocaleString("vi-VN"));
-      }
-      setInterestAmount("");
-      setNotes("");
-      setMessage(null);
-      fetchPaymentProgress();
-    }
-  }, [isOpen, loanAmount, loanId, isInstallmentType]);
-
-  const fetchPaymentProgress = async () => {
-    setIsLoadingProgress(true);
-    try {
-      const response = await fetch(`/api/loans/${loanId}/payment-progress`);
-
-      if (!response.ok) {
-        console.error("Failed to fetch payment progress:", response.status);
-
-        return;
-      }
-
-      const result = await response.json();
-
-      if (result.success && result.data) {
-        const periods = result.data.periods || [];
-
-        let totalDue = 0;
-        let totalPaid = 0;
-
-        if (isInstallmentType) {
-          // Gói 1: Tính tổng của cả 3 kỳ (Gốc + Lãi + Phí)
-          totalDue = periods.reduce((sum: number, p: any) => {
-            const feeAmount = Number(p.fee_amount || 0);
-            const principalAmount = Number(p.principal || 0);
-
-            return sum + principalAmount + feeAmount;
-          }, 0);
-
-          // Gói 1: Sử dụng tổng tiền đã thanh toán từ API
-          totalPaid = Number(result.data.totalPaid || 0);
-        } else {
-          // Gói 2, 3: Chỉ tính mốc hiện tại (Lãi + Phí)
-          const today = new Date();
-          const sortedPeriods = [...periods].sort(
-            (a: any, b: any) =>
-              new Date(a.due_date).getTime() - new Date(b.due_date).getTime(),
-          );
-
-          const currentPeriod =
-            sortedPeriods.find((p: any) => new Date(p.due_date) >= today) ||
-            sortedPeriods[sortedPeriods.length - 1];
-
-          if (currentPeriod) {
-            totalDue = Number(currentPeriod.fee_amount || 0);
-          }
-
-          // Gói 2, 3: Chỉ tính lãi đã trả
-          totalPaid = Number(result.data.cycle?.totalInterestPaid || 0);
-        }
-
-        setTotalInterestPaid(totalPaid);
-        setTotalInterestDue(totalDue);
-
-        // Auto-fill remaining amount
-        const remaining = Math.max(0, totalDue - totalPaid);
-
-        if (remaining > 0) {
-          setInterestAmount(remaining.toLocaleString("vi-VN"));
-        } else {
-          // If fully paid, set to 0
-          setInterestAmount("0");
-        }
-      }
-    } catch (error) {
-      console.error("Failed to fetch payment progress:", error);
-    } finally {
-      setIsLoadingProgress(false);
-    }
-  };
+    if (!isOpen) return;
+    setInterestAmount("0");
+    setNotes("");
+    setMessage(null);
+  }, [isOpen, loanId]);
 
   const formatNumber = (value: string) => {
     const numericValue = value.replace(/[^\d]/g, "");
@@ -164,88 +62,26 @@ const RedeemModal = ({
     return Number(numericValue).toLocaleString("vi-VN");
   };
 
-  const handlePrincipalChange = (value: string) => {
-    const formatted = formatNumber(value);
-
-    setPrincipalAmount(formatted);
-  };
-
-  const handleInterestChange = (value: string) => {
-    const formatted = formatNumber(value);
-
-    setInterestAmount(formatted);
-  };
-
   const parseAmount = (formattedAmount: string): number => {
-    return Number(formattedAmount.replace(/\./g, ""));
+    if (!formattedAmount.trim()) return 0;
+
+    return Number(formattedAmount.replace(/\./g, "")) || 0;
   };
 
-  const handleSubmit = async () => {
-    const numericPrincipal = parseAmount(principalAmount);
-    const numericInterest = parseAmount(interestAmount);
+  const redeemInterest = parseAmount(interestAmount);
+  const totalAmount = loanAmount + redeemInterest;
 
-    // Gói 1: Không cần kiểm tra gốc (đã bao gồm trong tổng 3 kỳ)
-    if (!isInstallmentType) {
-      if (!principalAmount || numericPrincipal <= 0) {
-        setMessage({ type: "error", text: "Vui lòng nhập số tiền gốc hợp lệ" });
-
-        return;
-      }
-
-      if (numericPrincipal !== loanAmount) {
-        setMessage({
-          type: "error",
-          text: `Số tiền gốc phải bằng ${formatCurrencyVND(loanAmount)}`,
-        });
-
-        return;
-      }
-    }
-
-    if (!interestAmount || numericInterest < 0) {
-      setMessage({
-        type: "error",
-        text: isInstallmentType
-          ? "Vui lòng nhập tổng tiền hợp lệ"
-          : "Vui lòng nhập số tiền lãi hợp lệ",
-      });
+  const handleSubmit = () => {
+    if (redeemInterest < 0) {
+      setMessage({ type: "error", text: "Số tiền lãi/phí không hợp lệ" });
 
       return;
     }
 
-    // Build confirm message
-    const totalAmount = isInstallmentType
-      ? numericInterest
-      : numericPrincipal + numericInterest;
-    const remainingInterest = totalInterestDue - totalInterestPaid;
-
-    let msg = "";
-
-    if (isInstallmentType) {
-      msg += `Tổng chuộc (cả 3 kỳ): ${formatCurrencyVND(numericInterest)}\n\n`;
-    } else {
-      msg += `Tiền gốc: ${formatCurrencyVND(numericPrincipal)}\n`;
-      msg += `Tiền lãi: ${formatCurrencyVND(numericInterest)}\n`;
-      msg += `Tổng cộng: ${formatCurrencyVND(totalAmount)}\n\n`;
-    }
-
-    if (numericInterest < remainingInterest) {
-      msg += `⚠️ Lưu ý: Còn thiếu ${formatCurrencyVND(remainingInterest - numericInterest)}\n\n`;
-    }
-
-    msg += `Sau khi chuộc đồ, khoản vay sẽ chuyển sang trạng thái "Đã chuộc"`;
-
-    setConfirmMessage(msg);
     setIsConfirmOpen(true);
   };
 
   const handleConfirmRedeem = async () => {
-    const numericPrincipal = parseAmount(principalAmount);
-    const numericInterest = parseAmount(interestAmount);
-    const totalAmount = isInstallmentType
-      ? numericInterest
-      : numericPrincipal + numericInterest;
-
     setIsSubmitting(true);
     setMessage(null);
 
@@ -254,8 +90,8 @@ const RedeemModal = ({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          principalAmount: isInstallmentType ? 0 : numericPrincipal, // Gói 1 không cần gốc riêng
-          interestAmount: numericInterest,
+          principalAmount: loanAmount,
+          interestAmount: redeemInterest,
           notes: notes.trim(),
         }),
       });
@@ -268,14 +104,11 @@ const RedeemModal = ({
           description: `Chuộc đồ thành công! Tổng: ${formatCurrencyVND(totalAmount)}`,
           color: "success",
         });
-
-        // Close modal and refresh immediately
-        setPrincipalAmount("");
-        setInterestAmount("");
+        setInterestAmount("0");
         setNotes("");
         setMessage(null);
         onClose();
-        if (onSuccess) onSuccess();
+        onSuccess?.();
       } else {
         setMessage({ type: "error", text: result.error || "Có lỗi xảy ra" });
       }
@@ -287,215 +120,95 @@ const RedeemModal = ({
     }
   };
 
-  const handleClose = () => {
-    if (!isSubmitting) {
-      setPrincipalAmount("");
-      setInterestAmount("");
-      setNotes("");
-      setMessage(null);
-      onClose();
-    }
-  };
-
-  const numericPrincipal = parseAmount(principalAmount);
-  const numericInterest = parseAmount(interestAmount);
-  const totalAmount = isInstallmentType
-    ? numericInterest
-    : numericPrincipal + numericInterest;
-  const remainingInterest = totalInterestDue - totalInterestPaid;
-
   return (
-    <Modal isOpen={isOpen} size="lg" onClose={handleClose}>
-      <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5 text-primary" />
-            <span>Chuộc đồ</span>
-          </div>
-        </ModalHeader>
-        <ModalBody>
-          {message && (
-            <div
-              className={`flex items-center gap-2 p-3 rounded-lg ${
-                message.type === "success"
-                  ? "bg-success-50 text-success-700 dark:bg-success-900/20 dark:text-success-400"
-                  : message.type === "error"
-                    ? "bg-danger-50 text-danger-700 dark:bg-danger-900/20 dark:text-danger-400"
-                    : message.type === "warning"
-                      ? "bg-warning-50 text-warning-700 dark:bg-warning-900/20 dark:text-warning-400"
-                      : "bg-primary-50 text-primary-700 dark:bg-primary-900/20 dark:text-primary-400"
-              }`}
-            >
-              {message.type === "success" ? (
-                <CheckCircle className="w-4 h-4" />
-              ) : message.type === "error" ? (
-                <XCircle className="w-4 h-4" />
-              ) : message.type === "warning" ? (
-                <AlertTriangle className="w-4 h-4" />
-              ) : (
-                <Info className="w-4 h-4" />
-              )}
-              <p className="text-sm">{message.text}</p>
-            </div>
-          )}
-
-          {isLoadingProgress ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
-          ) : (
-            <Card shadow="sm">
-              <CardBody className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-default-600">Tổng lãi phải trả:</span>
-                  <span className="font-semibold">
-                    {formatCurrencyVND(totalInterestDue)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-default-600">Đã đóng:</span>
-                  <span className="font-semibold text-success">
-                    {formatCurrencyVND(totalInterestPaid)}
-                  </span>
-                </div>
-                <Divider />
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-default-600 font-medium">
-                    Lãi còn thiếu:
-                  </span>
-                  <span
-                    className={`font-bold ${remainingInterest > 0 ? "text-warning" : "text-success"}`}
-                  >
-                    {formatCurrencyVND(remainingInterest)}
-                  </span>
-                </div>
-              </CardBody>
-            </Card>
-          )}
-
-          <div className="p-3 rounded-lg bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800">
-            <div className="flex items-start gap-2">
-              <Info className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-primary-700 dark:text-primary-400">
-                {isInstallmentType
-                  ? "Gói 1: Chuộc đồ = Tổng (Gốc + Lãi + Phí) của cả 3 kỳ trừ đi số tiền đã thanh toán. Tổng 3 kỳ đã bao gồm cả gốc."
-                  : "Chuộc đồ = Trả gốc + Trả lãi còn thiếu. Sau khi chuộc đồ, khoản vay sẽ hoàn thành."}
-              </p>
-            </div>
-          </div>
-
-          {/* Chỉ hiển thị input tiền gốc cho Gói 2, 3 */}
-          {!isInstallmentType && (
-            <Input
-              isRequired
-              description={`Phải bằng số tiền vay: ${formatCurrencyVND(loanAmount)}`}
-              endContent={
-                <div className="pointer-events-none flex items-center">
-                  <span className="text-default-400 text-small">VNĐ</span>
-                </div>
-              }
-              isDisabled={isSubmitting}
-              label="Tiền gốc"
-              placeholder="Nhập số tiền gốc"
-              value={principalAmount}
-              onValueChange={handlePrincipalChange}
-            />
-          )}
-
-          <Input
-            isRequired
-            description={
-              remainingInterest > 0
-                ? `Còn thiếu: ${formatCurrencyVND(remainingInterest)}`
-                : isInstallmentType
-                  ? "Đã thanh toán đủ (tổng cả 3 kỳ)"
-                  : "Đã đóng đủ lãi"
-            }
-            endContent={
-              <div className="pointer-events-none flex items-center">
-                <span className="text-default-400 text-small">VNĐ</span>
+    <>
+      <Modal isOpen={isOpen} size="md" onClose={onClose}>
+        <ModalContent>
+          <ModalHeader className="flex items-center gap-2">
+            <ShoppingCart className="w-5 h-5 text-success" />
+            Chuộc đồ
+          </ModalHeader>
+          <ModalBody className="gap-4">
+            {message && (
+              <div
+                className={`flex items-center gap-2 p-3 rounded-lg text-sm ${
+                  message.type === "success"
+                    ? "bg-success-50 text-success-700 dark:bg-success-900/20 dark:text-success-400"
+                    : "bg-danger-50 text-danger-700 dark:bg-danger-900/20 dark:text-danger-400"
+                }`}
+              >
+                {message.type === "success" ? (
+                  <CheckCircle className="w-4 h-4 shrink-0" />
+                ) : (
+                  <XCircle className="w-4 h-4 shrink-0" />
+                )}
+                {message.text}
               </div>
-            }
-            isDisabled={isSubmitting}
-            label={
-              isInstallmentType
-                ? "Tổng chuộc (Gốc + Lãi + Phí) cả 3 kỳ"
-                : "Tiền lãi"
-            }
-            placeholder={
-              isInstallmentType ? "Nhập tổng tiền" : "Nhập số tiền lãi"
-            }
-            value={interestAmount}
-            onValueChange={handleInterestChange}
-          />
+            )}
 
-          {/* Total Amount */}
-          {totalAmount > 0 && (
-            <Card
-              className="bg-gradient-to-r from-primary-50 to-success-50 dark:from-primary-900/20 dark:to-success-900/20"
-              shadow="sm"
+            <div className="rounded-lg bg-default-100 px-3 py-2 text-sm">
+              <div className="flex justify-between gap-2">
+                <span className="text-default-500">Tiền gốc (cố định)</span>
+                <span className="font-semibold">
+                  {formatCurrencyVND(loanAmount)}
+                </span>
+              </div>
+            </div>
+
+            <Input
+              description="Kế toán tự nhập số cần thu — không ràng buộc theo gói"
+              label="Tiền lãi / phí thu thêm"
+              placeholder="0"
+              value={interestAmount}
+              onValueChange={(value) => setInterestAmount(formatNumber(value))}
+            />
+
+            <div className="rounded-lg border border-success-200 bg-success-50 dark:bg-success-900/20 px-3 py-2 text-sm flex justify-between gap-2">
+              <span className="font-medium text-success-700 dark:text-success-400">
+                Tổng khách trả
+              </span>
+              <span className="font-bold text-success-700 dark:text-success-400">
+                {formatCurrencyVND(totalAmount)}
+              </span>
+            </div>
+
+            <Textarea
+              label="Ghi chú (tuỳ chọn)"
+              minRows={2}
+              placeholder="Ví dụ: Khách chuộc đồ, thanh toán đủ..."
+              value={notes}
+              onValueChange={setNotes}
+            />
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="flat" onPress={onClose}>
+              Hủy
+            </Button>
+            <Button
+              color="success"
+              isLoading={isSubmitting}
+              startContent={
+                isSubmitting ? undefined : <ShoppingCart className="w-4 h-4" />
+              }
+              onPress={handleSubmit}
             >
-              <CardBody>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Tổng cộng:</span>
-                  <span className="text-xl font-bold text-primary">
-                    {formatCurrencyVND(totalAmount)}
-                  </span>
-                </div>
-              </CardBody>
-            </Card>
-          )}
+              {isSubmitting ? "Đang xử lý..." : "Chuộc đồ"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
-          <Textarea
-            isDisabled={isSubmitting}
-            label="Ghi chú (tùy chọn)"
-            minRows={2}
-            placeholder="Ví dụ: Khách chuộc đồ, thanh toán đầy đủ..."
-            value={notes}
-            onValueChange={setNotes}
-          />
-        </ModalBody>
-        <ModalFooter>
-          <Button
-            isDisabled={isSubmitting}
-            variant="flat"
-            onPress={handleClose}
-          >
-            Hủy
-          </Button>
-          <Button
-            color="primary"
-            isDisabled={
-              isSubmitting ||
-              !interestAmount ||
-              (isInstallmentType ? false : !principalAmount)
-            }
-            startContent={
-              isSubmitting ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <ShoppingCart className="w-4 h-4" />
-              )
-            }
-            onPress={handleSubmit}
-          >
-            {isSubmitting ? "Đang xử lý..." : "Xác nhận chuộc đồ"}
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-
-      {/* Confirm Modal */}
       <ConfirmModal
         confirmColor="success"
         confirmText="Xác nhận chuộc đồ"
         isLoading={isSubmitting}
         isOpen={isConfirmOpen}
-        message={confirmMessage}
+        message={`Tiền gốc: ${formatCurrencyVND(loanAmount)}\nLãi/phí: ${formatCurrencyVND(redeemInterest)}\nTổng: ${formatCurrencyVND(totalAmount)}\n\nKhoản vay sẽ chuyển sang trạng thái Đã chuộc.`}
         title="Xác nhận chuộc đồ"
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleConfirmRedeem}
       />
-    </Modal>
+    </>
   );
 };
 

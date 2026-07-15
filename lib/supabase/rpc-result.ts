@@ -11,7 +11,9 @@ export const isRpcNotFoundError = (
 
   return (
     error.code === "PGRST202" ||
+    error.code === "PGRST203" ||
     error.code === "42883" ||
+    error.code === "42804" ||
     error.message?.includes("Could not find the function") === true
   );
 };

@@ -300,48 +300,46 @@ const ContractsSection = ({
                 {isDownloadingAll ? "Đang tải..." : "Tải tất cả"}
               </Button>
             )}
-            {/* Chỉ hiển thị nút tạo/tạo lại hợp đồng khi loan đã được duyệt hoặc đã ký */}
+            {/* Chỉ tạo HĐ mới khi approved; signed chỉ tạo lại / repair PDF đã ký */}
             {canManageContractActions &&
+              loanStatus === LOAN_STATUS.APPROVED &&
+              loanFiles.length === 0 && (
+                <Button
+                  color="primary"
+                  isDisabled={isGenerating}
+                  size="sm"
+                  startContent={
+                    isGenerating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Plus className="w-4 h-4" />
+                    )
+                  }
+                  onPress={() => setSelectionModalMode("create")}
+                >
+                  {isGenerating ? "Đang tạo..." : "Tạo hợp đồng"}
+                </Button>
+              )}
+            {canManageContractActions &&
+              loanFiles.length > 0 &&
               (loanStatus === LOAN_STATUS.APPROVED ||
                 loanStatus === LOAN_STATUS.SIGNED) && (
-                <>
-                  {loanFiles.length === 0 ? (
-                    <Button
-                      color="primary"
-                      isDisabled={isGenerating}
-                      size="sm"
-                      startContent={
-                        isGenerating ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Plus className="w-4 h-4" />
-                        )
-                      }
-                      onPress={() => setSelectionModalMode("create")}
-                    >
-                      {isGenerating ? "Đang tạo..." : "Tạo hợp đồng"}
-                    </Button>
-                  ) : (
-                    canManageContractActions && (
-                      <Button
-                        color="warning"
-                        isDisabled={isRegenerating}
-                        size="sm"
-                        startContent={
-                          isRegenerating ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="w-4 h-4" />
-                          )
-                        }
-                        variant="flat"
-                        onPress={() => setSelectionModalMode("regenerate")}
-                      >
-                        {isRegenerating ? "Đang tạo lại..." : "Tạo lại"}
-                      </Button>
+                <Button
+                  color="warning"
+                  isDisabled={isRegenerating}
+                  size="sm"
+                  startContent={
+                    isRegenerating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4" />
                     )
-                  )}
-                </>
+                  }
+                  variant="flat"
+                  onPress={() => setSelectionModalMode("regenerate")}
+                >
+                  {isRegenerating ? "Đang tạo lại..." : "Tạo lại"}
+                </Button>
               )}
           </div>
         </CardHeader>
@@ -388,13 +386,32 @@ const ContractsSection = ({
                 <div className="text-sm text-warning-700 dark:text-warning-400">
                   <p className="font-semibold">Hợp đồng đã được ký</p>
                   <p className="mt-1">
-                    Bạn có thể tạo lại hợp đồng nếu khách hàng ký sai hoặc cần
-                    chỉnh sửa.
+                    &quot;Tạo lại&quot; sẽ hủy trạng thái đã ký, xóa chữ ký và
+                    lịch thanh toán (nếu chưa có giao dịch). Cần ký lại trước khi
+                    giải ngân.
                   </p>
                 </div>
               </div>
             </div>
           )}
+
+          {loanStatus === LOAN_STATUS.SIGNED &&
+            loanFiles.length === 0 &&
+            !shouldRepairSignedContracts && (
+              <div className="p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-warning-700 dark:text-warning-400">
+                    <p className="font-semibold">Không có hợp đồng để tạo lại</p>
+                    <p className="mt-1">
+                      Khoản vay đang ở trạng thái đã ký nhưng chưa có file hợp
+                      đồng. Dùng &quot;Tạo lại PDF đã ký&quot; nếu còn chữ ký,
+                      hoặc liên hệ quản trị viên.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
           {message && (
             <>
@@ -427,14 +444,19 @@ const ContractsSection = ({
           {loanFiles.length === 0 ? (
             <div className="text-center py-8 text-default-500">
               <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              {loanStatus === LOAN_STATUS.APPROVED ||
-              loanStatus === LOAN_STATUS.SIGNED ? (
+              {loanStatus === LOAN_STATUS.APPROVED ? (
                 <>
                   <p className="text-sm">Chưa có hợp đồng</p>
                   <p className="text-xs mt-1">
-                    {loanStatus === LOAN_STATUS.APPROVED
-                      ? "Tạo hợp đồng PDF trước, sau đó mới ký"
-                      : "Có thể tạo lại hợp đồng nếu cần thiết"}
+                    Tạo hợp đồng PDF trước, sau đó mới ký
+                  </p>
+                </>
+              ) : loanStatus === LOAN_STATUS.SIGNED ? (
+                <>
+                  <p className="text-sm">Chưa có hợp đồng trong danh sách</p>
+                  <p className="text-xs mt-1">
+                    Không thể tạo hợp đồng mới khi đã ký — dùng sửa PDF đã ký
+                    hoặc tạo lại sau khi hủy ký
                   </p>
                 </>
               ) : (
@@ -515,6 +537,7 @@ const ContractsSection = ({
         isLoading={isGenerating || isRegenerating}
         isOpen={selectionModalMode !== null}
         mode={selectionModalMode ?? "create"}
+        willUnsign={loanStatus === LOAN_STATUS.SIGNED}
         onClose={() => setSelectionModalMode(null)}
         onConfirm={handleSelectionConfirm}
       />

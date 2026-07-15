@@ -28,6 +28,8 @@ type TProps = {
   onConfirm: (selectedTypes: TContractType[]) => void;
   isLoading?: boolean;
   mode?: "create" | "regenerate";
+  /** true khi tạo lại từ trạng thái đã ký — sẽ hủy ký */
+  willUnsign?: boolean;
 };
 
 const ContractSelectionModal = ({
@@ -36,6 +38,7 @@ const ContractSelectionModal = ({
   onConfirm,
   isLoading = false,
   mode = "create",
+  willUnsign = false,
 }: TProps) => {
   const availableTypes = useMemo(() => [...GENERATABLE_CONTRACT_TYPES], []);
 
@@ -96,9 +99,19 @@ const ContractSelectionModal = ({
                 <div className="text-sm text-warning-700 dark:text-warning-400">
                   <p className="font-semibold">Lưu ý khi tạo lại</p>
                   <ul className="text-xs mt-2 space-y-1 list-disc list-inside">
-                    <li>Hợp đồng cũ sẽ bị xóa khỏi danh sách</li>
-                    <li>File cũ vẫn được giữ trên Google Drive</li>
-                    <li>Trạng thái khoản vay sẽ reset về Đã duyệt</li>
+                    <li>Hợp đồng cũ sẽ bị thay bằng bản mới chưa ký</li>
+                    <li>File cũ vẫn có thể còn trên Google Drive</li>
+                    {willUnsign ? (
+                      <>
+                        <li>
+                          Trạng thái sẽ về Đã duyệt — chữ ký và lịch thanh toán
+                          (nếu chưa giao dịch) bị xóa
+                        </li>
+                        <li>Phải ký lại trước khi giải ngân</li>
+                      </>
+                    ) : (
+                      <li>Trạng thái khoản vay vẫn là Đã duyệt (Chờ ký)</li>
+                    )}
                   </ul>
                 </div>
               </div>

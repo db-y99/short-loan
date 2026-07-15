@@ -223,6 +223,46 @@ export async function POST(
       );
     }
 
+    // Re-check HĐ + status trước khi flip (race với "Trả về chờ duyệt" lúc upload chữ ký)
+    const [{ data: loanRecheck }, { data: filesRecheck }] = await Promise.all([
+      supabase.from("loans").select("id, status").eq("id", loanId).single(),
+      supabase.from("loan_files").select("type, name").eq("loan_id", loanId),
+    ]);
+
+    const recheckUnsigned = getUnsignedContractTypesFromFiles(
+      filesRecheck ?? [],
+    );
+    const recheckUnsignedSet = new Set(recheckUnsigned);
+    const recheckMissingRequired = DEFAULT_SELECTED_CONTRACT_TYPES.filter(
+      (type) => !recheckUnsignedSet.has(type),
+    );
+
+    if (
+      loanRecheck?.status !== LOAN_STATUS.APPROVED ||
+      recheckUnsigned.length === 0 ||
+      recheckMissingRequired.length > 0
+    ) {
+      const uploadedIds = [
+        draftSignatureFileId,
+        officialSignatureFileId,
+      ].filter((id): id is string => Boolean(id));
+
+      if (uploadedIds.length > 0) {
+        await deleteManyFromDrive(uploadedIds).catch((cleanupError) => {
+          console.error("[SIGN_RECHECK_DRIVE_CLEANUP_ERROR]", cleanupError);
+        });
+      }
+
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "Khoản vay đã thay đổi (trả về chờ duyệt hoặc thiếu hợp đồng). Vui lòng tải lại và thử ký lại.",
+        },
+        { status: 409 },
+      );
+    }
+
     // Cập nhật trạng thái (optimistic lock: chỉ khi đang approved)
     const { data: updatedLoans, error: updateError } = await supabase
       .from("loans")
@@ -262,22 +302,14 @@ export async function POST(
       );
     }
 
-    await supabase.from("loan_activity_logs").insert({
-      loan_id: loanId,
-      type: ACTIVITY_LOG_TYPE.CONTRACT_SIGNED,
-      user_id: user?.id ?? null,
-      user_name: user?.email ?? "Khách hàng",
-      system_message: "Hợp đồng đã được ký kết",
-    });
+    const signatureFileIds = [
+      draftSignatureFileId,
+      officialSignatureFileId,
+    ].filter((id): id is string => Boolean(id));
 
     const pdfResult = await generateSignedContractsService(loanId);
 
     if (!pdfResult.success) {
-      const signatureFileIds = [
-        draftSignatureFileId,
-        officialSignatureFileId,
-      ].filter((id): id is string => Boolean(id));
-
       await revertFailedSign({ supabase, loanId, signatureFileIds });
 
       return NextResponse.json(
@@ -303,11 +335,6 @@ export async function POST(
     } catch (scheduleError) {
       console.error("[SIGN_PAYMENT_SCHEDULE_ERROR]", scheduleError);
 
-      const signatureFileIds = [
-        draftSignatureFileId,
-        officialSignatureFileId,
-      ].filter((id): id is string => Boolean(id));
-
       await revertFailedSign({ supabase, loanId, signatureFileIds });
 
       return NextResponse.json(
@@ -320,6 +347,21 @@ export async function POST(
         },
         { status: 500 },
       );
+    }
+
+    // Chỉ ghi log sau khi PDF + lịch thanh toán thành công — tránh log "đã ký" khi đã rollback
+    const { error: logError } = await supabase
+      .from("loan_activity_logs")
+      .insert({
+        loan_id: loanId,
+        type: ACTIVITY_LOG_TYPE.CONTRACT_SIGNED,
+        user_id: user?.id ?? null,
+        user_name: user?.email ?? "Khách hàng",
+        system_message: "Hợp đồng đã được ký kết",
+      });
+
+    if (logError) {
+      console.error("[SIGN_ACTIVITY_LOG_ERROR]", logError);
     }
 
     return NextResponse.json({

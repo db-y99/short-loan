@@ -529,7 +529,7 @@ export async function regenerateContractsService(
           }
         : null;
 
-    // Khoản vay đã ký: bắt buộc tạo lại toàn bộ loại HĐ hiện có, xóa lịch thanh toán cũ.
+    // Khoản vay đã ký: bắt buộc tạo lại toàn bộ loại HĐ hiện có, hủy ký, xóa lịch thanh toán cũ.
     if (currentLoan.status === LOAN_STATUS.SIGNED) {
       const { data: existingFiles } = await supabase
         .from("loan_files")
@@ -555,28 +555,30 @@ export async function regenerateContractsService(
 
       typesToGenerate = existingTypes;
 
-      const { clearLoanPaymentScheduleIfNoTransactionsService } = await import(
-        "@/services/payments/payment-periods.service"
-      );
+      const { count: txCount, error: txCountError } = await supabase
+        .from("loan_payment_transactions")
+        .select("id", { count: "exact", head: true })
+        .eq("loan_id", loanId);
 
-      try {
-        await clearLoanPaymentScheduleIfNoTransactionsService(loanId);
-      } catch (scheduleError) {
-        console.error("[REGENERATE_CLEAR_SCHEDULE_ERROR]", scheduleError);
+      if (txCountError) {
+        return {
+          success: false,
+          error: "Không thể kiểm tra lịch sử thanh toán",
+        };
+      }
 
+      if (txCount && txCount > 0) {
         return {
           success: false,
           error:
-            scheduleError instanceof Error
-              ? scheduleError.message
-              : "Không thể xóa lịch thanh toán cũ",
+            "Không thể tạo lại hợp đồng vì đã có giao dịch thanh toán. Không thể hủy ký khi đã có thanh toán.",
         };
       }
 
       console.log(
         `[REGENERATE_CONTRACTS] Resetting loan status to approved...`,
       );
-      const { error: updateError } = await supabase
+      const { data: resetRows, error: updateError } = await supabase
         .from("loans")
         .update({
           status: LOAN_STATUS.APPROVED,
@@ -586,16 +588,25 @@ export async function regenerateContractsService(
           official_signature_file_id: null,
         })
         .eq("id", loanId)
-        .eq("status", LOAN_STATUS.SIGNED);
+        .eq("status", LOAN_STATUS.SIGNED)
+        .select("id");
 
-      if (updateError) {
+      if (updateError || !resetRows?.length) {
         console.error("[RESET_LOAN_STATUS_ERROR]", updateError);
 
         return {
           success: false,
-          error: "Không thể reset trạng thái khoản vay",
+          error:
+            updateError
+              ? "Không thể reset trạng thái khoản vay"
+              : "Khoản vay không còn ở trạng thái đã ký hoặc đã được xử lý",
         };
       }
+    } else if (currentLoan.status !== LOAN_STATUS.APPROVED) {
+      return {
+        success: false,
+        error: `Không thể tạo lại hợp đồng. Trạng thái hiện tại: ${currentLoan.status}. Cần trạng thái đã duyệt hoặc đã ký.`,
+      };
     }
 
     console.log(`[REGENERATE_CONTRACTS] Generating new contracts...`);
@@ -611,6 +622,40 @@ export async function regenerateContractsService(
 
       if (rollbackError) {
         console.error("[REGENERATE_STATUS_ROLLBACK_ERROR]", rollbackError);
+      }
+
+      return result;
+    }
+
+    // Chỉ xóa lịch + chữ ký Drive sau khi tạo HĐ mới thành công
+    if (result.success && statusSnapshot) {
+      const { clearLoanPaymentScheduleIfNoTransactionsService } = await import(
+        "@/services/payments/payment-periods.service"
+      );
+
+      try {
+        await clearLoanPaymentScheduleIfNoTransactionsService(loanId, {
+          failIfHasTransactions: true,
+        });
+      } catch (scheduleError) {
+        console.error("[REGENERATE_CLEAR_SCHEDULE_AFTER_ERROR]", scheduleError);
+        // HĐ mới đã tạo, status đã approved — cảnh báo nhưng không rollback HĐ
+      }
+
+      const signatureDriveIds = [
+        statusSnapshot.draft_signature_file_id,
+        statusSnapshot.official_signature_file_id,
+      ].filter((id): id is string => Boolean(id));
+
+      if (signatureDriveIds.length > 0) {
+        const { deleteManyFromDrive } = await import("@/lib/google-drive");
+
+        await deleteManyFromDrive(signatureDriveIds).catch((cleanupError) => {
+          console.error(
+            "[REGENERATE_SIGNATURE_DRIVE_CLEANUP_ERROR]",
+            cleanupError,
+          );
+        });
       }
     }
 

@@ -374,7 +374,6 @@ const AssetGallery = ({
                 <DeferredDriveThumb
                   alt={`Ảnh ${index + 1}`}
                   fileId={image.fileId}
-                  priority={index < 3}
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors" />
                 <span className="absolute bottom-1 right-1 text-xs bg-black/60 text-white px-1.5 py-0.5 rounded">

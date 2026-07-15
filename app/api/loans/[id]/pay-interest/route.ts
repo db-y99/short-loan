@@ -41,7 +41,7 @@ export async function POST(
     // Check if loan exists and is disbursed
     const { data: loan, error: loanError } = await supabase
       .from("loans")
-      .select("id, code, status, amount, current_cycle, loan_type")
+      .select("id, code, status, amount, current_cycle")
       .eq("id", loanId)
       .single();
 
@@ -74,19 +74,7 @@ export async function POST(
       );
     }
 
-    // Kiểm tra loan_type để áp dụng logic đóng tiền phù hợp
-    const isInstallmentType =
-      loan.loan_type === "installment_3_periods" ||
-      loan.loan_type?.includes("trả góp") ||
-      loan.loan_type?.includes("Gói 1");
-
-    const isBulletPaymentType =
-      loan.loan_type === "bullet_payment_by_milestone" ||
-      loan.loan_type === "bullet_payment_with_collateral_hold" ||
-      loan.loan_type?.includes("Gói 2") ||
-      loan.loan_type?.includes("Gói 3");
-
-    // Get payment periods để kiểm tra mốc hiện tại
+    // Kế toán chỉ nhập số tiền — không validate theo gói / mốc
     const { data: periods } = await supabase
       .from("loan_payment_periods")
       .select("id, milestone_day, fee_amount, principal, status, paid_amount")
@@ -94,105 +82,25 @@ export async function POST(
       .eq("period_type", "current")
       .order("period_number", { ascending: true });
 
-    // Gói 1: Đóng tiền tổng chuộc theo mốc (Gốc + Lãi + Phí)
-    // Mỗi kỳ độc lập, không cộng dồn
-    if (isInstallmentType && periods && periods.length > 0) {
-      // Tìm kỳ đầu tiên CHƯA hoàn thành (status !== 'paid')
-      const currentPeriod =
-        periods.find((p: any) => p.status !== "paid") ||
-        periods[periods.length - 1];
+    const systemMessage = `Đóng tiền ${amount.toLocaleString("vi-VN")} VNĐ${notes ? ` - ${notes}` : ""}`;
 
-      if (currentPeriod) {
-        // Tổng = Gốc + Lãi + Phí của kỳ hiện tại
-        const feeAmount = Number(currentPeriod.fee_amount || 0);
-        const principalAmount = Number(currentPeriod.principal || 0);
-        const currentMilestoneFee = principalAmount + feeAmount;
+    // Gắn vào kỳ đầu chưa paid nếu có — không chặn khi vượt mốc
+    const targetPeriod =
+      periods?.find((p) => p.status !== "paid") || periods?.[periods.length - 1];
 
-        const paidForThisPeriod = Number(currentPeriod.paid_amount || 0);
-        const remaining = currentMilestoneFee - paidForThisPeriod;
-
-        // Kiểm tra không vượt quá số tiền còn thiếu
-        if (amount > remaining) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: `Số tiền vượt quá số tiền còn thiếu của kỳ ${currentPeriod.milestone_day} ngày (${remaining.toLocaleString("vi-VN")} VNĐ)`,
-            },
-            { status: 400 },
-          );
-        }
-      }
-    }
-
-    // Gói 2, 3: Luôn đóng lãi + phí của mốc 30 ngày, chỉ đóng được 1 mốc duy nhất
-    if (isBulletPaymentType && periods && periods.length > 0) {
-      // Tìm mốc 30 ngày (mốc cuối cùng)
-      const milestone30 =
-        periods.find((p: any) => p.milestone_day === 30) ||
-        periods[periods.length - 1];
-
-      if (milestone30) {
-        const milestone30Fee = Number(milestone30.fee_amount || 0);
-        const paidForMilestone30 = Number(milestone30.paid_amount || 0);
-
-        // Kiểm tra xem đã đóng đủ mốc 30 ngày chưa
-        if (paidForMilestone30 >= milestone30Fee && milestone30Fee > 0) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: `Gói 2/3 đã đóng xong mốc 30 ngày rồi. Không cho đóng thêm nữa.`,
-            },
-            { status: 400 },
-          );
-        }
-
-        // Kiểm tra không vượt quá số tiền còn thiếu của mốc 30 ngày
-        const remaining = milestone30Fee - paidForMilestone30;
-
-        if (amount > remaining) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: `Số tiền vượt quá số tiền còn thiếu của mốc 30 ngày (${remaining.toLocaleString("vi-VN")} VNĐ)`,
-            },
-            { status: 400 },
-          );
-        }
-      }
-    }
-
-    // Insert payment transaction — atomic via RPC
-    const loanTypeLabel = isInstallmentType
-      ? "Gói 1 (Đóng tiền tổng chuộc)"
-      : "Gói 2/3 (Đóng tiền lãi + phí)";
-    const systemMessage = `Đóng tiền ${amount.toLocaleString("vi-VN")} VNĐ - ${loanTypeLabel}${notes ? ` - ${notes}` : ""}`;
-
-    let targetPeriod: NonNullable<typeof periods>[number] | undefined;
     let newPeriodStatus: string | undefined;
 
-    if (periods && periods.length > 0) {
-      if (isBulletPaymentType) {
-        targetPeriod =
-          periods.find((p) => p.milestone_day === 30) ||
-          periods[periods.length - 1];
-      } else {
-        targetPeriod =
-          periods.find((p) => p.status !== "paid") ||
-          periods[periods.length - 1];
-      }
+    if (targetPeriod?.id) {
+      const feeAmount = Number(targetPeriod.fee_amount || 0);
+      const principalAmount = Number(targetPeriod.principal || 0);
+      const totalRequired = principalAmount + feeAmount;
+      const newPaidAmount =
+        Number(targetPeriod.paid_amount || 0) + Number(amount);
 
-      if (targetPeriod?.id) {
-        const feeAmount = Number(targetPeriod.fee_amount || 0);
-        const principalAmount = Number(targetPeriod.principal || 0);
-        const totalRequired = isInstallmentType
-          ? principalAmount + feeAmount
-          : feeAmount;
-        const newPaidAmount =
-          Number(targetPeriod.paid_amount || 0) + Number(amount);
-
-        newPeriodStatus =
-          newPaidAmount >= totalRequired ? "paid" : targetPeriod.status;
-      }
+      newPeriodStatus =
+        totalRequired > 0 && newPaidAmount >= totalRequired
+          ? "paid"
+          : targetPeriod.status;
     }
 
     const { data: rpcResult, error: rpcError } = await supabase.rpc(
