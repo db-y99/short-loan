@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ROLES } from "@/constants/roles";
 
 const VALID_ROLES = Object.values(ROLES);
@@ -11,7 +11,7 @@ const VALID_ROLES = Object.values(ROLES);
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createSupabaseServerClient();
@@ -24,7 +24,7 @@ export async function PUT(
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -32,8 +32,11 @@ export async function PUT(
 
     if (!role || !VALID_ROLES.includes(role)) {
       return NextResponse.json(
-        { success: false, error: "Role không hợp lệ. Chỉ chấp nhận: admin, user" },
-        { status: 400 }
+        {
+          success: false,
+          error: "Role không hợp lệ. Chỉ chấp nhận: admin, user",
+        },
+        { status: 400 },
       );
     }
 
@@ -46,21 +49,23 @@ export async function PUT(
 
     if (error || !data) {
       console.error("[UPDATE_ROLE_ERROR]", error);
+
       return NextResponse.json(
         { success: false, error: "Không thể cập nhật role" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error("[UPDATE_ROLE_ERROR]", error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -6,6 +6,7 @@ import { Button } from "@heroui/button";
 import { Progress } from "@heroui/progress";
 import { Tabs, Tab } from "@heroui/tabs";
 import { ArrowLeft, Download } from "lucide-react";
+
 import { AssetPledgeContractView } from "@/components/contracts/asset-pledge-contract-view.client";
 import { AssetLeaseContractView } from "@/components/contracts/asset-lease-contract-view.client";
 import { FullPaymentConfirmationView } from "@/components/contracts/full-payment-confirmation-view.client";
@@ -29,14 +30,19 @@ function getFileName(type: string, data: TContractData): string {
   const code =
     "SO_HD_THUE" in data
       ? (data as TAssetLeaseContractData).SO_HD_THUE
-      : (data as TAssetPledgeContractData | TFullPaymentConfirmationData | TAssetDisposalAuthorizationData)
-          .MA_HD;
+      : (
+          data as
+            | TAssetPledgeContractData
+            | TFullPaymentConfirmationData
+            | TAssetDisposalAuthorizationData
+        ).MA_HD;
   const map: Record<string, string> = {
     [CONTRACT_TYPE.ASSET_PLEDGE]: `Hop-dong-cam-co-${code}`,
     [CONTRACT_TYPE.ASSET_LEASE]: `Hop-dong-thue-${code}`,
     [CONTRACT_TYPE.FULL_PAYMENT]: `Xac-nhan-nhan-du-tien-${code}`,
     [CONTRACT_TYPE.ASSET_DISPOSAL]: `Uy-quyen-xu-ly-tai-san-${code}`,
   };
+
   return `${map[type] ?? "contract"}.pdf`;
 }
 
@@ -44,7 +50,9 @@ export default function ContractPage() {
   const params = useParams();
   const router = useRouter();
   const loanId = params.id as string;
-  const [activeType, setActiveType] = useState<string>(CONTRACT_TYPE.ASSET_PLEDGE);
+  const [activeType, setActiveType] = useState<string>(
+    CONTRACT_TYPE.ASSET_PLEDGE,
+  );
   const [loanType, setLoanType] = useState("");
   const [contractData, setContractData] = useState<TContractData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -71,12 +79,15 @@ export default function ContractPage() {
       .then((result) => {
         if (!result.success) return;
         const nextLoanType = result.data.loanType ?? "";
+
         setLoanType(nextLoanType);
-        const applicableTypes = getGeneratableContractTypesForLoan(nextLoanType);
+        const applicableTypes =
+          getGeneratableContractTypesForLoan(nextLoanType);
+
         setActiveType((current) =>
           applicableTypes.includes(current as TContractType)
             ? current
-            : applicableTypes[0] ?? CONTRACT_TYPE.ASSET_PLEDGE,
+            : (applicableTypes[0] ?? CONTRACT_TYPE.ASSET_PLEDGE),
         );
       })
       .catch(() => {});
@@ -89,6 +100,7 @@ export default function ContractPage() {
     fetch(`/api/loans/${loanId}/contract-data?type=${activeType}`)
       .then((res) => {
         if (!res.ok) throw new Error("Không tải được dữ liệu hợp đồng");
+
         return res.json();
       })
       .then((result) => {
@@ -107,17 +119,21 @@ export default function ContractPage() {
   const handleDownload = async () => {
     if (!contractData) return;
     const fileName = getFileName(activeType, contractData);
+
     await downloadPDF("contract-content", fileName);
   };
 
   const handleUploadToDrive = async () => {
     const data = contractData as { drive_folder_id?: string } | null;
+
     if (!data || !data.drive_folder_id) {
       alert("Chưa có thư mục Drive cho khoản vay này.");
+
       return;
     }
     if (!contractData) return;
     const fileName = getFileName(activeType, contractData);
+
     try {
       await uploadPDFToDrive(
         "contract-content",
@@ -145,10 +161,10 @@ export default function ContractPage() {
           {error}
         </div>
         <Button
-          variant="flat"
           className="mt-4"
-          onPress={() => router.back()}
           startContent={<ArrowLeft className="w-4 h-4" />}
+          variant="flat"
+          onPress={() => router.back()}
         >
           Quay lại
         </Button>
@@ -156,42 +172,41 @@ export default function ContractPage() {
     );
   }
 
-  console.log({contractData})
+  console.log({ contractData });
 
   return (
     <div className="mx-auto">
-     <div className="mb-2 flex items-center justify-between">
+      <div className="mb-2 flex items-center justify-between">
         <Button
-          variant="flat"
           size="sm"
-          onPress={() => router.back()}
           startContent={<ArrowLeft className="w-4 h-4" />}
+          variant="flat"
+          onPress={() => router.back()}
         >
           Quay lại
         </Button>
       </div>
       <div className="mb-4 gap-4 sticky top-0 bg-background/95 backdrop-blur py-4 z-10 border-b border-default-200">
         <div className="flex flex-col">
-
-      <Tabs
-        selectedKey={activeType}
-        onSelectionChange={(k) => setActiveType(k as string)}
-        className="mb-4"
-      >
-        {contractTabs.map((tab) => (
-          <Tab key={tab.key} title={tab.label} />
-        ))}
-      </Tabs>
-       <div className="flex items-center gap-2">
-         <Button
-          color="primary"
-          onPress={handleDownload}
-          isDisabled={generating || loading}
-          startContent={<Download className="w-4 h-4" />}
-        >
-          {generating ? `Đang tạo PDF... ${progress}%` : "Tải xuống PDF"}
-        </Button>
-        {/* <Button
+          <Tabs
+            className="mb-4"
+            selectedKey={activeType}
+            onSelectionChange={(k) => setActiveType(k as string)}
+          >
+            {contractTabs.map((tab) => (
+              <Tab key={tab.key} title={tab.label} />
+            ))}
+          </Tabs>
+          <div className="flex items-center gap-2">
+            <Button
+              color="primary"
+              isDisabled={generating || loading}
+              startContent={<Download className="w-4 h-4" />}
+              onPress={handleDownload}
+            >
+              {generating ? `Đang tạo PDF... ${progress}%` : "Tải xuống PDF"}
+            </Button>
+            {/* <Button
           color="success"
           variant="flat"
           onPress={handleUploadToDrive}
@@ -200,13 +215,13 @@ export default function ContractPage() {
         >
           {generating ? `Đang xử lý... ${progress}%` : "Lưu lên Drive"}
         </Button> */}
-       </div>
+          </div>
         </div>
       </div>
 
       {generating && (
         <div className="mb-4">
-          <Progress value={progress} size="sm" color="primary" />
+          <Progress color="primary" size="sm" value={progress} />
         </div>
       )}
 

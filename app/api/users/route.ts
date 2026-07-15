@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { ROLES } from "@/constants/roles";
@@ -10,9 +11,15 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (!user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
     }
 
     const { searchParams } = new URL(request.url);
@@ -30,24 +37,33 @@ export async function GET(request: NextRequest) {
     }
 
     const from = (page - 1) * limit;
+
     query = query.range(from, from + limit - 1);
 
     const { data, error, count } = await query;
 
     if (error) {
       console.error("[GET_USERS_ERROR]", error);
+
       return NextResponse.json(
         { success: false, error: "Không thể lấy danh sách người dùng" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
-    return NextResponse.json({ success: true, data: { users: data || [], total: count || 0, page, limit } });
+    return NextResponse.json({
+      success: true,
+      data: { users: data || [], total: count || 0, page, limit },
+    });
   } catch (error) {
     console.error("[GET_USERS_ERROR]", error);
+
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 }
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
+      { status: 500 },
     );
   }
 }
@@ -60,35 +76,52 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (!user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
     }
 
-    const { email, password, full_name, role = ROLES.USER, branch_id } = await request.json();
+    const {
+      email,
+      password,
+      full_name,
+      role = ROLES.USER,
+      branch_id,
+    } = await request.json();
 
     if (!email?.trim() || !full_name?.trim() || !password?.trim()) {
       return NextResponse.json(
         { success: false, error: "Email, mật khẩu và tên là bắt buộc" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const supabaseAdmin = createSupabaseAdminClient();
 
     // Create auth user
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: email.trim(),
-      password: password.trim(),
-      email_confirm: true,
-      user_metadata: { full_name: full_name.trim() },
-    });
+    const { data: authData, error: authError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email: email.trim(),
+        password: password.trim(),
+        email_confirm: true,
+        user_metadata: { full_name: full_name.trim() },
+      });
 
     if (authError || !authData.user) {
       console.error("[CREATE_AUTH_USER_ERROR]", authError);
+
       return NextResponse.json(
-        { success: false, error: authError?.message || "Không thể tạo tài khoản" },
-        { status: 400 }
+        {
+          success: false,
+          error: authError?.message || "Không thể tạo tài khoản",
+        },
+        { status: 400 },
       );
     }
 
@@ -107,9 +140,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, data: profile || authData.user });
   } catch (error) {
     console.error("[CREATE_USER_ERROR]", error);
+
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 }
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
+      { status: 500 },
     );
   }
 }

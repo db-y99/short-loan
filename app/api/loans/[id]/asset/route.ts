@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LOAN_STATUS } from "@/constants/loan";
+import { requireAdminForPendingLoan } from "@/lib/auth/api-auth";
 
 export async function PATCH(
   request: NextRequest,
@@ -10,16 +12,9 @@ export async function PATCH(
     const supabase = await createSupabaseServerClient();
     const { id: loanId } = await params;
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const admin = await requireAdminForPendingLoan(loanId);
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
+    if (!admin.ok) return admin.response;
 
     const body = await request.json();
     const assetType = String(body.assetType || "").trim();
@@ -53,7 +48,8 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          error: "Chỉ được sửa thông tin tài sản khi khoản vay ở trạng thái chờ duyệt",
+          error:
+            "Chỉ được sửa thông tin tài sản khi khoản vay ở trạng thái chờ duyệt",
         },
         { status: 400 },
       );
@@ -77,6 +73,7 @@ export async function PATCH(
 
     if (updateError) {
       console.error("[UPDATE_ASSET_ERROR]", updateError);
+
       return NextResponse.json(
         { success: false, error: "Không thể cập nhật thông tin tài sản" },
         { status: 500 },
@@ -88,6 +85,7 @@ export async function PATCH(
     });
   } catch (error) {
     console.error("[PATCH_LOAN_ASSET_ERROR]", error);
+
     return NextResponse.json(
       {
         success: false,

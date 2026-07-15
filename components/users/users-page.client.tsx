@@ -1,5 +1,7 @@
 "use client";
 
+import type { TBranch } from "@/types/branch.types";
+
 import { useState, useEffect } from "react";
 import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
@@ -7,37 +9,37 @@ import { Card, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Pagination } from "@heroui/pagination";
 import { Select, SelectItem } from "@heroui/select";
-import { 
-  Table, 
-  TableHeader, 
-  TableColumn, 
-  TableBody, 
-  TableRow, 
-  TableCell 
+import {
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
 } from "@heroui/table";
-import { 
-  Dropdown, 
-  DropdownTrigger, 
-  DropdownMenu, 
-  DropdownItem 
+import {
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
 } from "@heroui/dropdown";
-import { 
-  Users, 
-  Search, 
-  Plus, 
-  MoreVertical, 
-  Edit, 
+import {
+  Users,
+  Search,
+  Plus,
+  MoreVertical,
+  Edit,
   ShieldCheck,
-  UserCheck, 
+  UserCheck,
   UserX,
   KeyRound,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+
 import { ROLES } from "@/constants/roles";
 import { USER_STATUS } from "@/lib/constants";
 import { Profile } from "@/services/profiles.service";
 import { formatDate } from "@/lib/format";
-import type { TBranch } from "@/types/branch.types";
 import CreateUserModal from "@/components/users/create-user-modal";
 import EditUserModal from "@/components/users/edit-user-modal";
 import UpdateRoleModal from "@/components/users/update-role-modal";
@@ -52,7 +54,14 @@ type TProps = {
   selectedBranch: string;
 };
 
-const UsersPageClient = ({ profiles, total, currentPage, searchQuery, branches, selectedBranch }: TProps) => {
+const UsersPageClient = ({
+  profiles,
+  total,
+  currentPage,
+  searchQuery,
+  branches,
+  selectedBranch,
+}: TProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [search, setSearch] = useState(searchQuery);
@@ -60,14 +69,20 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery, branches, 
   const [editingUser, setEditingUser] = useState<Profile | null>(null);
   const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => { setIsClient(true); }, []);
-  const [updatingRoleUser, setUpdatingRoleUser] = useState<Profile | null>(null);
-  const [resettingPasswordUser, setResettingPasswordUser] = useState<Profile | null>(null);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+  const [updatingRoleUser, setUpdatingRoleUser] = useState<Profile | null>(
+    null,
+  );
+  const [resettingPasswordUser, setResettingPasswordUser] =
+    useState<Profile | null>(null);
 
   const totalPages = Math.ceil(total / 20);
 
   const handleSearch = () => {
     const params = new URLSearchParams(searchParams);
+
     if (search.trim()) {
       params.set("search", search.trim());
     } else {
@@ -79,6 +94,7 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery, branches, 
 
   const handleBranchFilter = (branchId: string) => {
     const params = new URLSearchParams(searchParams);
+
     if (branchId) {
       params.set("branch", branchId);
     } else {
@@ -90,6 +106,7 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery, branches, 
 
   const handlePageChange = (page: number) => {
     const params = new URLSearchParams(searchParams);
+
     params.set("page", page.toString());
     router.push(`/users?${params.toString()}`);
   };
@@ -100,6 +117,7 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery, branches, 
 
   const getBranchName = (branchId?: string | null) => {
     if (!branchId) return "—";
+
     return branches.find((b) => b.id === branchId)?.name || "—";
   };
 
@@ -134,7 +152,11 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery, branches, 
   };
 
   const handleToggleStatus = async (user: Profile) => {
-    const newStatus = user.status === USER_STATUS.ACTIVE ? USER_STATUS.INACTIVE : USER_STATUS.ACTIVE;
+    const newStatus =
+      user.status === USER_STATUS.ACTIVE
+        ? USER_STATUS.INACTIVE
+        : USER_STATUS.ACTIVE;
+
     try {
       const response = await fetch(`/api/users/${user.id}/status`, {
         method: "PUT",
@@ -142,6 +164,7 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery, branches, 
         body: JSON.stringify({ status: newStatus }),
       });
       const result = await response.json();
+
       if (result.success) {
         refreshData();
       }
@@ -159,9 +182,7 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery, branches, 
             <Users className="w-6 h-6 text-primary" />
             Quản lý người dùng
           </h1>
-          <p className="text-default-600 mt-1">
-            Tổng cộng {total} người dùng
-          </p>
+          <p className="text-default-600 mt-1">Tổng cộng {total} người dùng</p>
         </div>
         <Button
           color="primary"
@@ -177,23 +198,24 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery, branches, 
         <CardBody>
           <div className="flex gap-2 flex-wrap">
             <Input
-              placeholder="Tìm kiếm theo tên hoặc email..."
-              value={search}
-              onValueChange={setSearch}
-              onKeyPress={handleKeyPress}
-              startContent={<Search className="w-4 h-4 text-default-400" />}
               className="flex-1 min-w-[200px]"
+              placeholder="Tìm kiếm theo tên hoặc email..."
+              startContent={<Search className="w-4 h-4 text-default-400" />}
+              value={search}
+              onKeyPress={handleKeyPress}
+              onValueChange={setSearch}
             />
             {isClient && branches.length > 0 && (
               <Select
+                aria-label="Lọc theo chi nhánh"
+                className="w-48"
                 placeholder="Tất cả chi nhánh"
                 selectedKeys={selectedBranch ? [selectedBranch] : []}
                 onSelectionChange={(keys) => {
-                  const val = Array.from(keys)[0] as string || "";
+                  const val = (Array.from(keys)[0] as string) || "";
+
                   handleBranchFilter(val);
                 }}
-                className="w-48"
-                aria-label="Lọc theo chi nhánh"
               >
                 {branches.map((b) => (
                   <SelectItem key={b.id}>{b.name}</SelectItem>
@@ -226,14 +248,22 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery, branches, 
                   <TableCell>
                     <div className="flex flex-col">
                       <span className="font-medium">{user.full_name}</span>
-                      <span className="text-xs text-default-500">ID: {user.id}</span>
+                      <span className="text-xs text-default-500">
+                        ID: {user.id}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{getBranchName(user.branch_id)}</TableCell>
                   <TableCell>
                     <Chip
-                      color={user.role === ROLES.ADMIN ? "secondary" : "default"}
+                      color={
+                        user.role === ROLES.ADMIN
+                          ? "secondary"
+                          : user.role === ROLES.CA
+                            ? "primary"
+                            : "default"
+                      }
                       size="sm"
                       variant="flat"
                     >
@@ -255,11 +285,7 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery, branches, 
                   <TableCell>
                     <Dropdown>
                       <DropdownTrigger>
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                        >
+                        <Button isIconOnly size="sm" variant="light">
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                       </DropdownTrigger>
@@ -280,23 +306,31 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery, branches, 
                         </DropdownItem>
                         <DropdownItem
                           key="reset-password"
-                          startContent={<KeyRound className="w-4 h-4" />}
                           color="warning"
+                          startContent={<KeyRound className="w-4 h-4" />}
                           onPress={() => setResettingPasswordUser(user)}
                         >
                           Đặt lại mật khẩu
                         </DropdownItem>
                         <DropdownItem
                           key="toggle-status"
-                          startContent={
-                            user.status === USER_STATUS.ACTIVE ? 
-                            <UserX className="w-4 h-4" /> : 
-                            <UserCheck className="w-4 h-4" />
+                          color={
+                            user.status === USER_STATUS.ACTIVE
+                              ? "warning"
+                              : "success"
                           }
-                          color={user.status === USER_STATUS.ACTIVE ? "warning" : "success"}
+                          startContent={
+                            user.status === USER_STATUS.ACTIVE ? (
+                              <UserX className="w-4 h-4" />
+                            ) : (
+                              <UserCheck className="w-4 h-4" />
+                            )
+                          }
                           onPress={() => handleToggleStatus(user)}
                         >
-                          {user.status === USER_STATUS.ACTIVE ? "Vô hiệu hóa" : "Kích hoạt"}
+                          {user.status === USER_STATUS.ACTIVE
+                            ? "Vô hiệu hóa"
+                            : "Kích hoạt"}
                         </DropdownItem>
                       </DropdownMenu>
                     </Dropdown>
@@ -312,38 +346,38 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery, branches, 
       {totalPages > 1 && (
         <div className="flex justify-center">
           <Pagination
-            total={totalPages}
-            page={currentPage}
-            onChange={handlePageChange}
             showControls
             showShadow
+            page={currentPage}
+            total={totalPages}
+            onChange={handlePageChange}
           />
         </div>
       )}
 
       {/* Modals */}
       <CreateUserModal
+        branches={branches}
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={refreshData}
-        branches={branches}
       />
 
       {editingUser && (
         <EditUserModal
-          isOpen={!!editingUser}
-          onClose={() => setEditingUser(null)}
-          user={editingUser}
-          onSuccess={refreshData}
           branches={branches}
+          isOpen={!!editingUser}
+          user={editingUser}
+          onClose={() => setEditingUser(null)}
+          onSuccess={refreshData}
         />
       )}
 
       {updatingRoleUser && (
         <UpdateRoleModal
           isOpen={!!updatingRoleUser}
-          onClose={() => setUpdatingRoleUser(null)}
           user={updatingRoleUser}
+          onClose={() => setUpdatingRoleUser(null)}
           onSuccess={refreshData}
         />
       )}
@@ -351,8 +385,8 @@ const UsersPageClient = ({ profiles, total, currentPage, searchQuery, branches, 
       {resettingPasswordUser && (
         <ResetPasswordModal
           isOpen={!!resettingPasswordUser}
-          onClose={() => setResettingPasswordUser(null)}
           user={resettingPasswordUser}
+          onClose={() => setResettingPasswordUser(null)}
         />
       )}
     </div>

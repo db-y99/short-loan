@@ -4,7 +4,7 @@
  */
 
 import type { TPaymentPeriod, TPaymentMilestone } from "@/types/loan.types";
-import { LOAN_TYPES, type TLoanType } from "@/constants/loan";
+
 import {
   calculateInstallment3Periods,
   calculateBulletPaymentByMilestone,
@@ -13,12 +13,16 @@ import {
   type TBulletPayment,
 } from "./loan-calculation";
 
+import { LOAN_TYPES, type TLoanType } from "@/constants/loan";
+
 /**
  * Tính ngày đáo hạn từ ngày ký hợp đồng
  */
 function calculateDueDate(signedAt: string, days: number): string {
   const date = new Date(signedAt);
+
   date.setDate(date.getDate() + days);
+
   return date.toISOString().split("T")[0]; // YYYY-MM-DD
 }
 
@@ -27,7 +31,9 @@ function calculateDueDate(signedAt: string, days: number): string {
  */
 function calculateNextPeriodDueDate(signedAt: string, days: number): string {
   const date = new Date(signedAt);
+
   date.setDate(date.getDate() + 30 + days); // Sau 30 ngày + days
+
   return date.toISOString().split("T")[0];
 }
 
@@ -68,7 +74,8 @@ function convertBulletToMilestone(
   return {
     days: payment.days,
     date: dueDate,
-    interestAndFee: payment.interest + payment.rentalFee + (payment.serviceFee || 0),
+    interestAndFee:
+      payment.interest + payment.rentalFee + (payment.serviceFee || 0),
     totalRedemption: payment.total,
     // Chi tiết cho Gói 3
     interest: payment.interest,
@@ -181,11 +188,21 @@ export function calculatePaymentPeriods(
   // Map loan type string to constant - handle both enum values and display labels
   let mappedLoanType: TLoanType;
 
-  if (loanType === LOAN_TYPES.INSTALLMENT_3_PERIODS || loanType.includes("trả góp") || loanType.includes("3 kỳ")) {
+  if (
+    loanType === LOAN_TYPES.INSTALLMENT_3_PERIODS ||
+    loanType.includes("trả góp") ||
+    loanType.includes("3 kỳ")
+  ) {
     mappedLoanType = LOAN_TYPES.INSTALLMENT_3_PERIODS;
-  } else if (loanType === LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE || loanType.includes("Theo mốc")) {
+  } else if (
+    loanType === LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE ||
+    loanType.includes("Theo mốc")
+  ) {
     mappedLoanType = LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE;
-  } else if (loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD || loanType.includes("Giữ TS")) {
+  } else if (
+    loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD ||
+    loanType.includes("Giữ TS")
+  ) {
     mappedLoanType = LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD;
   } else {
     // Default to installment

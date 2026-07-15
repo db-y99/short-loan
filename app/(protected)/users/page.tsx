@@ -29,12 +29,12 @@ export default async function UsersPage({ searchParams }: TPageProps) {
       <RoleGuard role={ROLES.ADMIN}>
         <section className="flex flex-col gap-4 py-4 md:py-6">
           <UsersPageClient
-            profiles={profiles}
-            total={total}
-            currentPage={page}
-            searchQuery={search}
             branches={branches}
+            currentPage={page}
+            profiles={profiles}
+            searchQuery={search}
             selectedBranch={branchId}
+            total={total}
           />
         </section>
       </RoleGuard>

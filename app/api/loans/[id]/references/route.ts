@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LOAN_STATUS } from "@/constants/loan";
+import {
+  requireActiveStaffUser,
+  requireAdminForPendingLoan,
+} from "@/lib/auth/api-auth";
 
 /**
  * POST /api/loans/[id]/references
@@ -8,23 +13,15 @@ import { LOAN_STATUS } from "@/constants/loan";
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createSupabaseServerClient();
     const { id: loanId } = await params;
 
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const admin = await requireAdminForPendingLoan(loanId);
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    if (!admin.ok) return admin.response;
 
     // Get request body
     const body = await request.json();
@@ -37,7 +34,7 @@ export async function POST(
           success: false,
           error: "Thiếu thông tin bắt buộc",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -51,14 +48,18 @@ export async function POST(
     if (loanError || !loan) {
       return NextResponse.json(
         { success: false, error: "Không tìm thấy khoản vay" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     if (loan.status !== LOAN_STATUS.PENDING) {
       return NextResponse.json(
-        { success: false, error: "Chỉ được thêm tham chiếu khi khoản vay ở trạng thái chờ duyệt" },
-        { status: 400 }
+        {
+          success: false,
+          error:
+            "Chỉ được thêm tham chiếu khi khoản vay ở trạng thái chờ duyệt",
+        },
+        { status: 400 },
       );
     }
 
@@ -76,9 +77,10 @@ export async function POST(
 
     if (insertError) {
       console.error("[ADD_REFERENCE_ERROR]", insertError);
+
       return NextResponse.json(
         { success: false, error: "Không thể thêm tham chiếu" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -88,12 +90,13 @@ export async function POST(
     });
   } catch (error) {
     console.error("[ADD_REFERENCE_ERROR]", error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -104,23 +107,15 @@ export async function POST(
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createSupabaseServerClient();
     const { id: loanId } = await params;
 
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const staff = await requireActiveStaffUser();
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    if (!staff.ok) return staff.response;
 
     // Get references
     const { data: references, error } = await supabase
@@ -131,9 +126,10 @@ export async function GET(
 
     if (error) {
       console.error("[GET_REFERENCES_ERROR]", error);
+
       return NextResponse.json(
         { success: false, error: "Không thể lấy danh sách tham chiếu" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -143,12 +139,13 @@ export async function GET(
     });
   } catch (error) {
     console.error("[GET_REFERENCES_ERROR]", error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

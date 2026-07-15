@@ -1,9 +1,7 @@
-
 export default function OverduePage() {
-
   return (
-   <>
-    <img src="/openclawvietnam.xyz.png" alt="" />
-   </>
+    <>
+      <img alt="" src="/openclawvietnam.xyz.png" />
+    </>
   );
 }

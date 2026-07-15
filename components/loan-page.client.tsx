@@ -1,5 +1,15 @@
 "use client";
 
+import type {
+  TLoan,
+  TLoanDetails,
+  TCreateLoanForm,
+  TReuseLoanOptions,
+  TUploadFiles,
+} from "@/types/loan.types";
+import type { TBranch } from "@/types/branch.types";
+
+import dynamic from "next/dynamic";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDisclosure } from "@heroui/modal";
@@ -7,13 +17,23 @@ import { useDisclosure } from "@heroui/modal";
 import LoansTable from "@/components/loan-table.client";
 import { getLoanDetailsAction } from "@/features/loans/actions/get-loan-details.action";
 import CreateContractModal from "@/components/create-loan/create-loan-modal.client";
-import { mapLoanDetailsToCreateForm, mapLoanAssetImagesToAttachments } from "@/lib/loan-form-mapper";
+import {
+  mapLoanDetailsToCreateForm,
+  mapLoanAssetImagesToAttachments,
+} from "@/lib/loan-form-mapper";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { ROLES } from "@/constants/roles";
 
-import type { TLoan, TLoanDetails, TCreateLoanForm, TReuseLoanOptions, TUploadFiles } from "@/types/loan.types";
-import type { TBranch } from "@/types/branch.types";
-import LoanDetailsModal from "@/components/loan-details/loan-details-modal.client";
+const LoanDetailsModal = dynamic(
+  () => import("@/components/loan-details/loan-details-modal.client"),
+  {
+    loading: () => null,
+  },
+);
+
+const preloadLoanDetailsModal = () => {
+  void import("@/components/loan-details/loan-details-modal.client");
+};
 
 type TProps = {
   loans: TLoan[];
@@ -21,7 +41,11 @@ type TProps = {
   selectedBranch?: string;
 };
 
-const LoansPageClient = ({ loans, branches = [], selectedBranch = "" }: TProps) => {
+const LoansPageClient = ({
+  loans,
+  branches = [],
+  selectedBranch = "",
+}: TProps) => {
   const router = useRouter();
   const { profile } = useAuth();
   const isAdmin = profile?.role === ROLES.ADMIN;
@@ -37,10 +61,17 @@ const LoansPageClient = ({ loans, branches = [], selectedBranch = "" }: TProps) 
     onClose: onCloseCreate,
   } = useDisclosure();
 
-  const [createInitialForm, setCreateInitialForm] = useState<TCreateLoanForm | null>(null);
-  const [createInitialBranchId, setCreateInitialBranchId] = useState<string | null>(null);
-  const [createSourceLoanCode, setCreateSourceLoanCode] = useState<string | null>(null);
-  const [createInitialAssetImages, setCreateInitialAssetImages] = useState<TUploadFiles[] | null>(null);
+  const [createInitialForm, setCreateInitialForm] =
+    useState<TCreateLoanForm | null>(null);
+  const [createInitialBranchId, setCreateInitialBranchId] = useState<
+    string | null
+  >(null);
+  const [createSourceLoanCode, setCreateSourceLoanCode] = useState<
+    string | null
+  >(null);
+  const [createInitialAssetImages, setCreateInitialAssetImages] = useState<
+    TUploadFiles[] | null
+  >(null);
   const [createKeepAssetImages, setCreateKeepAssetImages] = useState(false);
 
   const handleRowClick = useCallback(async (loan: TLoan) => {
@@ -75,6 +106,7 @@ const LoansPageClient = ({ loans, branches = [], selectedBranch = "" }: TProps) 
 
     setIsLoadingDetails(true);
     const result = await getLoanDetailsAction(selectedLoan.id);
+
     setIsLoadingDetails(false);
 
     if (result.success) {
@@ -125,21 +157,22 @@ const LoansPageClient = ({ loans, branches = [], selectedBranch = "" }: TProps) 
   return (
     <>
       <LoansTable
+        branches={branches}
         loans={loans}
+        selectedBranch={selectedBranch}
+        onCreateLoan={handleOpenCreateBlank}
         onRefresh={handleRefresh}
         onRowClick={handleRowClick}
-        onCreateLoan={handleOpenCreateBlank}
-        branches={branches}
-        selectedBranch={selectedBranch}
+        onRowHover={preloadLoanDetailsModal}
       />
 
       {isModalOpen && (
         <LoanDetailsModal
-          loanDetails={selectedLoan}
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          isLoading={isLoadingDetails}
           error={detailsError}
+          isLoading={isLoadingDetails}
+          isOpen={isModalOpen}
+          loanDetails={selectedLoan}
+          onClose={handleCloseModal}
           onRefresh={handleRefreshLoanDetails}
           onReuseLoan={handleReuseLoan}
         />
@@ -147,17 +180,17 @@ const LoansPageClient = ({ loans, branches = [], selectedBranch = "" }: TProps) 
 
       {isCreateOpen && (
         <CreateContractModal
+          branches={branches}
+          initialAssetImages={createInitialAssetImages}
+          initialBranchId={createInitialBranchId}
+          initialForm={createInitialForm}
+          isAdmin={isAdmin}
           isOpen={isCreateOpen}
+          keepAssetImages={createKeepAssetImages}
+          sourceLoanCode={createSourceLoanCode}
+          userBranchName={profile?.branch_name ?? null}
           onClose={handleCloseCreate}
           onSuccess={handleCreateSuccess}
-          branches={branches}
-          isAdmin={isAdmin}
-          userBranchName={profile?.branch_name ?? null}
-          initialForm={createInitialForm}
-          initialBranchId={createInitialBranchId}
-          sourceLoanCode={createSourceLoanCode}
-          initialAssetImages={createInitialAssetImages}
-          keepAssetImages={createKeepAssetImages}
         />
       )}
     </>

@@ -1,9 +1,11 @@
 "use client";
 
+import type { TCreateLoanForm, TPaymentMilestone } from "@/types/loan.types";
+
 import { Card, CardBody, CardHeader, Divider } from "@heroui/react";
 import { Calculator, Calendar, Clock } from "lucide-react";
 import { useMemo } from "react";
-import type { TCreateLoanForm, TPaymentMilestone } from "@/types/loan.types";
+
 import { formatCurrencyVND, parseFormattedNumber } from "@/lib/format";
 import { calculateLoan } from "@/lib/loan-calculation";
 import { LOAN_TYPES, type TLoanType } from "@/constants/loan";
@@ -24,44 +26,57 @@ const LoanPreviewSection = ({ form }: TProps) => {
     try {
       const loanAmount = parseFormattedNumber(form.loan_amount);
       const loanType = form.loan_type as TLoanType;
-      
+
       if (loanAmount <= 0) return null;
 
       const result = calculateLoan(loanAmount, loanType);
-      
+
       // Tính phí dịch vụ cho gói 3
       const serviceFee = loanAmount <= 2000000 ? 30000 : 0;
-      const isPackage3 = loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD;
+      const isPackage3 =
+        loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD;
 
       // Tạo mock milestones cho current period
-      const currentMilestones: (TPaymentMilestone & { principal?: number })[] = result.bulletPayments?.map((payment, index) => ({
-        days: payment.days,
-        date: new Date(Date.now() + payment.days * 24 * 60 * 60 * 1000).toISOString(),
-        interestAndFee: payment.interest + payment.rentalFee,
-        totalRedemption: payment.total,
-        // Chi tiết cho gói 3
-        interest: isPackage3 ? payment.interest : undefined,
-        rentalFee: isPackage3 ? payment.rentalFee : undefined,
-        serviceFee: isPackage3 ? serviceFee : undefined,
-      })) || result.installments?.map((installment, index) => ({
-        days: installment.dueDay,
-        date: new Date(Date.now() + installment.dueDay * 24 * 60 * 60 * 1000).toISOString(),
-        interestAndFee: installment.interest + installment.rentalFee,
-        totalRedemption: installment.total,
-        principal: installment.principal, // Thêm thông tin gốc cho gói 1
-      })) || [];
+      const currentMilestones: (TPaymentMilestone & { principal?: number })[] =
+        result.bulletPayments?.map((payment, index) => ({
+          days: payment.days,
+          date: new Date(
+            Date.now() + payment.days * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+          interestAndFee: payment.interest + payment.rentalFee,
+          totalRedemption: payment.total,
+          // Chi tiết cho gói 3
+          interest: isPackage3 ? payment.interest : undefined,
+          rentalFee: isPackage3 ? payment.rentalFee : undefined,
+          serviceFee: isPackage3 ? serviceFee : undefined,
+        })) ||
+        result.installments?.map((installment, index) => ({
+          days: installment.dueDay,
+          date: new Date(
+            Date.now() + installment.dueDay * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+          interestAndFee: installment.interest + installment.rentalFee,
+          totalRedemption: installment.total,
+          principal: installment.principal, // Thêm thông tin gốc cho gói 1
+        })) ||
+        [];
 
       // Next period milestones (chỉ cho bullet payments - gói 2 & 3)
-      const nextMilestones: TPaymentMilestone[] = result.bulletPayments?.map((payment, index) => ({
-        days: payment.days,
-        date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000 + payment.days * 24 * 60 * 60 * 1000).toISOString(),
-        interestAndFee: payment.interest + payment.rentalFee,
-        totalRedemption: loanAmount + payment.interest + payment.rentalFee, // Gốc + lãi (không chuộc gốc)
-        // Chi tiết cho gói 3
-        interest: isPackage3 ? payment.interest : undefined,
-        rentalFee: isPackage3 ? payment.rentalFee : undefined,
-        serviceFee: isPackage3 ? serviceFee : undefined,
-      })) || [];
+      const nextMilestones: TPaymentMilestone[] =
+        result.bulletPayments?.map((payment, index) => ({
+          days: payment.days,
+          date: new Date(
+            Date.now() +
+              30 * 24 * 60 * 60 * 1000 +
+              payment.days * 24 * 60 * 60 * 1000,
+          ).toISOString(),
+          interestAndFee: payment.interest + payment.rentalFee,
+          totalRedemption: loanAmount + payment.interest + payment.rentalFee, // Gốc + lãi (không chuộc gốc)
+          // Chi tiết cho gói 3
+          interest: isPackage3 ? payment.interest : undefined,
+          rentalFee: isPackage3 ? payment.rentalFee : undefined,
+          serviceFee: isPackage3 ? serviceFee : undefined,
+        })) || [];
 
       return {
         ...result,
@@ -72,6 +87,7 @@ const LoanPreviewSection = ({ form }: TProps) => {
       };
     } catch (error) {
       console.error("Error calculating loan preview:", error);
+
       return null;
     }
   }, [form.loan_amount, form.loan_type]);
@@ -80,7 +96,15 @@ const LoanPreviewSection = ({ form }: TProps) => {
     return null;
   }
 
-  const { loanAmount, appraisalFee, netAmount, currentMilestones, nextMilestones, isInstallment, isPackage3 } = previewData;
+  const {
+    loanAmount,
+    appraisalFee,
+    netAmount,
+    currentMilestones,
+    nextMilestones,
+    isInstallment,
+    isPackage3,
+  } = previewData;
   const showAppraisalFee = appraisalFee > 0;
 
   return (
@@ -129,7 +153,8 @@ const LoanPreviewSection = ({ form }: TProps) => {
 
             {showAppraisalFee && (
               <p className="text-xs text-default-500 italic mt-2">
-                * Phí thẩm định chỉ thu 1 lần đầu (áp dụng cho khoản vay ≥ 5 triệu đồng, Gói 1, 2 & 3).
+                * Phí thẩm định chỉ thu 1 lần đầu (áp dụng cho khoản vay ≥ 5
+                triệu đồng, Gói 1, 2 & 3).
               </p>
             )}
           </CardBody>
@@ -149,10 +174,13 @@ const LoanPreviewSection = ({ form }: TProps) => {
                 >
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold">
-                      {isInstallment ? `Kỳ ${index + 1}` : `Mốc ${milestone.days}`}
+                      {isInstallment
+                        ? `Kỳ ${index + 1}`
+                        : `Mốc ${milestone.days}`}
                     </span>
                     <span className="text-xs text-default-500">
-                      {new Date(milestone.date).toLocaleDateString('vi-VN')} (Ngày {milestone.days})
+                      {new Date(milestone.date).toLocaleDateString("vi-VN")}{" "}
+                      (Ngày {milestone.days})
                     </span>
                   </div>
                   <div className="text-right">
@@ -161,14 +189,23 @@ const LoanPreviewSection = ({ form }: TProps) => {
                     </div>
                     {isInstallment && milestone.principal ? (
                       <div className="text-xs text-default-500">
-                        Gốc: {formatCurrencyVND(milestone.principal)} | Lãi: {formatCurrencyVND(milestone.interestAndFee)}
+                        Gốc: {formatCurrencyVND(milestone.principal)} | Lãi:{" "}
+                        {formatCurrencyVND(milestone.interestAndFee)}
                       </div>
                     ) : isPackage3 ? (
                       <div className="text-xs text-default-500 space-y-1">
-                        <div>Lãi: {formatCurrencyVND(milestone.interest || 0)}</div>
-                        <div>Phí thuê: {formatCurrencyVND(milestone.rentalFee || 0)}</div>
+                        <div>
+                          Lãi: {formatCurrencyVND(milestone.interest || 0)}
+                        </div>
+                        <div>
+                          Phí thuê:{" "}
+                          {formatCurrencyVND(milestone.rentalFee || 0)}
+                        </div>
                         {(milestone.serviceFee || 0) > 0 && (
-                          <div>Phí DV: {formatCurrencyVND(milestone.serviceFee || 0)}</div>
+                          <div>
+                            Phí DV:{" "}
+                            {formatCurrencyVND(milestone.serviceFee || 0)}
+                          </div>
                         )}
                       </div>
                     ) : (
@@ -179,7 +216,7 @@ const LoanPreviewSection = ({ form }: TProps) => {
                   </div>
                 </div>
               ))}
-              
+
               {/* Tổng cộng cho gói 1 */}
               {isInstallment && currentMilestones.length > 0 && (
                 <>
@@ -191,12 +228,15 @@ const LoanPreviewSection = ({ form }: TProps) => {
                     </div>
                     <div className="text-right">
                       <div className="text-base font-bold text-primary-700 dark:text-primary-400">
-                        {formatCurrencyVND(currentMilestones.reduce((sum, m) => sum + m.totalRedemption, 0))}
+                        {formatCurrencyVND(
+                          currentMilestones.reduce(
+                            (sum, m) => sum + m.totalRedemption,
+                            0,
+                          ),
+                        )}
                       </div>
                     </div>
                   </div>
-                  
-               
                 </>
               )}
             </div>
@@ -206,7 +246,7 @@ const LoanPreviewSection = ({ form }: TProps) => {
 
       {/* Next Period - chỉ hiển thị cho gói 2 và 3 */}
       {!isInstallment && nextMilestones.length > 0 && (
-        <Card shadow="sm" className="mt-4">
+        <Card className="mt-4" shadow="sm">
           <CardHeader className="pb-2">
             <SectionHeader icon={Calendar} title="Kỳ kế tiếp" />
           </CardHeader>
@@ -214,7 +254,7 @@ const LoanPreviewSection = ({ form }: TProps) => {
             <p className="text-sm text-default-500 mb-3">
               Nếu gia hạn (Đóng lãi ngày 30)
             </p>
-            <PaymentTable 
+            <PaymentTable
               milestones={nextMilestones}
               showDetailedBreakdown={isPackage3}
             />
@@ -224,10 +264,9 @@ const LoanPreviewSection = ({ form }: TProps) => {
 
       <div className="p-2 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
         <p className="text-xs text-warning-700 dark:text-warning-400">
-          {isInstallment 
+          {isInstallment
             ? "* Lãi Cầm Cố: 0.033%/ngày (theo luật). Phần còn lại là Phí Thuê TS."
-            : "* Ngày bắt đầu Kỳ kế tiếp = Ngày đến hạn 30 ngày của Kỳ hiện tại."
-          }
+            : "* Ngày bắt đầu Kỳ kế tiếp = Ngày đến hạn 30 ngày của Kỳ hiện tại."}
         </p>
       </div>
     </div>

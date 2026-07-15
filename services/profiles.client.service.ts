@@ -12,7 +12,9 @@ export type TProfileClient = {
 /**
  * Get profile by user ID (client-side)
  */
-export async function getProfileClientById(id: string): Promise<TProfileClient | null> {
+export async function getProfileClientById(
+  id: string,
+): Promise<TProfileClient | null> {
   try {
     const { data, error } = await supabaseClient
       .from("profiles")
@@ -22,8 +24,12 @@ export async function getProfileClientById(id: string): Promise<TProfileClient |
 
     if (error || !data) return null;
 
-    const branch = data.branches as { name: string } | { name: string }[] | null;
-    const branchName = (Array.isArray(branch) ? branch[0] : branch)?.name ?? null;
+    const branch = data.branches as
+      | { name: string }
+      | { name: string }[]
+      | null;
+    const branchName =
+      (Array.isArray(branch) ? branch[0] : branch)?.name ?? null;
 
     return {
       id: data.id,
@@ -35,6 +41,7 @@ export async function getProfileClientById(id: string): Promise<TProfileClient |
     };
   } catch (error) {
     console.error("Error getting profile:", error);
+
     return null;
   }
 }

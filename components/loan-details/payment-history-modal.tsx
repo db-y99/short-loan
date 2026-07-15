@@ -11,7 +11,15 @@ import {
 import { Button } from "@heroui/button";
 import { Card, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
-import { Loader2, History, Calendar, CreditCard, FileText, DollarSign } from "lucide-react";
+import {
+  Loader2,
+  History,
+  Calendar,
+  CreditCard,
+  FileText,
+  DollarSign,
+} from "lucide-react";
+
 import { formatCurrencyVND } from "@/lib/format";
 
 type TPaymentTransaction = {
@@ -44,9 +52,10 @@ const PaymentHistoryModal = ({ isOpen, onClose, loanId }: TProps) => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/loans/${loanId}/payment-history`);
-      
+
       if (!response.ok) {
         console.error("Failed to fetch payment history:", response.status);
+
         return;
       }
 
@@ -55,7 +64,11 @@ const PaymentHistoryModal = ({ isOpen, onClose, loanId }: TProps) => {
       if (result.success) {
         setPayments(result.data || []);
         // Tính tổng tiền đã đóng
-        const total = (result.data || []).reduce((sum: number, p: TPaymentTransaction) => sum + Number(p.amount), 0);
+        const total = (result.data || []).reduce(
+          (sum: number, p: TPaymentTransaction) => sum + Number(p.amount),
+          0,
+        );
+
         setTotalPaid(total);
       }
     } catch (error) {
@@ -102,7 +115,7 @@ const PaymentHistoryModal = ({ isOpen, onClose, loanId }: TProps) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
+    <Modal isOpen={isOpen} scrollBehavior="inside" size="2xl" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex items-center gap-2">
           <History className="w-5 h-5 text-primary" />
@@ -139,43 +152,55 @@ const PaymentHistoryModal = ({ isOpen, onClose, loanId }: TProps) => {
               {payments.length > 0 ? (
                 <div className="space-y-3">
                   {payments.map((payment, index) => (
-                    <Card key={payment.id} shadow="sm" className="hover:shadow-md transition-shadow">
+                    <Card
+                      key={payment.id}
+                      className="hover:shadow-md transition-shadow"
+                      shadow="sm"
+                    >
                       <CardBody className="p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <Chip
-                                color={getTransactionTypeColor(payment.transaction_type)}
+                                color={getTransactionTypeColor(
+                                  payment.transaction_type,
+                                )}
                                 size="sm"
                                 variant="flat"
                               >
-                                {getTransactionTypeLabel(payment.transaction_type)}
+                                {getTransactionTypeLabel(
+                                  payment.transaction_type,
+                                )}
                               </Chip>
                               <span className="text-lg font-semibold text-success">
                                 {formatCurrencyVND(payment.amount)}
                               </span>
                             </div>
-                            
+
                             <div className="space-y-1 text-sm text-default-600">
                               <div className="flex items-center gap-2">
                                 <Calendar className="w-4 h-4" />
                                 <span>{formatDate(payment.created_at)}</span>
                               </div>
-                              
+
                               <div className="flex items-center gap-2">
                                 <CreditCard className="w-4 h-4" />
-                                <span>{payment.payment_method || "Tiền mặt"}</span>
+                                <span>
+                                  {payment.payment_method || "Tiền mặt"}
+                                </span>
                               </div>
-                              
+
                               {payment.notes && (
                                 <div className="flex items-start gap-2">
                                   <FileText className="w-4 h-4 mt-0.5" />
-                                  <span className="italic">{payment.notes}</span>
+                                  <span className="italic">
+                                    {payment.notes}
+                                  </span>
                                 </div>
                               )}
                             </div>
                           </div>
-                          
+
                           <div className="text-right text-sm text-default-500">
                             #{index + 1}
                           </div>
@@ -187,8 +212,12 @@ const PaymentHistoryModal = ({ isOpen, onClose, loanId }: TProps) => {
               ) : (
                 <div className="text-center py-12 text-default-500">
                   <History className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                  <p className="text-lg font-medium mb-1">Chưa có giao dịch nào</p>
-                  <p className="text-sm">Lịch sử thanh toán sẽ hiển thị tại đây</p>
+                  <p className="text-lg font-medium mb-1">
+                    Chưa có giao dịch nào
+                  </p>
+                  <p className="text-sm">
+                    Lịch sử thanh toán sẽ hiển thị tại đây
+                  </p>
                 </div>
               )}
             </div>

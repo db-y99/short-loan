@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { getCurrentUser } from "@/lib/actions/auth";
+import { requireActiveStaffUser } from "@/lib/auth/api-auth";
 
 /**
  * GET /api/loans/[id]/payment-history
@@ -8,16 +9,12 @@ import { getCurrentUser } from "@/lib/actions/auth";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const user = await getCurrentUser();
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    const staff = await requireActiveStaffUser();
+
+    if (!staff.ok) return staff.response;
 
     const { id: loanId } = await params;
     const supabase = await createSupabaseServerClient();
@@ -32,14 +29,15 @@ export async function GET(
     if (loanError || !loan) {
       return NextResponse.json(
         { success: false, error: "Không tìm thấy khoản vay" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Lấy tất cả lịch sử thanh toán với thông tin user bằng join
     const { data: payments, error: paymentsError } = await supabase
       .from("loan_payment_transactions")
-      .select(`
+      .select(
+        `
         id,
         amount,
         transaction_type,
@@ -52,15 +50,17 @@ export async function GET(
           email,
           full_name
         )
-      `)
+      `,
+      )
       .eq("loan_id", loanId)
       .order("created_at", { ascending: false });
 
     if (paymentsError) {
       console.error("Payment history error:", paymentsError);
+
       return NextResponse.json(
         { success: false, error: "Lỗi khi lấy lịch sử thanh toán" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -72,11 +72,13 @@ export async function GET(
       payment_method: payment.payment_method,
       notes: payment.notes,
       created_at: payment.created_at,
-      created_by_user: payment.profiles ? {
-        id: payment.profiles.id,
-        email: payment.profiles.email,
-        full_name: payment.profiles.full_name,
-      } : null,
+      created_by_user: payment.profiles
+        ? {
+            id: payment.profiles.id,
+            email: payment.profiles.email,
+            full_name: payment.profiles.full_name,
+          }
+        : null,
     }));
 
     return NextResponse.json({
@@ -84,12 +86,12 @@ export async function GET(
       data: formattedPayments,
       total: formattedPayments.length,
     });
-
   } catch (error) {
     console.error("Payment history API error:", error);
+
     return NextResponse.json(
       { success: false, error: "Lỗi server" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireActiveStaffUser } from "@/lib/auth/api-auth";
 
 /**
  * GET /api/loans/[id]/payment-progress
@@ -7,23 +9,15 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createSupabaseServerClient();
     const { id: loanId } = await params;
 
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const staff = await requireActiveStaffUser();
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    if (!staff.ok) return staff.response;
 
     // Get loan info
     const { data: loan, error: loanError } = await supabase
@@ -35,7 +29,7 @@ export async function GET(
     if (loanError || !loan) {
       return NextResponse.json(
         { success: false, error: "Không tìm thấy khoản vay" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -50,23 +44,26 @@ export async function GET(
     if (cycleError || !cycle) {
       return NextResponse.json(
         { success: false, error: "Không tìm thấy chu kỳ thanh toán" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     // Get payment periods
     const { data: periods, error: periodsError } = await supabase
       .from("loan_payment_periods")
-      .select("milestone_day, fee_amount, principal, status, due_date, period_number, paid_amount")
+      .select(
+        "milestone_day, fee_amount, principal, status, due_date, period_number, paid_amount",
+      )
       .eq("cycle_id", cycle.id)
       .eq("period_type", "current")
       .order("period_number", { ascending: true });
 
     if (periodsError) {
       console.error("[GET_PERIODS_ERROR]", periodsError);
+
       return NextResponse.json(
         { success: false, error: "Không thể lấy thông tin kỳ thanh toán" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -74,18 +71,19 @@ export async function GET(
     const { data: payments, error: paymentsError } = await supabase
       .from("loan_payment_transactions")
       .select("amount")
-      .eq("loan_id", loanId)
+      .eq("loan_id", loanId);
 
-      console.log({payments})
+    console.log({ payments });
     if (paymentsError) {
       console.error("[GET_PAYMENTS_ERROR]", paymentsError);
       // Don't fail the request, just set totalPaid to 0
     }
 
     // Calculate total payments made
-    const totalPaid = payments?.reduce((sum, payment) => {
-      return sum + (Number(payment.amount) || 0);
-    }, 0) || 0;
+    const totalPaid =
+      payments?.reduce((sum, payment) => {
+        return sum + (Number(payment.amount) || 0);
+      }, 0) || 0;
 
     return NextResponse.json({
       success: true,
@@ -103,12 +101,13 @@ export async function GET(
     });
   } catch (error) {
     console.error("[GET_PAYMENT_PROGRESS_ERROR]", error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

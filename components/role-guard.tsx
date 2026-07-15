@@ -9,7 +9,9 @@ type TProps = {
 
 export default async function RoleGuard({ role, children }: TProps) {
   const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const profileRole = user ? await getProfileRole(user.id) : null;
 

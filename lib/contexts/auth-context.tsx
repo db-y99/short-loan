@@ -2,8 +2,12 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
+
 import { supabaseClient } from "@/lib/supabase/client";
-import { getProfileClientById, TProfileClient } from "@/services/profiles.client.service";
+import {
+  getProfileClientById,
+  TProfileClient,
+} from "@/services/profiles.client.service";
 import { USER_STATUS } from "@/lib/constants";
 
 type TProfile = TProfileClient;
@@ -29,11 +33,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refresh = async () => {
     try {
-      const { data: { user } } = await supabaseClient.auth.getUser();
+      const {
+        data: { user },
+      } = await supabaseClient.auth.getUser();
+
       setUser(user ?? null);
 
       if (user) {
         const data = await getProfileClientById(user.id);
+
         setProfile(data);
       } else {
         setProfile(null);
@@ -58,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         getProfileClientById(session.user.id).then((data) => {
           if (!data || data.deleted_at || data.status !== USER_STATUS.ACTIVE) {
             supabaseClient.auth.signOut();
+
             return;
           }
           setProfile(data);
@@ -79,8 +88,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
+
   if (!context) {
     throw new Error("useAuth must be used within AuthProvider");
   }
+
   return context;
 };

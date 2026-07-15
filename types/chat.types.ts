@@ -40,4 +40,8 @@ export interface OptimisticMessage extends ActivityLog {
 /**
  * Connection status for realtime subscription
  */
-export type ConnectionStatus = "connected" | "connecting" | "error" | "disconnected";
+export type ConnectionStatus =
+  | "connected"
+  | "connecting"
+  | "error"
+  | "disconnected";

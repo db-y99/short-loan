@@ -1,5 +1,6 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export default async function ProtectedLayout({
   children,

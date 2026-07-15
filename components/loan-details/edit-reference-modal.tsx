@@ -54,24 +54,32 @@ const EditReferenceModal = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.fullName.trim() || !formData.phone.trim() || !formData.relationship.trim()) {
+    if (
+      !formData.fullName.trim() ||
+      !formData.phone.trim() ||
+      !formData.relationship.trim()
+    ) {
       addToast({
         title: "Lỗi",
         description: "Vui lòng nhập đầy đủ thông tin tham chiếu",
         color: "danger",
       });
+
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`/api/loans/${loanId}/references/${referenceId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `/api/loans/${loanId}/references/${referenceId}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
         },
-        body: JSON.stringify(formData),
-      });
+      );
 
       const result = await response.json();
 
@@ -81,6 +89,7 @@ const EditReferenceModal = ({
           description: result.error || "Không thể cập nhật tham chiếu",
           color: "danger",
         });
+
         return;
       }
 
@@ -105,7 +114,7 @@ const EditReferenceModal = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+    <Modal isOpen={isOpen} size="2xl" onClose={onClose}>
       <ModalContent>
         <form onSubmit={handleSubmit}>
           <ModalHeader className="flex items-center gap-2">
@@ -114,34 +123,39 @@ const EditReferenceModal = ({
           </ModalHeader>
           <ModalBody className="gap-4">
             <Input
+              isRequired
+              isDisabled={isSubmitting}
               label="Họ và tên"
               value={formData.fullName}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, fullName: value }))}
-              isRequired
-              isDisabled={isSubmitting}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, fullName: value }))
+              }
             />
             <Input
+              isRequired
+              isDisabled={isSubmitting}
               label="Số điện thoại"
               value={formData.phone}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, phone: value }))}
-              isRequired
-              isDisabled={isSubmitting}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, phone: value }))
+              }
             />
             <Input
-              label="Mối quan hệ"
-              value={formData.relationship}
-              onValueChange={(value) => setFormData((prev) => ({ ...prev, relationship: value }))}
               isRequired
               isDisabled={isSubmitting}
+              label="Mối quan hệ"
+              value={formData.relationship}
+              onValueChange={(value) =>
+                setFormData((prev) => ({ ...prev, relationship: value }))
+              }
             />
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={onClose} isDisabled={isSubmitting}>
+            <Button isDisabled={isSubmitting} variant="flat" onPress={onClose}>
               Hủy
             </Button>
             <Button
               color="primary"
-              type="submit"
               isDisabled={isSubmitting}
               startContent={
                 isSubmitting ? (
@@ -150,6 +164,7 @@ const EditReferenceModal = ({
                   <UserCog className="w-4 h-4" />
                 )
               }
+              type="submit"
             >
               {isSubmitting ? "Đang cập nhật..." : "Cập nhật"}
             </Button>

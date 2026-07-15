@@ -1,19 +1,38 @@
 "use client";
 
+import type { TLoanFile, TLoanStatus } from "@/types/loan.types";
+import type { TContractType } from "@/types/contract.types";
+
 import { useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
-import { FileText, Download, Eye, Loader2, Plus, CheckCircle, RefreshCw, AlertCircle } from "lucide-react";
+import {
+  FileText,
+  Download,
+  Eye,
+  Loader2,
+  Plus,
+  CheckCircle,
+  RefreshCw,
+  AlertCircle,
+} from "lucide-react";
 import { addToast } from "@heroui/toast";
-import type { TLoanFile, TLoanStatus } from "@/types/loan.types";
-import { generateContractsAction, regenerateContractsAction } from "@/features/contracts/actions/generate-contracts.action";
+
+import {
+  generateContractsAction,
+  regenerateContractsAction,
+} from "@/features/contracts/actions/generate-contracts.action";
 import { repairSignedContractsAction } from "@/features/contracts/actions/repair-signed-contracts.action";
 import ContractPreviewModal from "@/components/contracts/contract-preview-modal";
 import ContractSelectionModal from "@/components/contracts/contract-selection-modal";
 import ContractErrorDetails from "@/components/contracts/contract-error-details";
-import type { TContractType } from "@/types/contract.types";
-import { needsSignedContractRepair, sortContractsByType } from "@/lib/contract-utils";
+import {
+  needsSignedContractRepair,
+  sortContractsByType,
+} from "@/lib/contract-utils";
 import { LOAN_STATUS, LOAN_STATUS_LABEL } from "@/constants/loan";
+import { isLoanApproverRole } from "@/constants/roles";
+import { useAuth } from "@/lib/contexts/auth-context";
 
 type TProps = {
   loanId: string;
@@ -32,6 +51,9 @@ const ContractsSection = ({
   hasSignatures = false,
   onRefresh,
 }: TProps) => {
+  const { profile } = useAuth();
+  const canManageContractActions = isLoanApproverRole(profile?.role);
+
   const [isGenerating, setIsGenerating] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isRepairing, setIsRepairing] = useState(false);
@@ -42,7 +64,9 @@ const ContractsSection = ({
     type: "success" | "error";
     text: string;
   } | null>(null);
-  const [selectedContract, setSelectedContract] = useState<TLoanFile | null>(null);
+  const [selectedContract, setSelectedContract] = useState<TLoanFile | null>(
+    null,
+  );
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isDownloadingAll, setIsDownloadingAll] = useState(false);
@@ -160,20 +184,33 @@ const ContractsSection = ({
     try {
       await Promise.all(
         sortedContracts.map(async (contract) => {
-          const response = await fetch(`/api/drive/download/${contract.fileId}`);
+          const response = await fetch(
+            `/api/drive/download/${contract.fileId}`,
+          );
+
           if (!response.ok) throw new Error(`Không thể tải: ${contract.name}`);
           const blob = await response.blob();
           const url = URL.createObjectURL(blob);
           const link = document.createElement("a");
+
           link.href = url;
           link.download = `${contract.name}.pdf`;
           link.click();
           URL.revokeObjectURL(url);
         }),
       );
-      addToast({ title: "Thành công", description: "Đã tải xuống tất cả hợp đồng", color: "success" });
+      addToast({
+        title: "Thành công",
+        description: "Đã tải xuống tất cả hợp đồng",
+        color: "success",
+      });
     } catch (error) {
-      addToast({ title: "Lỗi", description: error instanceof Error ? error.message : "Lỗi khi tải xuống", color: "danger" });
+      addToast({
+        title: "Lỗi",
+        description:
+          error instanceof Error ? error.message : "Lỗi khi tải xuống",
+        color: "danger",
+      });
     } finally {
       setIsDownloadingAll(false);
     }
@@ -181,6 +218,7 @@ const ContractsSection = ({
 
   const handleViewContract = (contract: TLoanFile) => {
     const index = sortedContracts.findIndex((c) => c.id === contract.id);
+
     setSelectedContract(contract);
     setIsPreviewOpen(true);
     setSelectedIndex(index >= 0 ? index : 0);
@@ -198,6 +236,7 @@ const ContractsSection = ({
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
+
       link.href = url;
       link.download = `${contract.name}.pdf`;
       link.click();
@@ -211,7 +250,8 @@ const ContractsSection = ({
     } catch (error) {
       addToast({
         title: "Lỗi",
-        description: error instanceof Error ? error.message : "Lỗi khi tải xuống",
+        description:
+          error instanceof Error ? error.message : "Lỗi khi tải xuống",
         color: "danger",
       });
     }
@@ -219,16 +259,17 @@ const ContractsSection = ({
 
   return (
     <>
-      <Card shadow="sm" className="col-span-2">
+      <Card className="col-span-2" shadow="sm">
         <CardHeader className="flex items-center justify-between pb-2">
           <div className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-primary" />
             <h3 className="text-lg font-semibold">Hợp đồng</h3>
           </div>
-        <div className="flex items-center gap-2">
-            {shouldRepairSignedContracts ? (
+          <div className="flex items-center gap-2">
+            {canManageContractActions && shouldRepairSignedContracts ? (
               <Button
                 color="warning"
+                isDisabled={isRepairing}
                 size="sm"
                 startContent={
                   isRepairing ? (
@@ -237,16 +278,15 @@ const ContractsSection = ({
                     <RefreshCw className="w-4 h-4" />
                   )
                 }
-                isDisabled={isRepairing}
                 onPress={handleRepairSignedContracts}
               >
                 {isRepairing ? "Đang tạo PDF..." : "Tạo lại PDF đã ký"}
               </Button>
             ) : null}
-            {loanFiles.length > 0 && (
+            {canManageContractActions && loanFiles.length > 0 && (
               <Button
+                isDisabled={isDownloadingAll}
                 size="sm"
-                variant="flat"
                 startContent={
                   isDownloadingAll ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -254,51 +294,53 @@ const ContractsSection = ({
                     <Download className="w-4 h-4" />
                   )
                 }
-                isDisabled={isDownloadingAll}
+                variant="flat"
                 onPress={handleDownloadAll}
               >
                 {isDownloadingAll ? "Đang tải..." : "Tải tất cả"}
               </Button>
             )}
-            {/* Chỉ hiển thị nút tạo/tạo lại hợp đồng khi loan đã được duyệt hoặc đã ký */}
-            {(loanStatus === LOAN_STATUS.APPROVED || loanStatus === LOAN_STATUS.SIGNED) && (
-              <>
-                {loanFiles.length === 0 ? (
-                  <Button
-                    color="primary"
-                    size="sm"
-                    startContent={
-                      isGenerating ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Plus className="w-4 h-4" />
-                      )
-                    }
-                    isDisabled={isGenerating}
-                    onPress={() => setSelectionModalMode("create")}
-                  >
-                    {isGenerating ? "Đang tạo..." : "Tạo hợp đồng"}
-                  </Button>
-                ) : (
-                  <Button
-                    color="warning"
-                    size="sm"
-                    variant="flat"
-                    startContent={
-                      isRegenerating ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="w-4 h-4" />
-                      )
-                    }
-                    isDisabled={isRegenerating}
-                    onPress={() => setSelectionModalMode("regenerate")}
-                  >
-                    {isRegenerating ? "Đang tạo lại..." : "Tạo lại"}
-                  </Button>
-                )}
-              </>
-            )}
+            {/* Chỉ tạo HĐ mới khi approved; signed chỉ tạo lại / repair PDF đã ký */}
+            {canManageContractActions &&
+              loanStatus === LOAN_STATUS.APPROVED &&
+              loanFiles.length === 0 && (
+                <Button
+                  color="primary"
+                  isDisabled={isGenerating}
+                  size="sm"
+                  startContent={
+                    isGenerating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Plus className="w-4 h-4" />
+                    )
+                  }
+                  onPress={() => setSelectionModalMode("create")}
+                >
+                  {isGenerating ? "Đang tạo..." : "Tạo hợp đồng"}
+                </Button>
+              )}
+            {canManageContractActions &&
+              loanFiles.length > 0 &&
+              (loanStatus === LOAN_STATUS.APPROVED ||
+                loanStatus === LOAN_STATUS.SIGNED) && (
+                <Button
+                  color="warning"
+                  isDisabled={isRegenerating}
+                  size="sm"
+                  startContent={
+                    isRegenerating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="w-4 h-4" />
+                    )
+                  }
+                  variant="flat"
+                  onPress={() => setSelectionModalMode("regenerate")}
+                >
+                  {isRegenerating ? "Đang tạo lại..." : "Tạo lại"}
+                </Button>
+              )}
           </div>
         </CardHeader>
         <CardBody className="pt-0 space-y-3">
@@ -328,7 +370,8 @@ const ContractsSection = ({
                 <div className="text-sm text-danger-700 dark:text-danger-400">
                   <p className="font-semibold">Thiếu hợp đồng PDF đã ký</p>
                   <p className="mt-1">
-                    Khoản vay đã ký nhưng PDF chưa đủ. Nhấn &quot;Tạo lại PDF đã ký&quot; để khôi phục.
+                    Khoản vay đã ký nhưng PDF chưa đủ. Nhấn &quot;Tạo lại PDF đã
+                    ký&quot; để khôi phục.
                   </p>
                 </div>
               </div>
@@ -342,11 +385,33 @@ const ContractsSection = ({
                 <CheckCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
                 <div className="text-sm text-warning-700 dark:text-warning-400">
                   <p className="font-semibold">Hợp đồng đã được ký</p>
-                  <p className="mt-1">Bạn có thể tạo lại hợp đồng nếu khách hàng ký sai hoặc cần chỉnh sửa.</p>
+                  <p className="mt-1">
+                    &quot;Tạo lại&quot; sẽ hủy trạng thái đã ký, xóa chữ ký và
+                    lịch thanh toán (nếu chưa có giao dịch). Cần ký lại trước khi
+                    giải ngân.
+                  </p>
                 </div>
               </div>
             </div>
           )}
+
+          {loanStatus === LOAN_STATUS.SIGNED &&
+            loanFiles.length === 0 &&
+            !shouldRepairSignedContracts && (
+              <div className="p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-warning-700 dark:text-warning-400">
+                    <p className="font-semibold">Không có hợp đồng để tạo lại</p>
+                    <p className="mt-1">
+                      Khoản vay đang ở trạng thái đã ký nhưng chưa có file hợp
+                      đồng. Dùng &quot;Tạo lại PDF đã ký&quot; nếu còn chữ ký,
+                      hoặc liên hệ quản trị viên.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
           {message && (
             <>
@@ -361,17 +426,37 @@ const ContractsSection = ({
             </>
           )}
 
+          {loanStatus === LOAN_STATUS.APPROVED && loanFiles.length === 0 && (
+            <div className="p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg border border-warning-200 dark:border-warning-800">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+                <div className="text-sm text-warning-700 dark:text-warning-400">
+                  <p className="font-semibold">Bước bắt buộc trước khi ký</p>
+                  <p className="mt-1">
+                    Nhấn &quot;Tạo hợp đồng&quot; để tạo PDF chưa ký. Chỉ sau đó
+                    mới có thể ký hợp đồng.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {loanFiles.length === 0 ? (
             <div className="text-center py-8 text-default-500">
               <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
-              {loanStatus === "approved" || loanStatus === "signed" ? (
+              {loanStatus === LOAN_STATUS.APPROVED ? (
                 <>
-                  <p className="text-sm">Chưa có hợp đồng đã ký</p>
+                  <p className="text-sm">Chưa có hợp đồng</p>
                   <p className="text-xs mt-1">
-                    {loanStatus === "approved" 
-                      ? "Hợp đồng sẽ được tạo tự động sau khi ký"
-                      : "Có thể tạo lại hợp đồng nếu cần thiết"
-                    }
+                    Tạo hợp đồng PDF trước, sau đó mới ký
+                  </p>
+                </>
+              ) : loanStatus === LOAN_STATUS.SIGNED ? (
+                <>
+                  <p className="text-sm">Chưa có hợp đồng trong danh sách</p>
+                  <p className="text-xs mt-1">
+                    Không thể tạo hợp đồng mới khi đã ký — dùng sửa PDF đã ký
+                    hoặc tạo lại sau khi hủy ký
                   </p>
                 </>
               ) : (
@@ -381,7 +466,10 @@ const ContractsSection = ({
                     Hợp đồng chỉ có thể tạo khi khoản vay đã được duyệt
                   </p>
                   <p className="text-xs text-warning-600 mt-1">
-                    Trạng thái hiện tại: <span className="font-medium">{LOAN_STATUS_LABEL[loanStatus]}</span>
+                    Trạng thái hiện tại:{" "}
+                    <span className="font-medium">
+                      {LOAN_STATUS_LABEL[loanStatus]}
+                    </span>
                   </p>
                 </>
               )}
@@ -408,17 +496,17 @@ const ContractsSection = ({
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
+                      isIconOnly
                       size="sm"
                       variant="flat"
-                      isIconOnly
                       onPress={() => handleViewContract(contract)}
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
                     <Button
+                      isIconOnly
                       size="sm"
                       variant="flat"
-                      isIconOnly
                       onPress={() => handleDownloadContract(contract)}
                     >
                       <Download className="w-4 h-4" />
@@ -434,23 +522,24 @@ const ContractsSection = ({
       {/* Contract Preview Modal */}
       <ContractPreviewModal
         key={selectedContract?.id ?? "preview-closed"}
+        contracts={sortedContracts}
+        initialIndex={selectedIndex}
         isOpen={isPreviewOpen}
+        loanId={loanId}
         onClose={() => {
           setIsPreviewOpen(false);
           setSelectedContract(null);
         }}
-        contracts={sortedContracts}
-        initialIndex={selectedIndex}
-        loanId={loanId}
       />
 
       {/* Contract Selection Modal */}
       <ContractSelectionModal
+        isLoading={isGenerating || isRegenerating}
         isOpen={selectionModalMode !== null}
+        mode={selectionModalMode ?? "create"}
+        willUnsign={loanStatus === LOAN_STATUS.SIGNED}
         onClose={() => setSelectionModalMode(null)}
         onConfirm={handleSelectionConfirm}
-        isLoading={isGenerating || isRegenerating}
-        mode={selectionModalMode ?? "create"}
       />
     </>
   );

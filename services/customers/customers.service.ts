@@ -1,5 +1,6 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { TCustomer } from "@/types/customer.types";
+
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type TUpsertCustomerInput = {
   full_name: string;
@@ -15,13 +16,15 @@ type TUpsertCustomerInput = {
 
 /** Tạo hoặc cập nhật customer theo CCCD, trả về customer id */
 export const upsertCustomerService = async (
-  input: TUpsertCustomerInput
+  input: TUpsertCustomerInput,
 ): Promise<TCustomer> => {
   const supabase = await createSupabaseServerClient();
 
   const { data: existing } = await supabase
     .from("customers")
-    .select("id, full_name, cccd, phone, address, cccd_issue_date, cccd_issue_place, facebook_link, job, income, created_at")
+    .select(
+      "id, full_name, cccd, phone, address, cccd_issue_date, cccd_issue_place, facebook_link, job, income, created_at",
+    )
     .eq("cccd", input.cccd)
     .single();
 
@@ -39,11 +42,14 @@ export const upsertCustomerService = async (
         income: input.income ?? null,
       })
       .eq("id", existing.id)
-      .select("id, full_name, cccd, phone, address, cccd_issue_date, cccd_issue_place, facebook_link, job, income, created_at")
+      .select(
+        "id, full_name, cccd, phone, address, cccd_issue_date, cccd_issue_place, facebook_link, job, income, created_at",
+      )
       .single();
 
     if (error) throw new Error(error.message);
     if (!updated) throw new Error("Failed to update customer");
+
     return updated as TCustomer;
   }
 
@@ -60,10 +66,13 @@ export const upsertCustomerService = async (
       job: input.job || null,
       income: input.income ?? null,
     })
-    .select("id, full_name, cccd, phone, address, cccd_issue_date, cccd_issue_place, facebook_link, job, income, created_at")
+    .select(
+      "id, full_name, cccd, phone, address, cccd_issue_date, cccd_issue_place, facebook_link, job, income, created_at",
+    )
     .single();
 
   if (error) throw new Error(error.message);
   if (!inserted) throw new Error("Failed to create customer");
+
   return inserted as TCustomer;
 };

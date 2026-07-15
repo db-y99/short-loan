@@ -7,10 +7,18 @@ import { Checkbox } from "@heroui/checkbox";
 import { addToast } from "@heroui/toast";
 import { Chip } from "@heroui/chip";
 import {
-  FileText, CheckCircle, Loader2, Pen, Trash2,
-  ChevronLeft, ChevronRight, Shield, ScrollText,
+  FileText,
+  CheckCircle,
+  Loader2,
+  Pen,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  Shield,
+  ScrollText,
 } from "lucide-react";
 import SignatureCanvas from "react-signature-canvas";
+
 import SignaturePad from "@/components/signature-pad.client";
 import { AssetPledgeContractView } from "@/components/contracts/asset-pledge-contract-view.client";
 import { AssetLeaseContractView } from "@/components/contracts/asset-lease-contract-view.client";
@@ -38,13 +46,16 @@ export default function LoanSignPage() {
   const loanId = params.id as string;
 
   const [step, setStep] = useState<Step>("review");
-  const [selectedContractType, setSelectedContractType] = useState<ContractType>(CONTRACT_TYPE.ASSET_PLEDGE);
+  const [selectedContractType, setSelectedContractType] =
+    useState<ContractType>(CONTRACT_TYPE.ASSET_PLEDGE);
   const [isAgreed, setIsAgreed] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [contractData, setContractData] = useState<any>(null);
   const [draftSignature, setDraftSignature] = useState<string | null>(null);
-  const [officialSignature, setOfficialSignature] = useState<string | null>(null);
+  const [officialSignature, setOfficialSignature] = useState<string | null>(
+    null,
+  );
   const draftSigRef = useRef<SignatureCanvas>(null);
   const officialSigRef = useRef<SignatureCanvas>(null);
 
@@ -58,13 +69,12 @@ export default function LoanSignPage() {
     try {
       const res = await fetch(`/api/loans/${loanId}/contract-data`);
       const result = await res.json();
+
       if (result.success) {
         setContractData(result.data);
-        const createdTypes =
-          result.data.createdContractTypes ??
-          result.data.applicableContractTypes ??
-          [];
+        const createdTypes = result.data.createdContractTypes ?? [];
         const tabs = getSignPageContractTabsForCreatedTypes(createdTypes);
+
         if (tabs.length > 0) {
           setSelectedContractType((current) =>
             tabs.some((tab) => tab.key === current) ? current : tabs[0].key,
@@ -81,27 +91,52 @@ export default function LoanSignPage() {
   const saveSig = (
     ref: React.RefObject<SignatureCanvas>,
     setter: (v: string | null) => void,
-    label: string
+    label: string,
   ) => {
     if (ref.current?.isEmpty()) {
-      addToast({ title: "Chưa có chữ ký", description: "Vui lòng ký trước khi lưu", color: "warning" });
+      addToast({
+        title: "Chưa có chữ ký",
+        description: "Vui lòng ký trước khi lưu",
+        color: "warning",
+      });
+
       return;
     }
     const dataURL = ref.current?.toDataURL("image/png");
+
     if (!dataURL || dataURL === "data:,") {
-      addToast({ title: "Lỗi lưu chữ ký", description: "Dữ liệu không hợp lệ, vui lòng ký lại", color: "danger" });
+      addToast({
+        title: "Lỗi lưu chữ ký",
+        description: "Dữ liệu không hợp lệ, vui lòng ký lại",
+        color: "danger",
+      });
+
       return;
     }
     setter(dataURL);
     addToast({ title: `Đã lưu ${label}`, color: "success" });
   };
 
-  const clearSig = (ref: React.RefObject<SignatureCanvas>, setter: (v: string | null) => void) => {
+  const clearSig = (
+    ref: React.RefObject<SignatureCanvas>,
+    setter: (v: string | null) => void,
+  ) => {
     ref.current?.clear();
     setter(null);
   };
 
   const handleSign = async () => {
+    if (!canSign) {
+      addToast({
+        title: "Chưa thể ký hợp đồng",
+        description:
+          "Vui lòng tạo hợp đồng PDF trước khi ký. Liên hệ nhân viên để được hỗ trợ.",
+        color: "warning",
+      });
+
+      return;
+    }
+
     if (!isAgreed || !draftSignature || !officialSignature) return;
     setIsSigning(true);
     try {
@@ -111,33 +146,44 @@ export default function LoanSignPage() {
         body: JSON.stringify({ draftSignature, officialSignature }),
       });
       const signResult = await signRes.json();
+
       if (!signResult.success) {
-        addToast({ title: "Lỗi khi ký hợp đồng", description: signResult.error || "Có lỗi xảy ra", color: "danger" });
+        addToast({
+          title: "Lỗi khi ký hợp đồng",
+          description: signResult.error || "Có lỗi xảy ra",
+          color: "danger",
+        });
+
         return;
       }
       addToast({
         title: "Hoàn tất!",
-        description: signResult.message || "Hợp đồng đã được ký và tạo PDF thành công",
+        description:
+          signResult.message || "Hợp đồng đã được ký và tạo PDF thành công",
         color: "success",
       });
       setStep("done");
     } catch (err) {
       console.error("Error signing:", err);
-      addToast({ title: "Lỗi khi ký hợp đồng", description: "Có lỗi xảy ra", color: "danger" });
+      addToast({
+        title: "Lỗi khi ký hợp đồng",
+        description: "Có lỗi xảy ra",
+        color: "danger",
+      });
     } finally {
       setIsSigning(false);
     }
   };
 
   const contractTabs = useMemo(() => {
-    const createdTypes =
-      contractData?.createdContractTypes ??
-      contractData?.applicableContractTypes ??
-      [];
+    const createdTypes = contractData?.createdContractTypes ?? [];
+
     if (createdTypes.length === 0) return [];
 
     return getSignPageContractTabsForCreatedTypes(createdTypes);
-  }, [contractData?.createdContractTypes, contractData?.applicableContractTypes]);
+  }, [contractData?.createdContractTypes]);
+
+  const canSign = contractData?.canSign ?? contractTabs.length > 0;
 
   const currentTabIndex = contractTabs.findIndex(
     (t) => t.key === selectedContractType,
@@ -150,11 +196,19 @@ export default function LoanSignPage() {
         <div className="w-24 h-24 rounded-full bg-success flex items-center justify-center mb-6 shadow-lg shadow-success/30">
           <CheckCircle className="w-12 h-12 text-white" />
         </div>
-        <h1 className="text-2xl font-bold mb-2 text-foreground">Ký hợp đồng thành công!</h1>
+        <h1 className="text-2xl font-bold mb-2 text-foreground">
+          Ký hợp đồng thành công!
+        </h1>
         <p className="text-default-500 mb-8 max-w-xs text-sm leading-relaxed">
-          Hợp đồng đã được ký kết. PDF đang được tạo trong nền, bạn có thể đóng trang này.
+          Hợp đồng đã được ký kết. PDF đang được tạo trong nền, bạn có thể đóng
+          trang này.
         </p>
-        <Button color="success" size="lg" className="text-white font-semibold px-8" onPress={() => router.push("/")}>
+        <Button
+          className="text-white font-semibold px-8"
+          color="success"
+          size="lg"
+          onPress={() => router.push("/")}
+        >
           Về trang chủ
         </Button>
       </div>
@@ -163,12 +217,19 @@ export default function LoanSignPage() {
 
   // ── SIGN ────────────────────────────────────────────────────────────────────
   if (step === "sign") {
-    const canSubmit = isAgreed && !!draftSignature && !!officialSignature;
+    const canSubmit =
+      canSign && isAgreed && !!draftSignature && !!officialSignature;
+
     return (
       <div className="min-h-screen bg-background flex flex-col">
         {/* Header */}
         <div className="bg-background border-b border-default-200 px-4 py-3 flex items-center gap-3 sticky top-0 z-10">
-          <Button isIconOnly variant="flat" size="sm" onPress={() => setStep("review")}>
+          <Button
+            isIconOnly
+            size="sm"
+            variant="flat"
+            onPress={() => setStep("review")}
+          >
             <ChevronLeft className="w-4 h-4" />
           </Button>
           <div className="flex-1">
@@ -187,7 +248,8 @@ export default function LoanSignPage() {
           <div className="flex items-center gap-3 bg-primary/10 border border-primary/20 rounded-xl px-4 py-3">
             <Shield className="w-5 h-5 text-primary flex-shrink-0" />
             <p className="text-xs text-primary font-medium">
-              Ký vào ô bên dưới để xác nhận đồng ý với tất cả điều khoản hợp đồng
+              Ký vào ô bên dưới để xác nhận đồng ý với tất cả điều khoản hợp
+              đồng
             </p>
           </div>
 
@@ -196,30 +258,53 @@ export default function LoanSignPage() {
             <div className="flex items-center justify-between px-4 py-3 border-b border-default-100">
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Pen className="w-3.5 h-3.5 text-primary" />                </div>
+                  <Pen className="w-3.5 h-3.5 text-primary" />{" "}
+                </div>
                 <div>
                   <p className="font-semibold text-sm">Chữ ký nháy</p>
                   <p className="text-xs text-default-400">Ký tắt / ký nháy</p>
                 </div>
               </div>
               {draftSignature ? (
-                <Chip color="success" size="sm" variant="flat">Đã ký</Chip>
+                <Chip color="success" size="sm" variant="flat">
+                  Đã ký
+                </Chip>
               ) : (
-                <Chip color="warning" size="sm" variant="flat">Chưa ký</Chip>
+                <Chip color="warning" size="sm" variant="flat">
+                  Chưa ký
+                </Chip>
               )}
             </div>
             <div className="p-4">
               {!draftSignature ? (
                 <>
                   <div className="relative">
-                    <SignaturePad ref={draftSigRef} heightClass="h-56" className="rounded-xl" />
-                    <p className="absolute bottom-2 right-3 text-xs text-default-400 pointer-events-none select-none">Ký tại đây</p>
+                    <SignaturePad
+                      ref={draftSigRef}
+                      className="rounded-xl"
+                      heightClass="h-56"
+                    />
+                    <p className="absolute bottom-2 right-3 text-xs text-default-400 pointer-events-none select-none">
+                      Ký tại đây
+                    </p>
                   </div>
                   <div className="flex gap-2 mt-3">
-                    <Button size="sm" variant="flat" className="flex-1" onPress={() => clearSig(draftSigRef, setDraftSignature)}>
+                    <Button
+                      className="flex-1"
+                      size="sm"
+                      variant="flat"
+                      onPress={() => clearSig(draftSigRef, setDraftSignature)}
+                    >
                       Xóa
                     </Button>
-                    <Button size="sm" color="primary" className="flex-1 font-medium" onPress={() => saveSig(draftSigRef, setDraftSignature, "chữ ký nháy")}>
+                    <Button
+                      className="flex-1 font-medium"
+                      color="primary"
+                      size="sm"
+                      onPress={() =>
+                        saveSig(draftSigRef, setDraftSignature, "chữ ký nháy")
+                      }
+                    >
                       Xác nhận chữ ký
                     </Button>
                   </div>
@@ -227,12 +312,18 @@ export default function LoanSignPage() {
               ) : (
                 <div className="relative">
                   <div className="border border-success-200 rounded-xl p-3 bg-white dark:bg-white">
-                    <img src={draftSignature} alt="Chữ ký nháy" className="w-full h-44 object-contain bg-white" />
+                    <img
+                      alt="Chữ ký nháy"
+                      className="w-full h-44 object-contain bg-white"
+                      src={draftSignature}
+                    />
                   </div>
                   <Button
-                    size="sm" variant="flat" color="danger"
                     className="mt-2 w-full"
+                    color="danger"
+                    size="sm"
                     startContent={<Trash2 className="w-3.5 h-3.5" />}
+                    variant="flat"
                     onPress={() => clearSig(draftSigRef, setDraftSignature)}
                   >
                     Ký lại
@@ -255,23 +346,51 @@ export default function LoanSignPage() {
                 </div>
               </div>
               {officialSignature ? (
-                <Chip color="success" size="sm" variant="flat">Đã ký</Chip>
+                <Chip color="success" size="sm" variant="flat">
+                  Đã ký
+                </Chip>
               ) : (
-                <Chip color="warning" size="sm" variant="flat">Chưa ký</Chip>
+                <Chip color="warning" size="sm" variant="flat">
+                  Chưa ký
+                </Chip>
               )}
             </div>
             <div className="p-4">
               {!officialSignature ? (
                 <>
                   <div className="relative">
-                    <SignaturePad ref={officialSigRef} heightClass="h-56" className="rounded-xl" />
-                    <p className="absolute bottom-2 right-3 text-xs text-default-400 pointer-events-none select-none">Ký tại đây</p>
+                    <SignaturePad
+                      ref={officialSigRef}
+                      className="rounded-xl"
+                      heightClass="h-56"
+                    />
+                    <p className="absolute bottom-2 right-3 text-xs text-default-400 pointer-events-none select-none">
+                      Ký tại đây
+                    </p>
                   </div>
                   <div className="flex gap-2 mt-3">
-                    <Button size="sm" variant="flat" className="flex-1" onPress={() => clearSig(officialSigRef, setOfficialSignature)}>
+                    <Button
+                      className="flex-1"
+                      size="sm"
+                      variant="flat"
+                      onPress={() =>
+                        clearSig(officialSigRef, setOfficialSignature)
+                      }
+                    >
                       Xóa
                     </Button>
-                    <Button size="sm" color="success" className="flex-1 font-medium text-white" onPress={() => saveSig(officialSigRef, setOfficialSignature, "chữ ký chính thức")}>
+                    <Button
+                      className="flex-1 font-medium text-white"
+                      color="success"
+                      size="sm"
+                      onPress={() =>
+                        saveSig(
+                          officialSigRef,
+                          setOfficialSignature,
+                          "chữ ký chính thức",
+                        )
+                      }
+                    >
                       Xác nhận chữ ký
                     </Button>
                   </div>
@@ -279,13 +398,21 @@ export default function LoanSignPage() {
               ) : (
                 <div>
                   <div className="border border-success-200 rounded-xl p-3 bg-white dark:bg-white">
-                    <img src={officialSignature} alt="Chữ ký chính thức" className="w-full h-44 object-contain bg-white" />
+                    <img
+                      alt="Chữ ký chính thức"
+                      className="w-full h-44 object-contain bg-white"
+                      src={officialSignature}
+                    />
                   </div>
                   <Button
-                    size="sm" variant="flat" color="danger"
                     className="mt-2 w-full"
+                    color="danger"
+                    size="sm"
                     startContent={<Trash2 className="w-3.5 h-3.5" />}
-                    onPress={() => clearSig(officialSigRef, setOfficialSignature)}
+                    variant="flat"
+                    onPress={() =>
+                      clearSig(officialSigRef, setOfficialSignature)
+                    }
                   >
                     Ký lại
                   </Button>
@@ -296,9 +423,18 @@ export default function LoanSignPage() {
 
           {/* Agreement */}
           <div className="bg-content1 rounded-2xl border border-default-200 px-4 py-3">
-            <Checkbox isSelected={isAgreed} onValueChange={setIsAgreed} size="sm" color="primary">
+            <Checkbox
+              color="primary"
+              isSelected={isAgreed}
+              size="sm"
+              onValueChange={setIsAgreed}
+            >
               <span className="text-sm text-default-700">
-                Tôi đã đọc, hiểu và đồng ý với tất cả <span className="text-primary font-medium">{contractTabs.length} hợp đồng</span> và các điều khoản liên quan
+                Tôi đã đọc, hiểu và đồng ý với tất cả{" "}
+                <span className="text-primary font-medium">
+                  {contractTabs.length} hợp đồng
+                </span>{" "}
+                và các điều khoản liên quan
               </span>
             </Checkbox>
           </div>
@@ -308,17 +444,25 @@ export default function LoanSignPage() {
         <div className="fixed bottom-0 left-0 right-0 bg-background border-t border-default-200 px-4 py-4">
           {!canSubmit && (
             <p className="text-xs text-default-400 text-center mb-2">
-              {!draftSignature && !officialSignature ? "Cần ký cả 2 chữ ký" : !draftSignature ? "Còn thiếu chữ ký nháy" : !officialSignature ? "Còn thiếu chữ ký chính thức" : "Vui lòng tích đồng ý điều khoản"}
+              {!canSign
+                ? "Chưa có hợp đồng để ký. Liên hệ nhân viên tạo hợp đồng trước."
+                : !draftSignature && !officialSignature
+                  ? "Cần ký cả 2 chữ ký"
+                  : !draftSignature
+                    ? "Còn thiếu chữ ký nháy"
+                    : !officialSignature
+                      ? "Còn thiếu chữ ký chính thức"
+                      : "Vui lòng tích đồng ý điều khoản"}
             </p>
           )}
           <Button
-            color="primary"
-            size="lg"
             className="w-full font-semibold text-base"
-            startContent={!isSigning && <CheckCircle className="w-5 h-5" />}
-            onPress={handleSign}
+            color="primary"
             isDisabled={!canSubmit || isSigning}
             isLoading={isSigning}
+            size="lg"
+            startContent={!isSigning && <CheckCircle className="w-5 h-5" />}
+            onPress={handleSign}
           >
             {isSigning ? "Đang xử lý..." : "Hoàn tất ký hợp đồng"}
           </Button>
@@ -337,7 +481,9 @@ export default function LoanSignPage() {
             <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
               <FileText className="w-3.5 h-3.5 text-white" />
             </div>
-            <p className="font-bold text-sm text-foreground">Xem & Ký Hợp Đồng</p>
+            <p className="font-bold text-sm text-foreground">
+              Xem & Ký Hợp Đồng
+            </p>
           </div>
           {/* Progress dots */}
           <div className="flex gap-1.5">
@@ -345,21 +491,24 @@ export default function LoanSignPage() {
             <div className="w-2 h-2 rounded-full bg-default-200" />
           </div>
         </div>
-        <p className="text-xs text-default-400 mb-3">Bước 1 / 2 — Vui lòng đọc kỹ các hợp đồng trước khi ký</p>
+        <p className="text-xs text-default-400 mb-3">
+          Bước 1 / 2 — Vui lòng đọc kỹ các hợp đồng trước khi ký
+        </p>
 
         {/* Tab bar */}
         <div className="flex gap-1.5">
           {contractTabs.map((t) => {
             const isActive = t.key === selectedContractType;
+
             return (
               <button
                 key={t.key}
-                onClick={() => setSelectedContractType(t.key)}
                 className={`flex-1 py-2 px-1 rounded-lg text-xs font-medium transition-all ${
                   isActive
                     ? "bg-primary text-white shadow-sm shadow-primary/30"
                     : "bg-default-100 text-default-500 hover:bg-default-200"
                 }`}
+                onClick={() => setSelectedContractType(t.key)}
               >
                 {t.label}
               </button>
@@ -376,35 +525,59 @@ export default function LoanSignPage() {
             <p className="text-sm text-default-400">Đang tải hợp đồng...</p>
           </div>
         ) : contractData ? (
-          <div className="bg-content1 mx-3 my-4 rounded-2xl overflow-hidden border border-default-200">
-            {/* Contract label */}
-            <div className="px-4 py-2.5 border-b border-default-100 flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">
-                {currentTabIndex + 1}
-              </span>
-              <p className="text-xs font-medium text-default-600">
-                {contractTabs[currentTabIndex]?.label}
+          canSign ? (
+            <div className="bg-content1 mx-3 my-4 rounded-2xl overflow-hidden border border-default-200">
+              {/* Contract label */}
+              <div className="px-4 py-2.5 border-b border-default-100 flex items-center gap-2">
+                <span className="w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold">
+                  {currentTabIndex + 1}
+                </span>
+                <p className="text-xs font-medium text-default-600">
+                  {contractTabs[currentTabIndex]?.label}
+                </p>
+              </div>
+              <div className="p-4 flex justify-center overflow-x-auto">
+                {selectedContractType === CONTRACT_TYPE.ASSET_PLEDGE &&
+                  contractData?.pledgeContract && (
+                    <AssetPledgeContractView
+                      data={contractData.pledgeContract}
+                    />
+                  )}
+                {selectedContractType === CONTRACT_TYPE.ASSET_LEASE &&
+                  contractData?.leaseContract && (
+                    <AssetLeaseContractView data={contractData.leaseContract} />
+                  )}
+                {selectedContractType === CONTRACT_TYPE.FULL_PAYMENT &&
+                  contractData?.paymentConfirmation && (
+                    <FullPaymentConfirmationView
+                      data={contractData.paymentConfirmation}
+                    />
+                  )}
+                {selectedContractType === CONTRACT_TYPE.ASSET_DISPOSAL &&
+                  contractData?.disposalAuthorization && (
+                    <AssetDisposalAuthorizationView
+                      data={contractData.disposalAuthorization}
+                    />
+                  )}
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-32 gap-3 px-6 text-center">
+              <FileText className="w-12 h-12 text-warning" />
+              <p className="text-default-700 font-medium">
+                Chưa có hợp đồng để ký
+              </p>
+              <p className="text-default-500 text-sm">
+                Vui lòng liên hệ nhân viên tạo hợp đồng PDF trước khi ký.
               </p>
             </div>
-            <div className="p-4 flex justify-center overflow-x-auto">
-              {selectedContractType === CONTRACT_TYPE.ASSET_PLEDGE && contractData?.pledgeContract && (
-                <AssetPledgeContractView data={contractData.pledgeContract} />
-              )}
-              {selectedContractType === CONTRACT_TYPE.ASSET_LEASE && contractData?.leaseContract && (
-                <AssetLeaseContractView data={contractData.leaseContract} />
-              )}
-              {selectedContractType === CONTRACT_TYPE.FULL_PAYMENT && contractData?.paymentConfirmation && (
-                <FullPaymentConfirmationView data={contractData.paymentConfirmation} />
-              )}
-              {selectedContractType === CONTRACT_TYPE.ASSET_DISPOSAL && contractData?.disposalAuthorization && (
-                <AssetDisposalAuthorizationView data={contractData.disposalAuthorization} />
-              )}
-            </div>
-          </div>
+          )
         ) : (
           <div className="flex flex-col items-center justify-center py-32 gap-3 px-6 text-center">
             <FileText className="w-12 h-12 text-default-300" />
-            <p className="text-default-500 text-sm">Không thể tải dữ liệu hợp đồng</p>
+            <p className="text-default-500 text-sm">
+              Không thể tải dữ liệu hợp đồng
+            </p>
           </div>
         )}
       </div>
@@ -414,10 +587,13 @@ export default function LoanSignPage() {
         {/* Tab navigation hint */}
         <div className="flex items-center justify-between mb-3">
           <Button
-            size="sm" variant="flat"
             isDisabled={currentTabIndex === 0}
-            onPress={() => setSelectedContractType(contractTabs[currentTabIndex - 1].key)}
+            size="sm"
             startContent={<ChevronLeft className="w-3.5 h-3.5" />}
+            variant="flat"
+            onPress={() =>
+              setSelectedContractType(contractTabs[currentTabIndex - 1].key)
+            }
           >
             Trước
           </Button>
@@ -425,21 +601,24 @@ export default function LoanSignPage() {
             {currentTabIndex + 1} / {contractTabs.length} hợp đồng
           </p>
           <Button
-            size="sm" variant="flat"
-            isDisabled={currentTabIndex === contractTabs.length - 1}
-            onPress={() => setSelectedContractType(contractTabs[currentTabIndex + 1].key)}
             endContent={<ChevronRight className="w-3.5 h-3.5" />}
+            isDisabled={currentTabIndex === contractTabs.length - 1}
+            size="sm"
+            variant="flat"
+            onPress={() =>
+              setSelectedContractType(contractTabs[currentTabIndex + 1].key)
+            }
           >
             Tiếp
           </Button>
         </div>
         <Button
-          color="primary"
-          size="lg"
           className="w-full font-semibold text-base"
+          color="primary"
           endContent={<ChevronRight className="w-5 h-5" />}
+          isDisabled={isLoading || !contractData || !canSign}
+          size="lg"
           onPress={() => setStep("sign")}
-          isDisabled={isLoading || !contractData}
         >
           Tiếp tục ký hợp đồng
         </Button>

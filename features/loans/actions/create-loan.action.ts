@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { ZodError } from "zod";
+
 import { CreateLoanSchema } from "./create-loan.schema";
+
 import { upsertCustomerService } from "@/services/customers/customers.service";
 import {
   createLoanService,
@@ -16,9 +18,6 @@ import { TCreateLoanPayload } from "@/types/loan.types";
 import { createLoanFolder } from "@/lib/google-drive";
 import { env } from "@/config/env";
 import { calculateAppraisalFee } from "@/lib/loan-calculation";
-import {
-  createLoanPaymentScheduleService,
-} from "@/services/payments/payment-periods.service";
 import { getCurrentUser } from "@/lib/actions/auth";
 import { getProfileById } from "@/services/profiles.service";
 import { ROLES } from "@/constants/roles";
@@ -36,6 +35,7 @@ export const createLoanAction = async (
   try {
     // Lấy thông tin user đang đăng nhập
     const currentUser = await getCurrentUser();
+
     if (!currentUser) {
       return {
         success: false,
@@ -47,7 +47,9 @@ export const createLoanAction = async (
     const profile = await getProfileById(currentUser.id);
     const isAdmin = profile?.role === ROLES.ADMIN;
     // Admin: dùng branch_id từ payload (có thể chọn), user thường: dùng branch_id của chính họ
-    const branchId = isAdmin ? (payload.branch_id ?? null) : (profile?.branch_id ?? null);
+    const branchId = isAdmin
+      ? (payload.branch_id ?? null)
+      : (profile?.branch_id ?? null);
 
     const input = CreateLoanSchema.parse({
       ...payload,
@@ -55,6 +57,7 @@ export const createLoanAction = async (
     });
 
     const parentFolderId = env.SHORT_LOAN_GOOGLE_DRIVE_FOLDER_ID;
+
     if (!parentFolderId) {
       return {
         success: false,
@@ -108,6 +111,7 @@ export const createLoanAction = async (
         relationship: r.relationship ?? null,
       })),
     });
+
     createdLoanId = id;
 
     const folderId = await createLoanFolder({
@@ -121,17 +125,9 @@ export const createLoanAction = async (
       driveFolderId: folderId,
     });
 
-    const signedAt = new Date().toISOString();
-
-    await createLoanPaymentScheduleService({
-      loanId: id,
-      loanAmount: amount,
-      loanType: loanPackage,
-      signedAt,
-    });
-
     revalidatePath("/");
     createdLoanId = null;
+
     return { success: true, data: { id, code, folderId } };
   } catch (err) {
     if (createdLoanId) {
@@ -150,6 +146,7 @@ export const createLoanAction = async (
     if (err instanceof Error) {
       return { success: false, error: err.message };
     }
+
     return { success: false, error: "Đã xảy ra lỗi khi tạo khoản vay" };
   }
 };

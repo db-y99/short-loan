@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireActiveStaffUser } from "@/lib/auth/api-auth";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id: loanId } = await params;
@@ -13,22 +15,17 @@ export async function POST(
     if (!content?.trim()) {
       return NextResponse.json(
         { success: false, error: "Nội dung tin nhắn không được để trống" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const supabase = await createSupabaseServerClient();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const staff = await requireActiveStaffUser();
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 },
-      );
-    }
+    if (!staff.ok) return staff.response;
+
+    const { user } = staff;
 
     // Insert message into loan_activity_logs
     const { data, error } = await supabase
@@ -45,18 +42,20 @@ export async function POST(
 
     if (error) {
       console.error("Error inserting message:", error);
+
       return NextResponse.json(
         { success: false, error: "Không thể gửi tin nhắn" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error("Error in POST /api/loans/[id]/messages:", error);
+
     return NextResponse.json(
       { success: false, error: "Lỗi server" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

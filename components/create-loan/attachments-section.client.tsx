@@ -1,13 +1,13 @@
 "use client";
 
+import type { TUploadFiles } from "@/types/loan.types";
+
 import { Button } from "@heroui/button";
 import { Image } from "@heroui/image";
 import { Divider } from "@heroui/divider";
 import { Chip } from "@heroui/chip";
 import { ImagePlus, X } from "lucide-react";
 import { useEffect, useMemo, useRef } from "react";
-
-import type { TUploadFiles } from "@/types/loan.types";
 
 type TProps = {
   attachments: File[];
@@ -64,9 +64,9 @@ const AttachmentsSection = ({
         </Button>
         <input
           ref={fileInputRef}
+          multiple
           accept="image/*"
           className="hidden"
-          multiple
           type="file"
           onChange={handleFileChange}
         />
@@ -85,7 +85,7 @@ const AttachmentsSection = ({
                 <span className="text-sm font-medium text-default-600">
                   Ảnh từ hợp đồng cũ
                 </span>
-                <Chip size="sm" variant="flat" color="primary">
+                <Chip color="primary" size="sm" variant="flat">
                   {existingImages.length}
                 </Chip>
               </div>
@@ -156,7 +156,9 @@ const AttachmentsSection = ({
                       </Button>
                     </div>
                     <div className="p-1.5 bg-default-50">
-                      <p className="text-xs text-default-500 truncate">{file.name}</p>
+                      <p className="text-xs text-default-500 truncate">
+                        {file.name}
+                      </p>
                     </div>
                   </div>
                 ))}

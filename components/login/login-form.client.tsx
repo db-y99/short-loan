@@ -7,10 +7,15 @@ import { Input } from "@heroui/input";
 import { Divider } from "@heroui/divider";
 import { Tabs, Tab } from "@heroui/tabs";
 import { useRouter, useSearchParams } from "next/navigation";
+
 import { siteConfig } from "@/config/site";
 import { ROUTES } from "@/constants/routes";
 import { useAuth } from "@/lib/contexts/auth-context";
-import { OtpInput, CountdownTimer, OtpExpiryTimer } from "@/components/auth/otp-input";
+import {
+  OtpInput,
+  CountdownTimer,
+  OtpExpiryTimer,
+} from "@/components/auth/otp-input";
 import {
   signInWithEmailPassword,
   sendOtpToEmail,
@@ -48,6 +53,7 @@ export default function LoginForm() {
 
   useEffect(() => {
     const errorParam = searchParams.get("error");
+
     if (errorParam && ERROR_MESSAGES[errorParam]) {
       setError(ERROR_MESSAGES[errorParam]);
     }
@@ -59,17 +65,21 @@ export default function LoginForm() {
 
     if (!email.trim()) {
       setError("Vui lòng nhập email.");
+
       return;
     }
     if (!password) {
       setError("Vui lòng nhập mật khẩu.");
+
       return;
     }
 
     startTransition(async () => {
       const result = await signInWithEmailPassword(email, password);
+
       if (result?.error) {
         setError(result.error);
+
         return;
       }
       await refresh();
@@ -84,13 +94,16 @@ export default function LoginForm() {
 
     if (!email.trim()) {
       setError("Vui lòng nhập email.");
+
       return;
     }
 
     startTransition(async () => {
       const result = await sendOtpToEmail(email);
+
       if (result?.error) {
         setError(result.error);
+
         return;
       }
 
@@ -104,17 +117,21 @@ export default function LoginForm() {
 
   const handleVerifyOtp = (code?: string) => {
     const codeToVerify = code || otpCode;
+
     setError(null);
 
     if (!codeToVerify.trim() || codeToVerify.trim().length < 6) {
       setError("Vui lòng nhập đủ 6 số mã OTP.");
+
       return;
     }
 
     startTransition(async () => {
       const result = await verifyEmailOtp(email, codeToVerify);
+
       if (result?.error) {
         setError(result.error);
+
         return;
       }
       await refresh();
@@ -128,16 +145,18 @@ export default function LoginForm() {
 
     startTransition(async () => {
       const result = await resendOtp(email);
+
       if (result?.error) {
         setError(result.error);
+
         return;
       }
-      
+
       // Reset OTP input và restart timer
       setOtpCode("");
       setOtpSentMessage(result.message || "Mã OTP mới đã được gửi.");
       setOtpSentTime(Date.now());
-      
+
       // Force restart timer by toggling showResendTimer
       setShowResendTimer(false);
       setTimeout(() => setShowResendTimer(true), 100);
@@ -194,41 +213,41 @@ export default function LoginForm() {
             )}
 
             <Tabs
-              selectedKey={loginMode}
-              onSelectionChange={handleModeChange}
               fullWidth
+              selectedKey={loginMode}
               variant="bordered"
+              onSelectionChange={handleModeChange}
             >
               <Tab key="password" title="Email & mật khẩu">
                 <form
-                  onSubmit={handleEmailPasswordSubmit}
                   className="flex flex-col gap-4 mt-2"
+                  onSubmit={handleEmailPasswordSubmit}
                 >
                   <Input
-                    type="email"
-                    label="Email"
-                    value={email}
-                    onValueChange={setEmail}
                     isRequired
                     autoComplete="email"
                     isDisabled={isPending}
+                    label="Email"
+                    type="email"
+                    value={email}
+                    onValueChange={setEmail}
                   />
                   <Input
-                    type="password"
-                    label="Mật khẩu"
-                    value={password}
-                    onValueChange={setPassword}
                     isRequired
                     autoComplete="current-password"
                     isDisabled={isPending}
+                    label="Mật khẩu"
+                    type="password"
+                    value={password}
+                    onValueChange={setPassword}
                   />
                   <Button
-                    type="submit"
                     fullWidth
-                    size="lg"
                     color="primary"
-                    isLoading={isPending}
                     isDisabled={isPending}
+                    isLoading={isPending}
+                    size="lg"
+                    type="submit"
                   >
                     Đăng nhập
                   </Button>
@@ -239,25 +258,25 @@ export default function LoginForm() {
                 <div className="mt-2">
                   {otpStep === "email" ? (
                     <form
-                      onSubmit={handleSendOtp}
                       className="flex flex-col gap-4"
+                      onSubmit={handleSendOtp}
                     >
                       <Input
-                        type="email"
-                        label="Email"
-                        value={email}
-                        onValueChange={setEmail}
                         isRequired
                         autoComplete="email"
                         isDisabled={isPending}
+                        label="Email"
+                        type="email"
+                        value={email}
+                        onValueChange={setEmail}
                       />
                       <Button
-                        type="submit"
                         fullWidth
-                        size="lg"
                         color="primary"
-                        isLoading={isPending}
                         isDisabled={isPending}
+                        isLoading={isPending}
+                        size="lg"
+                        type="submit"
                       >
                         Gửi mã OTP
                       </Button>
@@ -273,17 +292,19 @@ export default function LoginForm() {
                           Nhập mã OTP (6 số)
                         </p>
                         <OtpInput
+                          disabled={isPending}
                           value={otpCode}
                           onChange={setOtpCode}
                           onComplete={handleVerifyOtp}
-                          disabled={isPending}
                         />
 
                         {otpSentTime && (
                           <OtpExpiryTimer
                             expirySeconds={3600} // 1 hour
                             onExpiry={() => {
-                              setError("Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.");
+                              setError(
+                                "Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.",
+                              );
                               setOtpStep("email");
                               setOtpSentTime(null);
                             }}
@@ -293,13 +314,14 @@ export default function LoginForm() {
                         {showResendTimer && (
                           <div className="space-y-2">
                             <CountdownTimer
+                              disabled={isPending}
                               initialSeconds={60}
                               onResend={handleResendOtp}
-                              disabled={isPending}
                             />
                             <div className="text-center">
                               <p className="text-xs text-default-400">
-                                Không nhận được email? Kiểm tra thư mục spam hoặc thử gửi lại
+                                Không nhận được email? Kiểm tra thư mục spam
+                                hoặc thử gửi lại
                               </p>
                             </div>
                           </div>
@@ -308,22 +330,22 @@ export default function LoginForm() {
 
                       <Button
                         fullWidth
-                        size="lg"
                         color="primary"
-                        onPress={() => handleVerifyOtp()}
-                        isLoading={isPending}
                         isDisabled={isPending || otpCode.length < 6}
+                        isLoading={isPending}
+                        size="lg"
+                        onPress={() => handleVerifyOtp()}
                       >
                         Xác thực
                       </Button>
 
                       <Button
-                        type="button"
                         fullWidth
-                        variant="flat"
-                        size="sm"
-                        onPress={handleBackToOtpEmail}
                         isDisabled={isPending}
+                        size="sm"
+                        type="button"
+                        variant="flat"
+                        onPress={handleBackToOtpEmail}
                       >
                         Đổi email khác
                       </Button>
@@ -336,7 +358,9 @@ export default function LoginForm() {
             <Divider className="my-2" />
 
             <div className="text-center">
-              <p className="text-xs text-default-500">{INTERNAL_SUPPORT_TEXT}</p>
+              <p className="text-xs text-default-500">
+                {INTERNAL_SUPPORT_TEXT}
+              </p>
             </div>
           </CardBody>
 

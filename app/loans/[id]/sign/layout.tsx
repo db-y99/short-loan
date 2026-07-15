@@ -1,3 +1,7 @@
-export default function SignLayout({ children }: { children: React.ReactNode }) {
+export default function SignLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return <>{children}</>;
 }

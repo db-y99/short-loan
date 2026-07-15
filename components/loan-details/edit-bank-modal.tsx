@@ -1,5 +1,7 @@
 "use client";
 
+import type { TBankFormData } from "@/types/bank.types";
+
 import { useState, useEffect } from "react";
 import {
   Modal,
@@ -12,7 +14,6 @@ import { Button } from "@heroui/button";
 import { Input } from "@heroui/input";
 import { Loader2, Building2, CheckCircle, XCircle } from "lucide-react";
 import { addToast } from "@heroui/toast";
-import type { TBankFormData } from "@/types/bank.types";
 
 type TProps = {
   isOpen: boolean;
@@ -56,14 +57,17 @@ const EditBankModal = ({
     // Validate
     if (!formData.bank_name.trim()) {
       setMessage({ type: "error", text: "Vui lòng nhập tên ngân hàng" });
+
       return;
     }
     if (!formData.bank_account_holder.trim()) {
       setMessage({ type: "error", text: "Vui lòng nhập chủ tài khoản" });
+
       return;
     }
     if (!formData.bank_account_number.trim()) {
       setMessage({ type: "error", text: "Vui lòng nhập số tài khoản" });
+
       return;
     }
 
@@ -115,9 +119,9 @@ const EditBankModal = ({
   return (
     <Modal
       isOpen={isOpen}
-      onClose={handleClose}
-      size="2xl"
       scrollBehavior="inside"
+      size="2xl"
+      onClose={handleClose}
     >
       <ModalContent>
         <form onSubmit={handleSubmit}>
@@ -145,50 +149,50 @@ const EditBankModal = ({
             )}
 
             <Input
+              isRequired
+              isDisabled={isSubmitting}
               label="Ngân hàng"
               placeholder="Vietcombank"
               value={formData.bank_name}
               onValueChange={(value) =>
                 setFormData({ ...formData, bank_name: value })
               }
-              isRequired
-              isDisabled={isSubmitting}
             />
 
             <Input
+              isRequired
+              isDisabled={isSubmitting}
               label="Chủ tài khoản"
               placeholder="NGUYEN VAN A"
               value={formData.bank_account_holder}
               onValueChange={(value) =>
                 setFormData({ ...formData, bank_account_holder: value })
               }
-              isRequired
-              isDisabled={isSubmitting}
             />
 
             <Input
+              isRequired
+              isDisabled={isSubmitting}
               label="Số tài khoản"
               placeholder="1234567890"
               value={formData.bank_account_number}
               onValueChange={(value) =>
                 setFormData({ ...formData, bank_account_number: value })
               }
-              isRequired
-              isDisabled={isSubmitting}
             />
           </ModalBody>
 
           <ModalFooter>
             <Button
+              isDisabled={isSubmitting}
               variant="flat"
               onPress={handleClose}
-              isDisabled={isSubmitting}
             >
               Hủy
             </Button>
             <Button
               color="primary"
-              type="submit"
+              isDisabled={isSubmitting}
               startContent={
                 isSubmitting ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -196,7 +200,7 @@ const EditBankModal = ({
                   <Building2 className="w-4 h-4" />
                 )
               }
-              isDisabled={isSubmitting}
+              type="submit"
             >
               {isSubmitting ? "Đang cập nhật..." : "Cập nhật"}
             </Button>

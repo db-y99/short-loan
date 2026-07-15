@@ -3,10 +3,10 @@
  */
 
 export const CONTRACT_ORDER = [
-  "asset_pledge_contract",      // HĐ Cầm Cố Tài Sản
-  "asset_lease_contract",        // HĐ Thuê Tài Sản
-  "full_payment_confirmation",   // XN Đã Nhận Đủ Tiền
-  "asset_disposal_authorization" // Ủy Quyền Xử Lý TS
+  "asset_pledge_contract", // HĐ Cầm Cố Tài Sản
+  "asset_lease_contract", // HĐ Thuê Tài Sản
+  "full_payment_confirmation", // XN Đã Nhận Đủ Tiền
+  "asset_disposal_authorization", // Ủy Quyền Xử Lý TS
 ] as const;
 
 export const GENERATABLE_LOAN_FILE_TYPES = new Set<string>(CONTRACT_ORDER);
@@ -19,7 +19,9 @@ export function isSignedContractFileName(name: string): boolean {
 
 type TContractFileLike = { name: string; type: string };
 
-export function splitLoanContractFiles<T extends TContractFileLike>(files: T[]) {
+export function splitLoanContractFiles<T extends TContractFileLike>(
+  files: T[],
+) {
   const contractFiles = files.filter((file) =>
     GENERATABLE_LOAN_FILE_TYPES.has(file.type),
   );
@@ -61,10 +63,13 @@ export function needsSignedContractRepair({
 /**
  * Sắp xếp danh sách contracts/files theo thứ tự mong muốn
  */
-export function sortContractsByType<T extends { type: string }>(items: T[]): T[] {
+export function sortContractsByType<T extends { type: string }>(
+  items: T[],
+): T[] {
   return [...items].sort((a, b) => {
     const indexA = CONTRACT_ORDER.indexOf(a.type as any);
     const indexB = CONTRACT_ORDER.indexOf(b.type as any);
+
     return indexA - indexB;
   });
 }
@@ -74,5 +79,6 @@ export function getUnsignedContractTypesFromFiles<T extends TContractFileLike>(
   files: T[],
 ): string[] {
   const { unsignedContractFiles } = splitLoanContractFiles(files);
+
   return sortContractsByType(unsignedContractFiles).map((file) => file.type);
 }

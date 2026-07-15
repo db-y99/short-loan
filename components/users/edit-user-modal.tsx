@@ -1,5 +1,7 @@
 "use client";
 
+import type { TBranch } from "@/types/branch.types";
+
 import { useState, useEffect } from "react";
 import {
   Modal,
@@ -13,8 +15,8 @@ import { Input } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Loader2, Edit, CheckCircle, XCircle } from "lucide-react";
 import { addToast } from "@heroui/toast";
+
 import { Profile } from "@/services/profiles.service";
-import type { TBranch } from "@/types/branch.types";
 
 type TProps = {
   isOpen: boolean;
@@ -24,7 +26,13 @@ type TProps = {
   branches?: TBranch[];
 };
 
-const EditUserModal = ({ isOpen, onClose, user, onSuccess, branches = [] }: TProps) => {
+const EditUserModal = ({
+  isOpen,
+  onClose,
+  user,
+  onSuccess,
+  branches = [],
+}: TProps) => {
   const [formData, setFormData] = useState({
     email: "",
     full_name: "",
@@ -50,13 +58,16 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess, branches = [] }: TPro
   const handleSubmit = async () => {
     if (!formData.email.trim() || !formData.full_name.trim()) {
       setMessage({ type: "error", text: "Vui lòng điền đầy đủ thông tin" });
+
       return;
     }
 
     // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (!emailRegex.test(formData.email)) {
       setMessage({ type: "error", text: "Email không hợp lệ" });
+
       return;
     }
 
@@ -78,7 +89,7 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess, branches = [] }: TPro
           description: "Cập nhật thông tin người dùng thành công",
           color: "success",
         });
-        
+
         setMessage(null);
         onClose();
         onSuccess();
@@ -101,7 +112,7 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess, branches = [] }: TPro
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="md">
+    <Modal isOpen={isOpen} size="md" onClose={handleClose}>
       <ModalContent>
         <ModalHeader className="flex items-center gap-2">
           <Edit className="w-5 h-5 text-primary" />
@@ -127,34 +138,39 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess, branches = [] }: TPro
 
           <div className="space-y-4">
             <Input
-              label="Email"
-              placeholder="Nhập email người dùng"
-              value={formData.email}
-              onValueChange={(value) => setFormData({ ...formData, email: value })}
-              type="email"
               isRequired
               isDisabled={isSubmitting}
+              label="Email"
+              placeholder="Nhập email người dùng"
+              type="email"
+              value={formData.email}
+              onValueChange={(value) =>
+                setFormData({ ...formData, email: value })
+              }
             />
 
             <Input
+              isRequired
+              isDisabled={isSubmitting}
               label="Họ và tên"
               placeholder="Nhập họ và tên"
               value={formData.full_name}
-              onValueChange={(value) => setFormData({ ...formData, full_name: value })}
-              isRequired
-              isDisabled={isSubmitting}
+              onValueChange={(value) =>
+                setFormData({ ...formData, full_name: value })
+              }
             />
 
             {branches.length > 0 && (
               <Select
+                isDisabled={isSubmitting}
                 label="Chi nhánh"
                 placeholder="Chọn chi nhánh"
                 selectedKeys={formData.branch_id ? [formData.branch_id] : []}
                 onSelectionChange={(keys) => {
-                  const val = Array.from(keys)[0] as string || "";
+                  const val = (Array.from(keys)[0] as string) || "";
+
                   setFormData({ ...formData, branch_id: val });
                 }}
-                isDisabled={isSubmitting}
               >
                 {branches.map((b) => (
                   <SelectItem key={b.id}>{b.name}</SelectItem>
@@ -168,13 +184,20 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess, branches = [] }: TPro
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="flat" onPress={handleClose} isDisabled={isSubmitting}>
+          <Button
+            isDisabled={isSubmitting}
+            variant="flat"
+            onPress={handleClose}
+          >
             Hủy
           </Button>
           <Button
             color="primary"
-            onPress={handleSubmit}
-            isDisabled={isSubmitting || !formData.email.trim() || !formData.full_name.trim()}
+            isDisabled={
+              isSubmitting ||
+              !formData.email.trim() ||
+              !formData.full_name.trim()
+            }
             startContent={
               isSubmitting ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -182,6 +205,7 @@ const EditUserModal = ({ isOpen, onClose, user, onSuccess, branches = [] }: TPro
                 <Edit className="w-4 h-4" />
               )
             }
+            onPress={handleSubmit}
           >
             {isSubmitting ? "Đang cập nhật..." : "Cập nhật"}
           </Button>

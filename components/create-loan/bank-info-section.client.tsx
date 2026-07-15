@@ -1,9 +1,9 @@
 "use client";
 
+import type { TCreateLoanForm } from "@/types/loan.types";
+
 import { Input } from "@heroui/input";
 import { Divider } from "@heroui/divider";
-
-import type { TCreateLoanForm } from "@/types/loan.types";
 
 type TProps = {
   form: TCreateLoanForm;

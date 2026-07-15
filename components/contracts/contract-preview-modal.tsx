@@ -1,5 +1,7 @@
 "use client";
 
+import type { TLoanFile } from "@/types/loan.types";
+
 import { useState, useEffect, useLayoutEffect, useRef } from "react";
 import {
   Modal,
@@ -10,7 +12,6 @@ import {
 } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Loader2, Download, X, ChevronLeft, ChevronRight } from "lucide-react";
-import type { TLoanFile } from "@/types/loan.types";
 
 type TProps = {
   isOpen: boolean;
@@ -54,6 +55,7 @@ const ContractPreviewModal = ({
         Math.max(initialIndex, 0),
         Math.max(contracts.length - 1, 0),
       );
+
       setCurrentIndex(safeIndex);
     }
   }, [isOpen, initialIndex, contracts.length]);
@@ -85,12 +87,15 @@ const ContractPreviewModal = ({
         const response = await fetch(`/api/drive/download/${fileId}`, {
           signal: abortController.signal,
         });
+
         if (!response.ok) throw new Error("Không thể tải file PDF");
 
         const blob = await response.blob();
+
         if (abortController.signal.aborted) return;
 
         const objectUrl = URL.createObjectURL(blob);
+
         pdfUrlRef.current = objectUrl;
         setPdfUrl(objectUrl);
       } catch (err) {
@@ -123,6 +128,7 @@ const ContractPreviewModal = ({
     setIsDownloading(true);
     try {
       const link = document.createElement("a");
+
       link.href = pdfUrl;
       link.download = `${contract.name}.pdf`;
       link.click();
@@ -139,13 +145,16 @@ const ContractPreviewModal = ({
     try {
       const url = `/api/drive/download-word/${contract.fileId}`;
       const response = await fetch(url);
+
       if (!response.ok) {
         const msg = await response.text();
+
         throw new Error(msg || "Không thể tải file Word");
       }
       const blob = await response.blob();
       const objectUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
+
       link.href = objectUrl;
       link.download = `${contract.name}.docx`;
       link.click();
@@ -161,12 +170,12 @@ const ContractPreviewModal = ({
 
   return (
     <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="5xl"
-      scrollBehavior="inside"
-      classNames={{ base: "max-w-[1200px] h-[90vh]" }}
       hideCloseButton
+      classNames={{ base: "max-w-[1200px] h-[90vh]" }}
+      isOpen={isOpen}
+      scrollBehavior="inside"
+      size="5xl"
+      onClose={onClose}
     >
       <ModalContent>
         <ModalHeader className="flex items-center justify-between border-b border-default-200">
@@ -183,25 +192,25 @@ const ContractPreviewModal = ({
               <>
                 <Button
                   isIconOnly
-                  variant="light"
-                  size="sm"
-                  onPress={handlePrev}
                   isDisabled={!hasPrev || isLoading}
+                  size="sm"
+                  variant="light"
+                  onPress={handlePrev}
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </Button>
                 <Button
                   isIconOnly
-                  variant="light"
-                  size="sm"
-                  onPress={handleNext}
                   isDisabled={!hasNext || isLoading}
+                  size="sm"
+                  variant="light"
+                  onPress={handleNext}
                 >
                   <ChevronRight className="w-4 h-4" />
                 </Button>
               </>
             )}
-            <Button isIconOnly variant="light" size="sm" onPress={onClose}>
+            <Button isIconOnly size="sm" variant="light" onPress={onClose}>
               <X className="w-4 h-4" />
             </Button>
           </div>
@@ -221,8 +230,8 @@ const ContractPreviewModal = ({
           {pdfUrl && !isLoading && (
             <iframe
               key={contract.fileId}
-              src={pdfUrl}
               className="w-full h-full min-h-[600px]"
+              src={pdfUrl}
               title={contract.name}
             />
           )}
@@ -233,7 +242,7 @@ const ContractPreviewModal = ({
             Đóng
           </Button>
           <Button
-            variant="flat"
+            isDisabled={isDownloadingWord}
             startContent={
               isDownloadingWord ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -241,13 +250,14 @@ const ContractPreviewModal = ({
                 <Download className="w-4 h-4" />
               )
             }
+            variant="flat"
             onPress={handleDownloadWord}
-            isDisabled={isDownloadingWord}
           >
             {isDownloadingWord ? "Đang tải..." : "Tải xuống Word"}
           </Button>
           <Button
             color="primary"
+            isDisabled={!pdfUrl || isDownloading}
             startContent={
               isDownloading ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -256,7 +266,6 @@ const ContractPreviewModal = ({
               )
             }
             onPress={handleDownload}
-            isDisabled={!pdfUrl || isDownloading}
           >
             {isDownloading ? "Đang tải..." : "Tải xuống PDF"}
           </Button>

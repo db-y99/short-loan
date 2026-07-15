@@ -14,7 +14,11 @@ import {
   GENERATABLE_CONTRACT_TYPES,
   getGeneratableContractTypesForLoan,
 } from "@/constants/contracts";
-import { getUnsignedContractTypesFromFiles } from "@/lib/contract-utils";
+import {
+  getUnsignedContractTypesFromFiles,
+  splitLoanContractFiles,
+} from "@/lib/contract-utils";
+import { LOAN_STATUS } from "@/constants/loan";
 import {
   buildAssetPledgeContractData,
   buildAssetLeaseContractData,
@@ -32,6 +36,7 @@ type TContractDataItem = {
 async function cleanupDriveFiles(fileIds: string[]): Promise<void> {
   if (fileIds.length === 0) return;
   const { deleteManyFromDrive } = await import("@/lib/google-drive");
+
   await deleteManyFromDrive(fileIds).catch((err) => {
     console.error("[CONTRACT_DRIVE_CLEANUP_ERROR]", err);
   });
@@ -112,28 +117,33 @@ export async function generateContractsService(
     const { getLoanDetailsService } = await import(
       "@/services/loans/loans.service"
     );
+
     console.log(`[GENERATE_CONTRACTS] Fetching loan details...`);
     const loan = await getLoanDetailsService(loanId);
 
     if (!loan) {
       console.error(`[GENERATE_CONTRACTS] Loan not found: ${loanId}`);
+
       return { success: false, error: "Không tìm thấy khoản vay" };
     }
     console.log(`[GENERATE_CONTRACTS] Loan found: ${loan.code}`);
 
     // Kiểm tra trạng thái loan - chỉ cho phép tạo hợp đồng khi đã duyệt
-    if (loan.status !== "approved") {
+    if (loan.status !== LOAN_STATUS.APPROVED) {
       console.error(`[GENERATE_CONTRACTS] Invalid loan status: ${loan.status}`);
+
       return {
         success: false,
-        error: `Không thể tạo hợp đồng. Trạng thái hiện tại: ${loan.status}. Cần trạng thái: approved`,
+        error: `Không thể tạo hợp đồng. Trạng thái hiện tại: ${loan.status}. Cần trạng thái: ${LOAN_STATUS.APPROVED}`,
       };
     }
 
     // Kiểm tra drive folder
     const folderId = loan.driveFolderId;
+
     if (!folderId) {
       console.error(`[GENERATE_CONTRACTS] No drive folder for loan: ${loanId}`);
+
       return {
         success: false,
         error: "Khoản vay chưa có folder Drive. Vui lòng tạo folder trước.",
@@ -196,15 +206,21 @@ export async function generateContractsService(
     console.time("Generate PDFs");
     const pdfPromises = contractsData.map(async (contract) => {
       try {
-        const buffer = await generateContractPDFDirect(contract.data, contract.type);
+        const buffer = await generateContractPDFDirect(
+          contract.data,
+          contract.type,
+        );
+
         return buffer;
       } catch (err) {
         console.error(`[PDF_GEN_ERROR] ${contract.name}:`, err);
+
         return null;
       }
     });
-    
+
     const pdfBuffers = await Promise.all(pdfPromises);
+
     console.timeEnd("Generate PDFs");
 
     // Lọc ra các PDF thành công
@@ -241,10 +257,12 @@ export async function generateContractsService(
         folderId,
       ).catch((err: Error) => {
         console.error(`[DRIVE_UPLOAD_ERROR] ${contract.name}:`, err);
+
         return null;
-      })
+      }),
     );
     const uploadResults = await Promise.all(uploadPromises);
+
     console.timeEnd("Upload to Drive");
 
     // Lọc ra các upload thành công
@@ -268,6 +286,7 @@ export async function generateContractsService(
           .map((contract) => contract.fileId)
           .filter((id): id is string => Boolean(id)),
       );
+
       return {
         success: false,
         error:
@@ -284,6 +303,7 @@ export async function generateContractsService(
 
     if (existingRowsError) {
       console.error("[FETCH_OLD_CONTRACTS_ERROR]", existingRowsError);
+
       return {
         success: false,
         error:
@@ -308,11 +328,16 @@ export async function generateContractsService(
 
     console.timeEnd("Insert to DB");
 
-    if (insertError || !insertedRows || insertedRows.length !== rowsToInsert.length) {
+    if (
+      insertError ||
+      !insertedRows ||
+      insertedRows.length !== rowsToInsert.length
+    ) {
       console.error("[DB_BULK_INSERT_ERROR]", insertError);
       await cleanupDriveFiles(
         successfulUploads.map((contract) => contract.fileId!),
       );
+
       return {
         success: false,
         error:
@@ -321,7 +346,9 @@ export async function generateContractsService(
     }
 
     const oldIdsToDelete = (existingRows ?? []).map((row) => row.id);
-    const newDriveFileIds = successfulUploads.map((contract) => contract.fileId!);
+    const newDriveFileIds = successfulUploads.map(
+      (contract) => contract.fileId!,
+    );
     const newRowIds = insertedRows.map((row) => row.id);
 
     // BƯỚC 4: Xóa đúng bản ghi cũ đã snapshot trước khi insert mới
@@ -333,7 +360,12 @@ export async function generateContractsService(
 
       if (cleanupError) {
         console.error("[CLEANUP_OLD_CONTRACTS_ERROR]", cleanupError);
-        await rollbackInsertedContractRows(supabase, newRowIds, newDriveFileIds);
+        await rollbackInsertedContractRows(
+          supabase,
+          newRowIds,
+          newDriveFileIds,
+        );
+
         return {
           success: false,
           error:
@@ -369,6 +401,7 @@ export async function generateContractsService(
 
     if (metadataUpdateError) {
       console.error("[UPDATE_CONTRACT_VERSION_ERROR]", metadataUpdateError);
+
       return {
         success: false,
         error:
@@ -382,10 +415,10 @@ export async function generateContractsService(
     };
   } catch (error) {
     console.error("[GENERATE_CONTRACTS_ERROR]", error);
+
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Lỗi khi tạo hợp đồng",
+      error: error instanceof Error ? error.message : "Lỗi khi tạo hợp đồng",
     };
   }
 }
@@ -397,7 +430,10 @@ async function generateContractPDFDirect(
   contractData: any,
   contractType: string,
 ): Promise<Buffer> {
-  const { generateContractPDF } = await import("@/lib/pdf-generator-app-scripts");
+  const { generateContractPDF } = await import(
+    "@/lib/pdf-generator-app-scripts"
+  );
+
   return await generateContractPDF(contractData, contractType);
 }
 
@@ -469,7 +505,9 @@ export async function regenerateContractsService(
       };
     }
 
-    console.log(`[REGENERATE_CONTRACTS] Current loan status: ${currentLoan.status} (${currentLoan.code})`);
+    console.log(
+      `[REGENERATE_CONTRACTS] Current loan status: ${currentLoan.status} (${currentLoan.code})`,
+    );
 
     if (contractTypes.length === 0) {
       return {
@@ -478,8 +516,10 @@ export async function regenerateContractsService(
       };
     }
 
+    let typesToGenerate = contractTypes;
+
     const statusSnapshot =
-      currentLoan.status === "signed"
+      currentLoan.status === LOAN_STATUS.SIGNED
         ? {
             status: currentLoan.status,
             signed_at: currentLoan.signed_at,
@@ -489,50 +529,140 @@ export async function regenerateContractsService(
           }
         : null;
 
-    // Khoản vay đã ký vẫn có thể tạo lại các loại hợp đồng được chọn.
-    // Reset chữ ký để generateContractsService có thể tạo lại ở trạng thái approved.
-    if (currentLoan.status === "signed") {
-      console.log(`[REGENERATE_CONTRACTS] Resetting loan status to approved...`);
-      const { error: updateError } = await supabase
+    // Khoản vay đã ký: bắt buộc tạo lại toàn bộ loại HĐ hiện có, hủy ký, xóa lịch thanh toán cũ.
+    if (currentLoan.status === LOAN_STATUS.SIGNED) {
+      const { data: existingFiles } = await supabase
+        .from("loan_files")
+        .select("type")
+        .eq("loan_id", loanId);
+
+      const existingTypes = Array.from(
+        new Set(
+          (existingFiles ?? [])
+            .map((file) => file.type)
+            .filter((type): type is TContractType =>
+              GENERATABLE_CONTRACT_TYPES.includes(type as TContractType),
+            ),
+        ),
+      );
+
+      if (existingTypes.length === 0) {
+        return {
+          success: false,
+          error: "Không tìm thấy hợp đồng để tạo lại",
+        };
+      }
+
+      typesToGenerate = existingTypes;
+
+      const { count: txCount, error: txCountError } = await supabase
+        .from("loan_payment_transactions")
+        .select("id", { count: "exact", head: true })
+        .eq("loan_id", loanId);
+
+      if (txCountError) {
+        return {
+          success: false,
+          error: "Không thể kiểm tra lịch sử thanh toán",
+        };
+      }
+
+      if (txCount && txCount > 0) {
+        return {
+          success: false,
+          error:
+            "Không thể tạo lại hợp đồng vì đã có giao dịch thanh toán. Không thể hủy ký khi đã có thanh toán.",
+        };
+      }
+
+      console.log(
+        `[REGENERATE_CONTRACTS] Resetting loan status to approved...`,
+      );
+      const { data: resetRows, error: updateError } = await supabase
         .from("loans")
         .update({
-          status: "approved",
+          status: LOAN_STATUS.APPROVED,
           signed_at: null,
           is_signed: false,
           draft_signature_file_id: null,
           official_signature_file_id: null,
         })
         .eq("id", loanId)
-        .eq("status", "signed");
+        .eq("status", LOAN_STATUS.SIGNED)
+        .select("id");
 
-      if (updateError) {
+      if (updateError || !resetRows?.length) {
         console.error("[RESET_LOAN_STATUS_ERROR]", updateError);
+
         return {
           success: false,
-          error: "Không thể reset trạng thái khoản vay",
+          error:
+            updateError
+              ? "Không thể reset trạng thái khoản vay"
+              : "Khoản vay không còn ở trạng thái đã ký hoặc đã được xử lý",
         };
       }
+    } else if (currentLoan.status !== LOAN_STATUS.APPROVED) {
+      return {
+        success: false,
+        error: `Không thể tạo lại hợp đồng. Trạng thái hiện tại: ${currentLoan.status}. Cần trạng thái đã duyệt hoặc đã ký.`,
+      };
     }
 
     console.log(`[REGENERATE_CONTRACTS] Generating new contracts...`);
 
-    const result = await generateContractsService(loanId, contractTypes);
+    const result = await generateContractsService(loanId, typesToGenerate);
 
     if (!result.success && statusSnapshot) {
       const { error: rollbackError } = await supabase
         .from("loans")
         .update(statusSnapshot)
         .eq("id", loanId)
-        .eq("status", "approved");
+        .eq("status", LOAN_STATUS.APPROVED);
 
       if (rollbackError) {
         console.error("[REGENERATE_STATUS_ROLLBACK_ERROR]", rollbackError);
+      }
+
+      return result;
+    }
+
+    // Chỉ xóa lịch + chữ ký Drive sau khi tạo HĐ mới thành công
+    if (result.success && statusSnapshot) {
+      const { clearLoanPaymentScheduleIfNoTransactionsService } = await import(
+        "@/services/payments/payment-periods.service"
+      );
+
+      try {
+        await clearLoanPaymentScheduleIfNoTransactionsService(loanId, {
+          failIfHasTransactions: true,
+        });
+      } catch (scheduleError) {
+        console.error("[REGENERATE_CLEAR_SCHEDULE_AFTER_ERROR]", scheduleError);
+        // HĐ mới đã tạo, status đã approved — cảnh báo nhưng không rollback HĐ
+      }
+
+      const signatureDriveIds = [
+        statusSnapshot.draft_signature_file_id,
+        statusSnapshot.official_signature_file_id,
+      ].filter((id): id is string => Boolean(id));
+
+      if (signatureDriveIds.length > 0) {
+        const { deleteManyFromDrive } = await import("@/lib/google-drive");
+
+        await deleteManyFromDrive(signatureDriveIds).catch((cleanupError) => {
+          console.error(
+            "[REGENERATE_SIGNATURE_DRIVE_CLEANUP_ERROR]",
+            cleanupError,
+          );
+        });
       }
     }
 
     return result;
   } catch (error) {
     console.error("[REGENERATE_CONTRACTS_ERROR]", error);
+
     return {
       success: false,
       error:
@@ -545,9 +675,7 @@ export async function regenerateContractsService(
  * Generate 4 signed contract PDFs (sau khi ký hợp đồng)
  * Tạo PDF có chữ ký và lưu vào DB + Drive
  */
-export async function generateSignedContractsService(
-  loanId: string,
-): Promise<{
+export async function generateSignedContractsService(loanId: string): Promise<{
   success: boolean;
   contracts?: TContractFile[];
   error?: string;
@@ -560,7 +688,7 @@ export async function generateSignedContractsService(
     const { getLoanDetailsService } = await import(
       "@/services/loans/loans.service"
     );
-    
+
     const [loan, loanData] = await Promise.all([
       getLoanDetailsService(loanId),
       supabase
@@ -572,20 +700,28 @@ export async function generateSignedContractsService(
 
     if (!loan) {
       console.error(`[GENERATE_SIGNED_CONTRACTS] Loan not found: ${loanId}`);
+
       return { success: false, error: "Không tìm thấy khoản vay" };
     }
 
     // Kiểm tra drive folder
     const folderId = loan.driveFolderId;
+
     if (!folderId) {
-      console.error(`[GENERATE_SIGNED_CONTRACTS] No drive folder for loan: ${loanId}`);
+      console.error(
+        `[GENERATE_SIGNED_CONTRACTS] No drive folder for loan: ${loanId}`,
+      );
+
       return {
         success: false,
         error: "Khoản vay chưa có folder Drive",
       };
     }
 
-    if (!loanData.data?.draft_signature_file_id || !loanData.data?.official_signature_file_id) {
+    if (
+      !loanData.data?.draft_signature_file_id ||
+      !loanData.data?.official_signature_file_id
+    ) {
       return {
         success: false,
         error: "Chưa có chữ ký",
@@ -613,20 +749,21 @@ export async function generateSignedContractsService(
     // Fetch signatures and convert to base64 for PDF embedding
     let draftSignatureBase64: string | null = null;
     let officialSignatureBase64: string | null = null;
-    
+
     try {
       // Fetch signatures from Drive in parallel
       const { getFileFromDrive } = await import("@/lib/google-drive");
-      
+
       const [draftSigBuffer, officialSigBuffer] = await Promise.all([
         getFileFromDrive(loanData.data.draft_signature_file_id),
         getFileFromDrive(loanData.data.official_signature_file_id),
       ]);
-      
-      draftSignatureBase64 = `data:image/png;base64,${draftSigBuffer.toString('base64')}`;
-      officialSignatureBase64 = `data:image/png;base64,${officialSigBuffer.toString('base64')}`;
+
+      draftSignatureBase64 = `data:image/png;base64,${draftSigBuffer.toString("base64")}`;
+      officialSignatureBase64 = `data:image/png;base64,${officialSigBuffer.toString("base64")}`;
     } catch (fetchError) {
       console.error("Error fetching signatures:", fetchError);
+
       return {
         success: false,
         error: "Không thể tải chữ ký từ Drive",
@@ -662,6 +799,7 @@ export async function generateSignedContractsService(
       .filter((contract) => createdSet.has(contract.type))
       .map((contract) => {
         const meta = signedContractMeta[contract.type];
+
         if (!meta) return null;
 
         return {
@@ -675,19 +813,24 @@ export async function generateSignedContractsService(
           },
         };
       })
-      .filter((contract): contract is NonNullable<typeof contract> =>
-        contract !== null,
+      .filter(
+        (contract): contract is NonNullable<typeof contract> =>
+          contract !== null,
       );
 
     // Generate all PDFs in parallel
     console.time("Generate Signed PDFs");
     const pdfPromises = contractsData.map((contract) =>
-      generateContractPDFDirect(contract.data, contract.type).catch((err: Error) => {
-        console.error(`[SIGNED_PDF_GEN_ERROR] ${contract.name}:`, err);
-        return null;
-      })
+      generateContractPDFDirect(contract.data, contract.type).catch(
+        (err: Error) => {
+          console.error(`[SIGNED_PDF_GEN_ERROR] ${contract.name}:`, err);
+
+          return null;
+        },
+      ),
     );
     const pdfBuffers = await Promise.all(pdfPromises);
+
     console.timeEnd("Generate Signed PDFs");
 
     // Filter successful PDFs
@@ -724,10 +867,12 @@ export async function generateSignedContractsService(
         folderId,
       ).catch((err: Error) => {
         console.error(`[SIGNED_DRIVE_UPLOAD_ERROR] ${contract.name}:`, err);
+
         return null;
-      })
+      }),
     );
     const uploadResults = await Promise.all(uploadPromises);
+
     console.timeEnd("Upload Signed PDFs to Drive");
 
     // Filter successful uploads
@@ -751,6 +896,7 @@ export async function generateSignedContractsService(
           .map((contract) => contract.fileId)
           .filter((id): id is string => Boolean(id)),
       );
+
       return {
         success: false,
         error:
@@ -767,6 +913,7 @@ export async function generateSignedContractsService(
 
     if (existingRowsError) {
       console.error("[FETCH_OLD_SIGNED_CONTRACTS_ERROR]", existingRowsError);
+
       return {
         success: false,
         error:
@@ -788,13 +935,19 @@ export async function generateSignedContractsService(
       .from("loan_files")
       .insert(rowsToInsert)
       .select("id, name, type, file_id, provider");
+
     console.timeEnd("Insert Signed PDFs to DB");
 
-    if (insertError || !insertedRows || insertedRows.length !== rowsToInsert.length) {
+    if (
+      insertError ||
+      !insertedRows ||
+      insertedRows.length !== rowsToInsert.length
+    ) {
       console.error("[SIGNED_DB_BULK_INSERT_ERROR]", insertError);
       await cleanupDriveFiles(
         successfulUploads.map((contract) => contract.fileId!),
       );
+
       return {
         success: false,
         error:
@@ -804,7 +957,9 @@ export async function generateSignedContractsService(
 
     // Xóa đúng hợp đồng cũ cùng type sau khi insert mới thành công
     const oldIdsToDelete = (existingRows ?? []).map((row) => row.id);
-    const newDriveFileIds = successfulUploads.map((contract) => contract.fileId!);
+    const newDriveFileIds = successfulUploads.map(
+      (contract) => contract.fileId!,
+    );
     const newRowIds = insertedRows.map((row) => row.id);
 
     if (oldIdsToDelete.length > 0) {
@@ -815,7 +970,12 @@ export async function generateSignedContractsService(
 
       if (cleanupError) {
         console.error("[SIGNED_CLEANUP_OLD_CONTRACTS_ERROR]", cleanupError);
-        await rollbackInsertedContractRows(supabase, newRowIds, newDriveFileIds);
+        await rollbackInsertedContractRows(
+          supabase,
+          newRowIds,
+          newDriveFileIds,
+        );
+
         return {
           success: false,
           error:
@@ -844,7 +1004,11 @@ export async function generateSignedContractsService(
       .eq("id", loanId);
 
     if (metadataUpdateError) {
-      console.error("[UPDATE_SIGNED_CONTRACT_VERSION_ERROR]", metadataUpdateError);
+      console.error(
+        "[UPDATE_SIGNED_CONTRACT_VERSION_ERROR]",
+        metadataUpdateError,
+      );
+
       return {
         success: false,
         error:
@@ -852,7 +1016,9 @@ export async function generateSignedContractsService(
       };
     }
 
-    console.log(`[GENERATE_SIGNED_CONTRACTS] Successfully created ${uploadedContracts.length} signed PDFs (replaced old contracts)`);
+    console.log(
+      `[GENERATE_SIGNED_CONTRACTS] Successfully created ${uploadedContracts.length} signed PDFs (replaced old contracts)`,
+    );
 
     return {
       success: true,
@@ -860,10 +1026,90 @@ export async function generateSignedContractsService(
     };
   } catch (error) {
     console.error("[GENERATE_SIGNED_CONTRACTS_ERROR]", error);
+
     return {
       success: false,
       error:
         error instanceof Error ? error.message : "Lỗi khi tạo hợp đồng đã ký",
+    };
+  }
+}
+
+/**
+ * Hoàn tác artifact sau ký thất bại: xóa PDF đã ký và tạo lại bản chưa ký.
+ */
+export async function revertLoanSignArtifactsService(
+  loanId: string,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createSupabaseServerClient();
+
+    const { data: loanFiles, error: fetchError } = await supabase
+      .from("loan_files")
+      .select("id, type, name, file_id")
+      .eq("loan_id", loanId);
+
+    if (fetchError) {
+      return {
+        success: false,
+        error: "Không thể kiểm tra hợp đồng để hoàn tác",
+      };
+    }
+
+    const { signedContractFiles } = splitLoanContractFiles(loanFiles ?? []);
+
+    if (signedContractFiles.length === 0) {
+      return { success: true };
+    }
+
+    const typesToRestore = Array.from(
+      new Set(signedContractFiles.map((file) => file.type)),
+    ) as TContractType[];
+    const signedRowIds = signedContractFiles.map((file) => file.id);
+    const signedDriveIds = signedContractFiles
+      .map((file) => file.file_id)
+      .filter((id): id is string => Boolean(id));
+
+    if (signedRowIds.length > 0) {
+      const { error: deleteError } = await supabase
+        .from("loan_files")
+        .delete()
+        .in("id", signedRowIds);
+
+      if (deleteError) {
+        return {
+          success: false,
+          error: "Không thể xóa hợp đồng đã ký khi hoàn tác",
+        };
+      }
+    }
+
+    await cleanupDriveFiles(signedDriveIds);
+
+    const regenerateResult = await generateContractsService(
+      loanId,
+      typesToRestore,
+    );
+
+    if (!regenerateResult.success) {
+      return {
+        success: false,
+        error:
+          regenerateResult.error ??
+          "Không thể tạo lại hợp đồng chưa ký sau khi hoàn tác",
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("[REVERT_LOAN_SIGN_ARTIFACTS_ERROR]", error);
+
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Lỗi khi hoàn tác hợp đồng đã ký",
     };
   }
 }

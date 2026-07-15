@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LOAN_STATUS } from "@/constants/loan";
+import { requireAdminForPendingLoan } from "@/lib/auth/api-auth";
 
 /**
  * PATCH /api/loans/[id]/update-asset-condition
@@ -8,23 +10,15 @@ import { LOAN_STATUS } from "@/constants/loan";
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createSupabaseServerClient();
     const { id: loanId } = await params;
 
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const admin = await requireAdminForPendingLoan(loanId);
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    if (!admin.ok) return admin.response;
 
     // Get request body
     const body = await request.json();
@@ -33,7 +27,7 @@ export async function PATCH(
     if (!asset_condition || typeof asset_condition !== "string") {
       return NextResponse.json(
         { success: false, error: "Tình trạng tài sản không hợp lệ" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -46,7 +40,7 @@ export async function PATCH(
     if (loanError || !loan) {
       return NextResponse.json(
         { success: false, error: "Không tìm thấy khoản vay" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -54,9 +48,10 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          error: "Chỉ được cập nhật tình trạng tài sản khi khoản vay ở trạng thái chờ duyệt",
+          error:
+            "Chỉ được cập nhật tình trạng tài sản khi khoản vay ở trạng thái chờ duyệt",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -68,9 +63,10 @@ export async function PATCH(
 
     if (error) {
       console.error("Error updating asset condition:", error);
+
       return NextResponse.json(
         { success: false, error: "Không thể cập nhật tình trạng tài sản" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -80,9 +76,10 @@ export async function PATCH(
     });
   } catch (error) {
     console.error("Error in update-asset-condition route:", error);
+
     return NextResponse.json(
       { success: false, error: "Lỗi server" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

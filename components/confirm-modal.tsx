@@ -39,7 +39,7 @@ const ConfirmModal = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal isOpen={isOpen} size="md" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex items-center gap-2">
           <AlertTriangle className="w-5 h-5 text-warning" />
@@ -49,14 +49,14 @@ const ConfirmModal = ({
           <div className="whitespace-pre-line text-sm">{message}</div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="flat" onPress={onClose} isDisabled={isLoading}>
+          <Button isDisabled={isLoading} variant="flat" onPress={onClose}>
             {cancelText}
           </Button>
           <Button
             color={confirmColor}
-            onPress={handleConfirm}
-            isLoading={isLoading}
             isDisabled={isLoading}
+            isLoading={isLoading}
+            onPress={handleConfirm}
           >
             {confirmText}
           </Button>

@@ -1,7 +1,7 @@
 /**
  * ImageViewer Component
  * Feature: chat-va-trao-doi-nhat-ky
- * 
+ *
  * Modal to view images in full size with zoom functionality
  */
 
@@ -61,37 +61,39 @@ export function ImageViewer({ imageUrl, isOpen, onClose }: ImageViewerProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <button
-        type="button"
-        className="absolute inset-0 bg-black bg-opacity-90"
-        onClick={onClose}
         aria-label="Đóng xem ảnh"
+        className="absolute inset-0 bg-black bg-opacity-90"
+        type="button"
+        onClick={onClose}
       />
       {/* Controls */}
       <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
         {/* Zoom controls */}
         <button
-          onClick={handleZoomOut}
-          disabled={zoom <= 0.5}
           className="rounded-lg bg-gray-900/80 backdrop-blur-sm border border-white/20 p-2.5 text-white hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg"
+          disabled={zoom <= 0.5}
           title="Thu nhỏ"
+          onClick={handleZoomOut}
         >
           <ZoomOut className="h-5 w-5" />
         </button>
-        <span className="px-3 py-1.5 rounded-lg bg-gray-900/80 backdrop-blur-sm border border-white/20 text-white font-medium min-w-[60px] text-center">{Math.round(zoom * 100)}%</span>
+        <span className="px-3 py-1.5 rounded-lg bg-gray-900/80 backdrop-blur-sm border border-white/20 text-white font-medium min-w-[60px] text-center">
+          {Math.round(zoom * 100)}%
+        </span>
         <button
-          onClick={handleZoomIn}
-          disabled={zoom >= 3}
           className="rounded-lg bg-gray-900/80 backdrop-blur-sm border border-white/20 p-2.5 text-white hover:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg"
+          disabled={zoom >= 3}
           title="Phóng to"
+          onClick={handleZoomIn}
         >
           <ZoomIn className="h-5 w-5" />
         </button>
 
         {/* Close button */}
         <button
-          onClick={onClose}
           className="rounded-lg bg-gray-900/80 backdrop-blur-sm border border-white/20 p-2.5 text-white hover:bg-red-600 transition-colors shadow-lg"
           title="Đóng (ESC)"
+          onClick={onClose}
         >
           <X className="h-5 w-5" />
         </button>
@@ -101,16 +103,16 @@ export function ImageViewer({ imageUrl, isOpen, onClose }: ImageViewerProps) {
       <div className="relative z-10 flex items-center justify-center">
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-white border-t-transparent" />
           </div>
         )}
         <img
-          src={`/api/drive/file/${imageUrl}`}
           alt="Full size"
           className="max-h-[85vh] max-w-[85vw] object-contain transition-transform duration-200"
+          src={`/api/drive/file/${imageUrl}`}
           style={{ transform: `scale(${zoom})` }}
-          onLoad={() => setIsLoading(false)}
           onError={() => setIsLoading(false)}
+          onLoad={() => setIsLoading(false)}
         />
       </div>
 

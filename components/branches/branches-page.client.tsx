@@ -1,19 +1,39 @@
 "use client";
 
+import type { TBranch } from "@/types/branch.types";
+
 import { useState } from "react";
 import { Button } from "@heroui/button";
 import { Card, CardBody } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import {
-  Table, TableHeader, TableColumn, TableBody, TableRow, TableCell,
+  Table,
+  TableHeader,
+  TableColumn,
+  TableBody,
+  TableRow,
+  TableCell,
 } from "@heroui/table";
 import {
-  Dropdown, DropdownTrigger, DropdownMenu, DropdownItem,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
 } from "@heroui/dropdown";
-import { GitBranch, Plus, MoreVertical, Edit, Trash2, ToggleLeft, ToggleRight, Star, RefreshCw } from "lucide-react";
+import {
+  GitBranch,
+  Plus,
+  MoreVertical,
+  Edit,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+  Star,
+  RefreshCw,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { addToast } from "@heroui/toast";
-import type { TBranch } from "@/types/branch.types";
+
 import BranchModal from "@/components/branches/branch-modal";
 
 type TProps = { branches: TBranch[] };
@@ -40,6 +60,7 @@ export default function BranchesPageClient({ branches }: TProps) {
       body: JSON.stringify({ _delete: true }),
     });
     const result = await res.json();
+
     if (result.success) {
       addToast({ title: "Đã xóa chi nhánh", color: "success" });
       refresh();
@@ -56,6 +77,7 @@ export default function BranchesPageClient({ branches }: TProps) {
       body: JSON.stringify({ status: newStatus }),
     });
     const result = await res.json();
+
     if (result.success) {
       addToast({ title: "Đã cập nhật trạng thái", color: "success" });
       refresh();
@@ -72,23 +94,27 @@ export default function BranchesPageClient({ branches }: TProps) {
             <GitBranch className="w-6 h-6 text-primary" />
             Quản lý chi nhánh
           </h1>
-          <p className="text-default-600 mt-1">Tổng cộng {branches.length} chi nhánh</p>
+          <p className="text-default-600 mt-1">
+            Tổng cộng {branches.length} chi nhánh
+          </p>
         </div>
         <div className="flex items-center gap-2">
-          
           <Button
             color="primary"
             startContent={<Plus className="w-4 h-4" />}
-            onPress={() => { setEditingBranch(null); setIsModalOpen(true); }}
+            onPress={() => {
+              setEditingBranch(null);
+              setIsModalOpen(true);
+            }}
           >
             Thêm chi nhánh
           </Button>
           <Button
-            variant="flat"
             isIconOnly
-            onPress={handleRefresh}
-            isLoading={isRefreshing}
             aria-label="Làm mới dữ liệu"
+            isLoading={isRefreshing}
+            variant="flat"
+            onPress={handleRefresh}
           >
             <RefreshCw className="w-4 h-4" />
           </Button>
@@ -112,8 +138,12 @@ export default function BranchesPageClient({ branches }: TProps) {
                 <TableRow key={branch.id}>
                   <TableCell>
                     {branch.code ? (
-                      <span className="font-semibold text-sm text-default-600">{branch.code}</span>
-                    ) : "—"}
+                      <span className="font-semibold text-sm text-default-600">
+                        {branch.code}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
                   </TableCell>
                   <TableCell>
                     <span className="font-medium">{branch.name}</span>
@@ -122,10 +152,17 @@ export default function BranchesPageClient({ branches }: TProps) {
                   <TableCell>{branch.phone || "—"}</TableCell>
                   <TableCell>
                     {branch.is_headquarters ? (
-                      <Chip color="warning" size="sm" variant="flat" startContent={<Star className="w-3 h-3" />}>
+                      <Chip
+                        color="warning"
+                        size="sm"
+                        startContent={<Star className="w-3 h-3" />}
+                        variant="flat"
+                      >
                         Trụ sở chính
                       </Chip>
-                    ) : "—"}
+                    ) : (
+                      "—"
+                    )}
                   </TableCell>
                   <TableCell>
                     <Chip
@@ -133,7 +170,9 @@ export default function BranchesPageClient({ branches }: TProps) {
                       size="sm"
                       variant="flat"
                     >
-                      {branch.status === "active" ? "Hoạt động" : "Ngừng hoạt động"}
+                      {branch.status === "active"
+                        ? "Hoạt động"
+                        : "Ngừng hoạt động"}
                     </Chip>
                   </TableCell>
                   <TableCell>
@@ -147,24 +186,35 @@ export default function BranchesPageClient({ branches }: TProps) {
                         <DropdownItem
                           key="edit"
                           startContent={<Edit className="w-4 h-4" />}
-                          onPress={() => { setEditingBranch(branch); setIsModalOpen(true); }}
+                          onPress={() => {
+                            setEditingBranch(branch);
+                            setIsModalOpen(true);
+                          }}
                         >
                           Chỉnh sửa
                         </DropdownItem>
                         <DropdownItem
                           key="toggle"
-                          startContent={branch.status === "active"
-                            ? <ToggleLeft className="w-4 h-4" />
-                            : <ToggleRight className="w-4 h-4" />}
-                          color={branch.status === "active" ? "warning" : "success"}
+                          color={
+                            branch.status === "active" ? "warning" : "success"
+                          }
+                          startContent={
+                            branch.status === "active" ? (
+                              <ToggleLeft className="w-4 h-4" />
+                            ) : (
+                              <ToggleRight className="w-4 h-4" />
+                            )
+                          }
                           onPress={() => handleToggleStatus(branch)}
                         >
-                          {branch.status === "active" ? "Ngừng hoạt động" : "Kích hoạt"}
+                          {branch.status === "active"
+                            ? "Ngừng hoạt động"
+                            : "Kích hoạt"}
                         </DropdownItem>
                         <DropdownItem
                           key="delete"
-                          startContent={<Trash2 className="w-4 h-4" />}
                           color="danger"
+                          startContent={<Trash2 className="w-4 h-4" />}
                           onPress={() => handleDelete(branch)}
                         >
                           Xóa
@@ -180,10 +230,13 @@ export default function BranchesPageClient({ branches }: TProps) {
       </Card>
 
       <BranchModal
+        branch={editingBranch}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        branch={editingBranch}
-        onSuccess={() => { setIsModalOpen(false); refresh(); }}
+        onSuccess={() => {
+          setIsModalOpen(false);
+          refresh();
+        }}
       />
     </div>
   );

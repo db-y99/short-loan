@@ -18,12 +18,12 @@ const SignaturePad = forwardRef<SignatureCanvas, TProps>(
     >
       <SignatureCanvas
         ref={ref}
-        penColor={SIGNATURE_PEN_COLOR}
         backgroundColor={SIGNATURE_BG_COLOR}
         canvasProps={{
           className: `w-full ${heightClass} cursor-crosshair`,
           style: { backgroundColor: SIGNATURE_BG_COLOR },
         }}
+        penColor={SIGNATURE_PEN_COLOR}
       />
     </div>
   ),

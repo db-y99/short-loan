@@ -12,6 +12,7 @@ import { Button } from "@heroui/button";
 import { Select, SelectItem } from "@heroui/select";
 import { Loader2, ShieldCheck, XCircle } from "lucide-react";
 import { addToast } from "@heroui/toast";
+
 import { Profile } from "@/services/profiles.service";
 
 type TProps = {
@@ -25,6 +26,7 @@ import { ROLES } from "@/constants/roles";
 
 const ROLE_OPTIONS = [
   { key: ROLES.ADMIN, label: "Admin" },
+  { key: ROLES.CA, label: "CA (Kế toán)" },
   { key: ROLES.USER, label: "User" },
 ];
 
@@ -43,6 +45,7 @@ const UpdateRoleModal = ({ isOpen, onClose, user, onSuccess }: TProps) => {
   const handleSubmit = async () => {
     if (!selectedRole) {
       setError("Vui lòng chọn role");
+
       return;
     }
 
@@ -85,7 +88,7 @@ const UpdateRoleModal = ({ isOpen, onClose, user, onSuccess }: TProps) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="sm">
+    <Modal isOpen={isOpen} size="sm" onClose={handleClose}>
       <ModalContent>
         <ModalHeader className="flex items-center gap-2">
           <ShieldCheck className="w-5 h-5 text-primary" />
@@ -100,15 +103,22 @@ const UpdateRoleModal = ({ isOpen, onClose, user, onSuccess }: TProps) => {
           )}
 
           <div className="text-sm text-default-600 bg-default-50 dark:bg-default-100/10 p-3 rounded-lg space-y-1">
-            <p><span className="font-medium">Người dùng:</span> {user.full_name}</p>
-            <p><span className="font-medium">Role hiện tại:</span> {user.role || ROLES.USER}</p>
+            <p>
+              <span className="font-medium">Người dùng:</span> {user.full_name}
+            </p>
+            <p>
+              <span className="font-medium">Role hiện tại:</span>{" "}
+              {user.role || ROLES.USER}
+            </p>
           </div>
 
           <Select
+            isDisabled={isSubmitting}
             label="Role mới"
             selectedKeys={[selectedRole]}
-            onSelectionChange={(keys) => setSelectedRole(Array.from(keys)[0] as string)}
-            isDisabled={isSubmitting}
+            onSelectionChange={(keys) =>
+              setSelectedRole(Array.from(keys)[0] as string)
+            }
           >
             {ROLE_OPTIONS.map((role) => (
               <SelectItem key={role.key}>{role.label}</SelectItem>
@@ -116,12 +126,15 @@ const UpdateRoleModal = ({ isOpen, onClose, user, onSuccess }: TProps) => {
           </Select>
         </ModalBody>
         <ModalFooter>
-          <Button variant="flat" onPress={handleClose} isDisabled={isSubmitting}>
+          <Button
+            isDisabled={isSubmitting}
+            variant="flat"
+            onPress={handleClose}
+          >
             Hủy
           </Button>
           <Button
             color="primary"
-            onPress={handleSubmit}
             isDisabled={isSubmitting || !selectedRole}
             startContent={
               isSubmitting ? (
@@ -130,6 +143,7 @@ const UpdateRoleModal = ({ isOpen, onClose, user, onSuccess }: TProps) => {
                 <ShieldCheck className="w-4 h-4" />
               )
             }
+            onPress={handleSubmit}
           >
             {isSubmitting ? "Đang cập nhật..." : "Cập nhật"}
           </Button>

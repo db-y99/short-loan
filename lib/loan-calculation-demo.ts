@@ -10,6 +10,7 @@ import {
   type TInstallmentPeriod,
   type TBulletPayment,
 } from "./loan-calculation";
+
 import { LOAN_TYPES } from "@/constants/loan";
 
 /* =========================
@@ -33,12 +34,11 @@ function printInstallmentDetails(installments: TInstallmentPeriod[]) {
     console.log(`   Phí thuê TS:        ${formatMoney(period.rentalFee)}`);
     console.log(`   ─────────────────────────────────────`);
     console.log(`   TỔNG PHẢI TRẢ:      ${formatMoney(period.total)}`);
-    console.log(
-      `   (Mục tiêu lợi nhuận: ${formatMoney(period.targetProfit)})`,
-    );
+    console.log(`   (Mục tiêu lợi nhuận: ${formatMoney(period.targetProfit)})`);
   });
 
   const grandTotal = getTotalPaymentInstallment(installments);
+
   console.log("\n" + "═".repeat(80));
   console.log(`💰 TỔNG CỘNG CẢ 3 KỲ: ${formatMoney(grandTotal)}`);
   console.log(
@@ -55,6 +55,7 @@ function printBulletPaymentDetails(
 
   payments.forEach((payment) => {
     const profit = payment.total - DEMO_LOAN_AMOUNT;
+
     console.log(
       `\n🔹 MỐC ${payment.milestone} - ${payment.days} ngày (${(payment.rate * 100).toFixed(2)}%):`,
     );
@@ -69,7 +70,9 @@ function printBulletPaymentDetails(
 
 export function runLoanCalculationDemo() {
   console.log("╔" + "═".repeat(78) + "╗");
-  console.log("║" + " ".repeat(20) + "DEMO TÍNH TOÁN 3 GÓI VAY" + " ".repeat(33) + "║");
+  console.log(
+    "║" + " ".repeat(20) + "DEMO TÍNH TOÁN 3 GÓI VAY" + " ".repeat(33) + "║",
+  );
   console.log("╚" + "═".repeat(78) + "╝");
   console.log(`\n💵 Số tiền vay: ${formatMoney(DEMO_LOAN_AMOUNT)}\n`);
 
@@ -81,7 +84,10 @@ export function runLoanCalculationDemo() {
   console.log("█  GÓI 1: VAY TRẢ GÓP (3 KỲ)");
   console.log("█".repeat(80));
 
-  const goi1 = calculateLoan(DEMO_LOAN_AMOUNT, LOAN_TYPES.INSTALLMENT_3_PERIODS);
+  const goi1 = calculateLoan(
+    DEMO_LOAN_AMOUNT,
+    LOAN_TYPES.INSTALLMENT_3_PERIODS,
+  );
 
   console.log(`\n📌 Phí thẩm định (5%): ${formatMoney(goi1.appraisalFee)}`);
   console.log(`💸 Tiền khách thực nhận: ${formatMoney(goi1.netAmount)}`);
@@ -109,7 +115,9 @@ export function runLoanCalculationDemo() {
     LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE,
   );
 
-  console.log(`\n📌 Phí thẩm định: ${formatMoney(goi2.appraisalFee)} (Không áp dụng)`);
+  console.log(
+    `\n📌 Phí thẩm định: ${formatMoney(goi2.appraisalFee)} (Không áp dụng)`,
+  );
   console.log(`💸 Tiền khách thực nhận: ${formatMoney(goi2.netAmount)}`);
 
   if (goi2.bulletPayments) {
@@ -135,7 +143,9 @@ export function runLoanCalculationDemo() {
     LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD,
   );
 
-  console.log(`\n📌 Phí thẩm định: ${formatMoney(goi3.appraisalFee)} (Không áp dụng)`);
+  console.log(
+    `\n📌 Phí thẩm định: ${formatMoney(goi3.appraisalFee)} (Không áp dụng)`,
+  );
   console.log(`💸 Tiền khách thực nhận: ${formatMoney(goi3.netAmount)}`);
 
   if (goi3.bulletPayments) {
@@ -187,10 +197,7 @@ export function runLoanCalculationDemo() {
 
 export const demoExamples = {
   goi1: calculateLoan(DEMO_LOAN_AMOUNT, LOAN_TYPES.INSTALLMENT_3_PERIODS),
-  goi2: calculateLoan(
-    DEMO_LOAN_AMOUNT,
-    LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE,
-  ),
+  goi2: calculateLoan(DEMO_LOAN_AMOUNT, LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE),
   goi3: calculateLoan(
     DEMO_LOAN_AMOUNT,
     LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD,

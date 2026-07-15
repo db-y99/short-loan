@@ -3,9 +3,10 @@
  * Service để lưu và lấy payment periods từ DB
  */
 
+import type { TPaymentPeriod } from "@/types/loan.types";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { calculatePaymentPeriods } from "@/lib/payment-calculator";
-import type { TPaymentPeriod } from "@/types/loan.types";
 
 /**
  * Lưu payment periods vào DB
@@ -112,11 +113,22 @@ export async function saveDetailedPaymentPeriodsService({
 
   // Xác định loan type - handle both enum values and display labels
   let mappedLoanType: string;
-  if (loanType === LOAN_TYPES.INSTALLMENT_3_PERIODS || loanType.includes("trả góp") || loanType.includes("3 kỳ")) {
+
+  if (
+    loanType === LOAN_TYPES.INSTALLMENT_3_PERIODS ||
+    loanType.includes("trả góp") ||
+    loanType.includes("3 kỳ")
+  ) {
     mappedLoanType = LOAN_TYPES.INSTALLMENT_3_PERIODS;
-  } else if (loanType === LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE || loanType.includes("Theo mốc")) {
+  } else if (
+    loanType === LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE ||
+    loanType.includes("Theo mốc")
+  ) {
     mappedLoanType = LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE;
-  } else if (loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD || loanType.includes("Giữ TS")) {
+  } else if (
+    loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD ||
+    loanType.includes("Giữ TS")
+  ) {
     mappedLoanType = LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD;
   } else {
     mappedLoanType = LOAN_TYPES.INSTALLMENT_3_PERIODS;
@@ -125,13 +137,17 @@ export async function saveDetailedPaymentPeriodsService({
   // Tính ngày đáo hạn
   function calculateDueDate(signedAt: string, days: number): string {
     const date = new Date(signedAt);
+
     date.setDate(date.getDate() + days);
+
     return date.toISOString().split("T")[0];
   }
 
   function calculateNextPeriodDueDate(signedAt: string, days: number): string {
     const date = new Date(signedAt);
+
     date.setDate(date.getDate() + 30 + days);
+
     return date.toISOString().split("T")[0];
   }
 
@@ -226,7 +242,8 @@ export async function saveDetailedPaymentPeriodsService({
         interest: payment.interest,
         rental_fee: payment.rentalFee,
         rate: payment.rate,
-        fee_amount: payment.interest + payment.rentalFee + (payment.serviceFee || 0),
+        fee_amount:
+          payment.interest + payment.rentalFee + (payment.serviceFee || 0),
         total_due: payment.total,
         status: "pending" as const,
       })),
@@ -241,7 +258,8 @@ export async function saveDetailedPaymentPeriodsService({
         interest: payment.interest,
         rental_fee: payment.rentalFee,
         rate: payment.rate,
-        fee_amount: payment.interest + payment.rentalFee + (payment.serviceFee || 0),
+        fee_amount:
+          payment.interest + payment.rentalFee + (payment.serviceFee || 0),
         total_due: payment.total,
         status: "pending" as const,
       })),
@@ -298,9 +316,10 @@ export async function getPaymentPeriodsService(
   const nextPeriods = data.filter((p) => p.period_type === "next");
 
   // Tính service fee cho Gói 3
-  const isPackage3 = loanData.loan_type === 'bullet_payment_with_collateral_hold' || 
-                     loanData.loan_type?.includes('Giữ TS');
-  const serviceFee = (isPackage3 && loanData.amount <= 2000000) ? 30000 : 0;
+  const isPackage3 =
+    loanData.loan_type === "bullet_payment_with_collateral_hold" ||
+    loanData.loan_type?.includes("Giữ TS");
+  const serviceFee = isPackage3 && loanData.amount <= 2000000 ? 30000 : 0;
 
   // Convert to TPaymentPeriod format
   const currentPeriod: TPaymentPeriod = {
@@ -422,9 +441,7 @@ export async function recalculatePendingLoanPaymentScheduleService({
   }
 
   if (count && count > 0) {
-    throw new Error(
-      "Không thể tính lại lịch thanh toán khi đã có giao dịch",
-    );
+    throw new Error("Không thể tính lại lịch thanh toán khi đã có giao dịch");
   }
 
   const { error: updateCycleError } = await supabase
@@ -444,6 +461,64 @@ export async function recalculatePendingLoanPaymentScheduleService({
   await saveDetailedPaymentPeriodsService({
     loanId,
     cycleId: cycle.id,
+    loanAmount,
+    loanType,
+    signedAt,
+  });
+}
+
+/**
+ * Xóa lịch thanh toán nếu chưa có giao dịch (dùng khi hoàn tác ký / tạo lại HĐ).
+ * @param failIfHasTransactions - nếu true, throw khi đã có giao dịch (bắt buộc cho regenerate đã ký)
+ */
+export async function clearLoanPaymentScheduleIfNoTransactionsService(
+  loanId: string,
+  options?: { failIfHasTransactions?: boolean },
+): Promise<void> {
+  const supabase = await createSupabaseServerClient();
+
+  const { count, error: txCountError } = await supabase
+    .from("loan_payment_transactions")
+    .select("id", { count: "exact", head: true })
+    .eq("loan_id", loanId);
+
+  if (txCountError) {
+    throw new Error("Không thể kiểm tra lịch sử thanh toán");
+  }
+
+  if (count && count > 0) {
+    if (options?.failIfHasTransactions) {
+      throw new Error(
+        "Không thể xóa lịch thanh toán vì đã có giao dịch. Không thể tạo lại hợp đồng khi đã có thanh toán.",
+      );
+    }
+
+    return;
+  }
+
+  await supabase.from("loan_payment_periods").delete().eq("loan_id", loanId);
+  await supabase.from("loan_payment_cycles").delete().eq("loan_id", loanId);
+}
+
+/**
+ * Tạo lại lịch thanh toán khi ký hợp đồng (dùng ngày ký thực tế).
+ * Xóa chu kỳ cũ nếu chưa có giao dịch thanh toán.
+ */
+export async function recreateLoanPaymentScheduleOnSignService({
+  loanId,
+  loanAmount,
+  loanType,
+  signedAt,
+}: {
+  loanId: string;
+  loanAmount: number;
+  loanType: string;
+  signedAt: string;
+}): Promise<void> {
+  await clearLoanPaymentScheduleIfNoTransactionsService(loanId);
+
+  await createLoanPaymentScheduleService({
+    loanId,
     loanAmount,
     loanType,
     signedAt,

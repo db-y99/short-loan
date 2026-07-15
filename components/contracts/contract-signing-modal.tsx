@@ -1,12 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-} from "@heroui/modal";
+import { Modal, ModalContent, ModalHeader, ModalBody } from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Tabs, Tab } from "@heroui/react";
 import { Card, CardBody } from "@heroui/card";
@@ -14,6 +9,7 @@ import { Checkbox } from "@heroui/checkbox";
 import { addToast } from "@heroui/toast";
 import { X, FileText, CheckCircle, Loader2, Pen, Trash2 } from "lucide-react";
 import SignatureCanvas from "react-signature-canvas";
+
 import SignaturePad from "@/components/signature-pad.client";
 import { AssetPledgeContractView } from "@/components/contracts/asset-pledge-contract-view.client";
 import { AssetLeaseContractView } from "@/components/contracts/asset-lease-contract-view.client";
@@ -40,21 +36,19 @@ type TProps = {
   onSign: () => Promise<void>;
 };
 
-const ContractSigningModal = ({
-  isOpen,
-  onClose,
-  loanId,
-  onSign,
-}: TProps) => {
-  const [selectedContractType, setSelectedContractType] = useState<ContractType>(CONTRACT_TYPE.ASSET_PLEDGE);
+const ContractSigningModal = ({ isOpen, onClose, loanId, onSign }: TProps) => {
+  const [selectedContractType, setSelectedContractType] =
+    useState<ContractType>(CONTRACT_TYPE.ASSET_PLEDGE);
   const [isAgreed, setIsAgreed] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [contractData, setContractData] = useState<any>(null);
-  
+
   // Signature states
   const [draftSignature, setDraftSignature] = useState<string | null>(null);
-  const [officialSignature, setOfficialSignature] = useState<string | null>(null);
+  const [officialSignature, setOfficialSignature] = useState<string | null>(
+    null,
+  );
   const draftSigRef = useRef<SignatureCanvas>(null);
   const officialSigRef = useRef<SignatureCanvas>(null);
 
@@ -69,15 +63,13 @@ const ContractSigningModal = ({
     try {
       const response = await fetch(`/api/loans/${loanId}/contract-data`);
       const result = await response.json();
-      
+
       console.log({ result });
       if (result.success) {
         setContractData(result.data);
-        const createdTypes =
-          result.data.createdContractTypes ??
-          result.data.applicableContractTypes ??
-          [];
+        const createdTypes = result.data.createdContractTypes ?? [];
         const tabs = getSignPageContractTabsForCreatedTypes(createdTypes);
+
         if (tabs.length > 0) {
           setSelectedContractType((current) =>
             tabs.some((tab) => tab.key === current) ? current : tabs[0].key,
@@ -92,10 +84,8 @@ const ContractSigningModal = ({
   };
 
   const contractTypes = useMemo(() => {
-    const createdTypes =
-      contractData?.createdContractTypes ??
-      contractData?.applicableContractTypes ??
-      [];
+    const createdTypes = contractData?.createdContractTypes ?? [];
+
     if (createdTypes.length === 0) return [];
 
     return getSignPageContractTabsForCreatedTypes(createdTypes).map((tab) => ({
@@ -109,15 +99,29 @@ const ContractSigningModal = ({
               ? "XN Đã Nhận Đủ Tiền"
               : "Ủy Quyền Xử Lý TS",
     }));
-  }, [contractData?.createdContractTypes, contractData?.applicableContractTypes]);
+  }, [contractData?.createdContractTypes]);
+
+  const canSign = contractData?.canSign ?? contractTypes.length > 0;
 
   const handleSign = async () => {
+    if (!canSign) {
+      addToast({
+        title: "Chưa thể ký hợp đồng",
+        description:
+          "Vui lòng tạo hợp đồng PDF trước khi ký. Quay lại mục Hợp đồng và nhấn Tạo hợp đồng.",
+        color: "warning",
+      });
+
+      return;
+    }
+
     if (!isAgreed) {
       addToast({
         title: "Vui lòng đồng ý với điều khoản",
         description: "Bạn cần đồng ý với các điều khoản hợp đồng để tiếp tục",
         color: "danger",
       });
+
       return;
     }
 
@@ -127,6 +131,7 @@ const ContractSigningModal = ({
         description: "Vui lòng ký cả chữ ký nháy và chữ ký chính thức",
         color: "danger",
       });
+
       return;
     }
 
@@ -152,12 +157,14 @@ const ContractSigningModal = ({
           description: signResult.error || "Có lỗi xảy ra khi ký hợp đồng",
           color: "danger",
         });
+
         return;
       }
 
       addToast({
         title: "Hoàn tất!",
-        description: signResult.message || "Hợp đồng đã được ký và tạo PDF thành công",
+        description:
+          signResult.message || "Hợp đồng đã được ký và tạo PDF thành công",
         color: "success",
       });
 
@@ -174,7 +181,6 @@ const ContractSigningModal = ({
     }
   };
 
-
   const clearDraftSignature = () => {
     draftSigRef.current?.clear();
     setDraftSignature(null);
@@ -187,21 +193,24 @@ const ContractSigningModal = ({
         description: "Vui lòng ký trước khi lưu",
         color: "warning",
       });
+
       return;
     }
-    
+
     try {
       // Use toDataURL directly instead of getTrimmedCanvas for compatibility
       const dataURL = draftSigRef.current?.toDataURL("image/png");
+
       if (!dataURL || dataURL === "data:,") {
         addToast({
           title: "Lỗi lưu chữ ký",
           description: "Dữ liệu chữ ký không hợp lệ. Vui lòng ký lại.",
           color: "danger",
         });
+
         return;
       }
-      
+
       setDraftSignature(dataURL);
       addToast({
         title: "Đã lưu chữ ký nháy",
@@ -229,21 +238,24 @@ const ContractSigningModal = ({
         description: "Vui lòng ký trước khi lưu",
         color: "warning",
       });
+
       return;
     }
-    
+
     try {
       // Use toDataURL directly instead of getTrimmedCanvas for compatibility
       const dataURL = officialSigRef.current?.toDataURL("image/png");
+
       if (!dataURL || dataURL === "data:,") {
         addToast({
           title: "Lỗi lưu chữ ký",
           description: "Dữ liệu chữ ký không hợp lệ. Vui lòng ký lại.",
           color: "danger",
         });
+
         return;
       }
-      
+
       setOfficialSignature(dataURL);
       addToast({
         title: "Đã lưu chữ ký chính thức",
@@ -261,14 +273,14 @@ const ContractSigningModal = ({
 
   return (
     <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      size="full"
       hideCloseButton
       classNames={{
         base: "m-0 max-w-full h-screen",
         wrapper: "items-start",
       }}
+      isOpen={isOpen}
+      size="full"
+      onClose={onClose}
     >
       <ModalContent className="h-full rounded-none">
         {/* Header */}
@@ -279,9 +291,9 @@ const ContractSigningModal = ({
           </div>
           <Button
             isIconOnly
+            className="text-white"
             variant="light"
             onPress={onClose}
-            className="text-white"
           >
             <X className="w-5 h-5" />
           </Button>
@@ -294,15 +306,18 @@ const ContractSigningModal = ({
               {/* Tabs - Contract Types */}
               <div className="border-b border-default-200 px-4">
                 <Tabs
-                  selectedKey={selectedContractType}
-                  onSelectionChange={(key) => setSelectedContractType(key as ContractType)}
-                  variant="underlined"
                   classNames={{
-                    tabList: "gap-0 w-full relative rounded-none p-0 border-b-0",
+                    tabList:
+                      "gap-0 w-full relative rounded-none p-0 border-b-0",
                     cursor: "w-full bg-primary",
                     tab: "max-w-fit px-6 h-12",
                     tabContent: "group-data-[selected=true]:text-primary",
                   }}
+                  selectedKey={selectedContractType}
+                  variant="underlined"
+                  onSelectionChange={(key) =>
+                    setSelectedContractType(key as ContractType)
+                  }
                 >
                   {contractTypes.map((type) => (
                     <Tab key={type.key} title={type.label} />
@@ -317,29 +332,60 @@ const ContractSigningModal = ({
                     <Loader2 className="w-8 h-8 animate-spin text-primary" />
                   </div>
                 ) : contractData ? (
-                  <div className="max-w-4xl mx-auto">
+                  canSign ? (
+                    <div className="max-w-4xl mx-auto">
+                      <Card shadow="sm">
+                        <CardBody className="p-8">
+                          {selectedContractType ===
+                            CONTRACT_TYPE.ASSET_PLEDGE &&
+                            contractData?.pledgeContract && (
+                              <AssetPledgeContractView
+                                data={contractData.pledgeContract}
+                              />
+                            )}
+                          {selectedContractType === CONTRACT_TYPE.ASSET_LEASE &&
+                            contractData?.leaseContract && (
+                              <AssetLeaseContractView
+                                data={contractData.leaseContract}
+                              />
+                            )}
+                          {selectedContractType ===
+                            CONTRACT_TYPE.FULL_PAYMENT &&
+                            contractData?.paymentConfirmation && (
+                              <FullPaymentConfirmationView
+                                data={contractData.paymentConfirmation}
+                              />
+                            )}
+                          {selectedContractType ===
+                            CONTRACT_TYPE.ASSET_DISPOSAL &&
+                            contractData?.disposalAuthorization && (
+                              <AssetDisposalAuthorizationView
+                                data={contractData.disposalAuthorization}
+                              />
+                            )}
+                        </CardBody>
+                      </Card>
+                    </div>
+                  ) : (
                     <Card shadow="sm">
-                      <CardBody className="p-8">
-                        {selectedContractType === CONTRACT_TYPE.ASSET_PLEDGE && contractData?.pledgeContract && (
-                          <AssetPledgeContractView data={contractData.pledgeContract} />
-                        )}
-                        {selectedContractType === CONTRACT_TYPE.ASSET_LEASE && contractData?.leaseContract && (
-                          <AssetLeaseContractView data={contractData.leaseContract} />
-                        )}
-                        {selectedContractType === CONTRACT_TYPE.FULL_PAYMENT && contractData?.paymentConfirmation && (
-                          <FullPaymentConfirmationView data={contractData.paymentConfirmation} />
-                        )}
-                        {selectedContractType === CONTRACT_TYPE.ASSET_DISPOSAL && contractData?.disposalAuthorization && (
-                          <AssetDisposalAuthorizationView data={contractData.disposalAuthorization} />
-                        )}
+                      <CardBody className="p-8 text-center">
+                        <FileText className="w-12 h-12 mx-auto mb-3 text-warning" />
+                        <p className="text-default-700 font-medium">
+                          Chưa có hợp đồng để ký
+                        </p>
+                        <p className="text-sm text-default-500 mt-2">
+                          Vui lòng tạo hợp đồng PDF ở mục Hợp đồng trước khi ký.
+                        </p>
                       </CardBody>
                     </Card>
-                  </div>
+                  )
                 ) : (
                   <Card shadow="sm">
                     <CardBody className="p-8 text-center">
                       <FileText className="w-12 h-12 mx-auto mb-3 text-default-400" />
-                      <p className="text-default-600">Không thể tải dữ liệu hợp đồng</p>
+                      <p className="text-default-600">
+                        Không thể tải dữ liệu hợp đồng
+                      </p>
                     </CardBody>
                   </Card>
                 )}
@@ -357,7 +403,7 @@ const ContractSigningModal = ({
 
               <div className="flex-1 p-4 space-y-4 overflow-y-auto">
                 {/* Contract Counter */}
-                <Card shadow="sm" className="border border-default-200">
+                <Card className="border border-default-200" shadow="sm">
                   <CardBody className="p-4">
                     <p className="text-xs text-default-600 mb-2">
                       Tổng số hợp đồng
@@ -366,13 +412,18 @@ const ContractSigningModal = ({
                       {contractTypes.length} hợp đồng
                     </p>
                     <p className="text-xs text-default-500 mt-1">
-                      Đang xem: {contractTypes.find(t => t.key === selectedContractType)?.label}
+                      Đang xem:{" "}
+                      {
+                        contractTypes.find(
+                          (t) => t.key === selectedContractType,
+                        )?.label
+                      }
                     </p>
                   </CardBody>
                 </Card>
 
                 {/* Draft Signature */}
-                <Card shadow="sm" className="border border-default-200">
+                <Card className="border border-default-200" shadow="sm">
                   <CardBody className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
@@ -381,10 +432,10 @@ const ContractSigningModal = ({
                       </div>
                       {draftSignature && (
                         <Button
+                          isIconOnly
+                          color="danger"
                           size="sm"
                           variant="light"
-                          color="danger"
-                          isIconOnly
                           onPress={clearDraftSignature}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -396,18 +447,18 @@ const ContractSigningModal = ({
                         <SignaturePad ref={draftSigRef} />
                         <div className="flex gap-2 mt-2">
                           <Button
+                            className="flex-1"
                             size="sm"
                             variant="flat"
                             onPress={clearDraftSignature}
-                            className="flex-1"
                           >
                             Xóa
                           </Button>
                           <Button
-                            size="sm"
-                            color="primary"
-                            onPress={saveDraftSignature}
                             className="flex-1"
+                            color="primary"
+                            size="sm"
+                            onPress={saveDraftSignature}
                           >
                             Lưu
                           </Button>
@@ -415,26 +466,32 @@ const ContractSigningModal = ({
                       </>
                     ) : (
                       <div className="border border-default-200 rounded-lg p-2 bg-white dark:bg-white">
-                        <img src={draftSignature} alt="Draft signature" className="w-full h-48 object-contain bg-white" />
+                        <img
+                          alt="Draft signature"
+                          className="w-full h-48 object-contain bg-white"
+                          src={draftSignature}
+                        />
                       </div>
                     )}
                   </CardBody>
                 </Card>
 
                 {/* Official Signature */}
-                <Card shadow="sm" className="border border-default-200">
+                <Card className="border border-default-200" shadow="sm">
                   <CardBody className="p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
                         <FileText className="w-4 h-4 text-success" />
-                        <p className="text-sm font-semibold">Chữ ký chính thức</p>
+                        <p className="text-sm font-semibold">
+                          Chữ ký chính thức
+                        </p>
                       </div>
                       {officialSignature && (
                         <Button
+                          isIconOnly
+                          color="danger"
                           size="sm"
                           variant="light"
-                          color="danger"
-                          isIconOnly
                           onPress={clearOfficialSignature}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -446,18 +503,18 @@ const ContractSigningModal = ({
                         <SignaturePad ref={officialSigRef} />
                         <div className="flex gap-2 mt-2">
                           <Button
+                            className="flex-1"
                             size="sm"
                             variant="flat"
                             onPress={clearOfficialSignature}
-                            className="flex-1"
                           >
                             Xóa
                           </Button>
                           <Button
-                            size="sm"
-                            color="success"
-                            onPress={saveOfficialSignature}
                             className="flex-1"
+                            color="success"
+                            size="sm"
+                            onPress={saveOfficialSignature}
                           >
                             Lưu
                           </Button>
@@ -465,29 +522,37 @@ const ContractSigningModal = ({
                       </>
                     ) : (
                       <div className="border border-default-200 rounded-lg p-2 bg-white dark:bg-white">
-                        <img src={officialSignature} alt="Official signature" className="w-full h-48 object-contain bg-white" />
+                        <img
+                          alt="Official signature"
+                          className="w-full h-48 object-contain bg-white"
+                          src={officialSignature}
+                        />
                       </div>
                     )}
                   </CardBody>
                 </Card>
 
                 {/* Agreement Checkbox */}
-                <Card shadow="sm" className="border border-default-200">
+                <Card className="border border-default-200" shadow="sm">
                   <CardBody className="p-4">
                     <Checkbox
                       isSelected={isAgreed}
-                      onValueChange={setIsAgreed}
                       size="sm"
+                      onValueChange={setIsAgreed}
                     >
                       <span className="text-sm">
-                        Tôi đã xem tất cả {contractTypes.length} hợp đồng và đồng ý với các điều khoản
+                        Tôi đã xem tất cả {contractTypes.length} hợp đồng và
+                        đồng ý với các điều khoản
                       </span>
                     </Checkbox>
                   </CardBody>
                 </Card>
 
                 {/* Info Card */}
-                <Card shadow="sm" className="bg-primary-50 border border-primary-200">
+                <Card
+                  className="bg-primary-50 border border-primary-200"
+                  shadow="sm"
+                >
                   <CardBody className="p-4">
                     <div className="flex items-start gap-2">
                       <CheckCircle className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
@@ -507,20 +572,26 @@ const ContractSigningModal = ({
               {/* Footer Actions */}
               <div className="p-4 border-t border-default-200 space-y-2">
                 <Button
-                  color="primary"
-                  size="lg"
                   className="w-full"
+                  color="primary"
+                  isDisabled={
+                    !canSign ||
+                    !isAgreed ||
+                    !draftSignature ||
+                    !officialSignature ||
+                    isSigning
+                  }
+                  isLoading={isSigning}
+                  size="lg"
                   startContent={<FileText className="w-4 h-4" />}
                   onPress={handleSign}
-                  isDisabled={!isAgreed || !draftSignature || !officialSignature || isSigning}
-                  isLoading={isSigning}
                 >
                   {isSigning ? "Đang ký..." : "HOÀN TẤT VÀ KÝ HỢP ĐỒNG"}
                 </Button>
                 <Button
-                  variant="flat"
-                  size="md"
                   className="w-full"
+                  size="md"
+                  variant="flat"
                   onPress={onClose}
                 >
                   Hủy bỏ

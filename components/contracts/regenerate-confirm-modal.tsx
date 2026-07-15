@@ -24,7 +24,7 @@ const RegenerateConfirmModal = ({
   isLoading = false,
 }: TProps) => {
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal isOpen={isOpen} size="md" onClose={onClose}>
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
@@ -52,14 +52,14 @@ const RegenerateConfirmModal = ({
           </div>
         </ModalBody>
         <ModalFooter>
-          <Button variant="flat" onPress={onClose} isDisabled={isLoading}>
+          <Button isDisabled={isLoading} variant="flat" onPress={onClose}>
             Hủy
           </Button>
           <Button
             color="warning"
-            onPress={onConfirm}
             isDisabled={isLoading}
             isLoading={isLoading}
+            onPress={onConfirm}
           >
             {isLoading ? "Đang tạo lại..." : "Xác nhận tạo lại"}
           </Button>

@@ -70,6 +70,7 @@ export async function uploadAssetImagesService(
           file.mimeType,
           loan.drive_folder_id,
         );
+
         uploadedFiles.push({ name: file.name, fileId });
       }
     } catch (uploadError) {
@@ -77,6 +78,7 @@ export async function uploadAssetImagesService(
         await deleteManyFromDrive(uploadedFiles.map((f) => f.fileId));
       }
       console.error("[UPLOAD_ASSET_IMAGES_DRIVE_ERROR]", uploadError);
+
       return {
         success: false,
         error: "Không thể upload ảnh lên Drive. Vui lòng thử lại.",
@@ -99,6 +101,7 @@ export async function uploadAssetImagesService(
     if (dbError || !dbRows || dbRows.length === 0) {
       await deleteManyFromDrive(uploadedFiles.map((f) => f.fileId));
       console.error("[UPLOAD_ASSET_IMAGES_DB_ERROR]", dbError);
+
       return {
         success: false,
         error: "Không thể lưu ảnh vào hệ thống. Vui lòng thử lại.",
@@ -118,10 +121,10 @@ export async function uploadAssetImagesService(
     };
   } catch (error) {
     console.error("[UPLOAD_ASSET_IMAGES_ERROR]", error);
+
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Lỗi khi upload ảnh",
+      error: error instanceof Error ? error.message : "Lỗi khi upload ảnh",
     };
   }
 }
@@ -180,10 +183,10 @@ export async function deleteAssetImageService(imageId: string) {
     return { success: true };
   } catch (error) {
     console.error("[DELETE_ASSET_IMAGE_ERROR]", error);
+
     return {
       success: false,
-      error:
-        error instanceof Error ? error.message : "Lỗi khi xóa ảnh",
+      error: error instanceof Error ? error.message : "Lỗi khi xóa ảnh",
     };
   }
 }

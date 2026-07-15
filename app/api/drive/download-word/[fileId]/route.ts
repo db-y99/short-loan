@@ -1,7 +1,10 @@
-// app/api/drive/download-word/[fileId]/route.ts
-
-import { NextResponse } from "next/server";
 import { env } from "@/config/env";
+import {
+  requireActiveStaffUser,
+  verifyStaffCanAccessDriveFile,
+} from "@/lib/auth/api-auth";
+import { create as createContentDisposition } from "content-disposition";
+import { NextResponse } from "next/server";
 
 export async function GET(
   _req: Request,
@@ -9,10 +12,24 @@ export async function GET(
 ) {
   const { fileId } = await ctx.params;
 
+  const staff = await requireActiveStaffUser();
+
+  if (!staff.ok) return staff.response;
+
+  const canAccess = await verifyStaffCanAccessDriveFile(fileId);
+
+  if (!canAccess) {
+    return new NextResponse("Forbidden", { status: 403 });
+  }
+
   try {
     const serviceUrl = env.CONVERT_PDF_TO_WORD_SERVICE_URL;
+
     if (!serviceUrl) {
-      return new NextResponse("CONVERT_PDF_TO_WORD_SERVICE_URL chưa được cấu hình", { status: 500 });
+      return new NextResponse(
+        "CONVERT_PDF_TO_WORD_SERVICE_URL chưa được cấu hình",
+        { status: 500 },
+      );
     }
 
     // Gọi Apps Script: PDF trên Drive → Google Docs → DOCX
@@ -25,7 +42,9 @@ export async function GET(
     const json = await scriptRes.json();
 
     if (!json.success) {
-      return new NextResponse(json.error || "Convert thất bại", { status: 400 });
+      return new NextResponse(json.error || "Convert thất bại", {
+        status: 400,
+      });
     }
 
     // Dùng token từ Apps Script để tải file DOCX
@@ -34,7 +53,9 @@ export async function GET(
     });
 
     if (!docxRes.ok) {
-      return new NextResponse("Không thể tải file Word từ Google", { status: 502 });
+      return new NextResponse("Không thể tải file Word từ Google", {
+        status: 502,
+      });
     }
 
     const buffer = await docxRes.arrayBuffer();
@@ -43,11 +64,14 @@ export async function GET(
       headers: {
         "Content-Type":
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "Content-Disposition": `attachment; filename="${json.fileName}"`,
+        "Content-Disposition": createContentDisposition(
+          String(json.fileName || "document.docx"),
+        ),
       },
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Lỗi tải Word";
+
     return new NextResponse(message, { status: 500 });
   }
 }

@@ -1,24 +1,40 @@
 /**
  * API Route: Stream file from Google Drive
  * Feature: chat-va-trao-doi-nhat-ky
- * 
+ *
  * Stream files from Google Drive using service account
  */
 
 import { NextRequest, NextResponse } from "next/server";
+
 import { streamFileFromDrive } from "@/lib/google-drive";
+import {
+  requireActiveStaffUser,
+  verifyStaffCanAccessDriveFile,
+} from "@/lib/auth/api-auth";
+import { create as createContentDisposition } from "content-disposition";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ fileId: string }> }
+  { params }: { params: Promise<{ fileId: string }> },
 ) {
   try {
     const { fileId } = await params;
 
+    const staff = await requireActiveStaffUser();
+
+    if (!staff.ok) return staff.response;
+
+    const canAccess = await verifyStaffCanAccessDriveFile(fileId);
+
+    if (!canAccess) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     if (!fileId) {
       return NextResponse.json(
         { error: "File ID is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -33,6 +49,7 @@ export async function GET(
 
     // Convert stream to buffer
     const chunks: Uint8Array[] = [];
+
     for await (const chunk of stream) {
       chunks.push(chunk);
     }
@@ -42,15 +59,18 @@ export async function GET(
     return new NextResponse(buffer, {
       headers: {
         "Content-Type": mimeType,
-        "Content-Disposition": `inline; filename="${fileName}"`,
+        "Content-Disposition": createContentDisposition(fileName, {
+          type: "inline",
+        }),
         "Cache-Control": "public, max-age=31536000, immutable",
       },
     });
   } catch (error) {
     console.error("Error streaming file from Drive:", error);
+
     return NextResponse.json(
       { error: "Failed to stream file" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

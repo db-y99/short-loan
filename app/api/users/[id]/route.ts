@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { updateProfile, getProfileById } from "@/services/profiles.service";
@@ -9,12 +10,12 @@ import { updateProfile, getProfileById } from "@/services/profiles.service";
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createSupabaseServerClient();
     const { id } = await params;
-    
+
     // Check authentication
     const {
       data: { user },
@@ -23,7 +24,7 @@ export async function GET(
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -32,7 +33,7 @@ export async function GET(
     if (!profile) {
       return NextResponse.json(
         { success: false, error: "Không tìm thấy người dùng" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -42,12 +43,13 @@ export async function GET(
     });
   } catch (error) {
     console.error("[GET_USER_ERROR]", error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -58,12 +60,12 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createSupabaseServerClient();
     const { id } = await params;
-    
+
     // Check authentication
     const {
       data: { user },
@@ -72,7 +74,7 @@ export async function PUT(
     if (!user) {
       return NextResponse.json(
         { success: false, error: "Unauthorized" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -83,16 +85,17 @@ export async function PUT(
     if (!email?.trim() || !full_name?.trim()) {
       return NextResponse.json(
         { success: false, error: "Email và tên là bắt buộc" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Check if user exists
     const existingUser = await getProfileById(id);
+
     if (!existingUser) {
       return NextResponse.json(
         { success: false, error: "Không tìm thấy người dùng" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -107,8 +110,11 @@ export async function PUT(
 
       if (emailCheck) {
         return NextResponse.json(
-          { success: false, error: "Email đã được sử dụng bởi người dùng khác" },
-          { status: 400 }
+          {
+            success: false,
+            error: "Email đã được sử dụng bởi người dùng khác",
+          },
+          { status: 400 },
         );
       }
     }
@@ -125,7 +131,7 @@ export async function PUT(
     if (!updatedUser) {
       return NextResponse.json(
         { success: false, error: "Không thể cập nhật người dùng" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -135,12 +141,13 @@ export async function PUT(
     });
   } catch (error) {
     console.error("[UPDATE_USER_ERROR]", error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -151,42 +158,64 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createSupabaseServerClient();
     const { id } = await params;
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (!user) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
     }
 
     const existing = await getProfileById(id);
+
     if (!existing) {
-      return NextResponse.json({ success: false, error: "Không tìm thấy người dùng" }, { status: 404 });
+      return NextResponse.json(
+        { success: false, error: "Không tìm thấy người dùng" },
+        { status: 404 },
+      );
     }
 
     const { error } = await supabase
       .from("profiles")
-      .update({ deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .update({
+        deleted_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })
       .eq("id", id);
 
     if (error) {
       console.error("[DELETE_USER_ERROR]", error);
-      return NextResponse.json({ success: false, error: "Không thể xóa người dùng" }, { status: 500 });
+
+      return NextResponse.json(
+        { success: false, error: "Không thể xóa người dùng" },
+        { status: 500 },
+      );
     }
 
     // Ép đăng xuất tất cả session của user bị xóa
     const adminClient = createSupabaseAdminClient();
+
     await adminClient.auth.admin.signOut(id, "others");
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[DELETE_USER_ERROR]", error);
+
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : "Internal server error" },
-      { status: 500 }
+      {
+        success: false,
+        error: error instanceof Error ? error.message : "Internal server error",
+      },
+      { status: 500 },
     );
   }
 }

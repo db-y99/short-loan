@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/modal";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/modal";
 import { Button } from "@heroui/button";
 import { Textarea } from "@heroui/input";
 
@@ -27,6 +33,7 @@ const UpdateAssetConditionModal = ({
   const handleSubmit = async () => {
     if (!condition.trim()) {
       setError("Vui lòng nhập tình trạng tài sản");
+
       return;
     }
 
@@ -34,13 +41,16 @@ const UpdateAssetConditionModal = ({
     setError(null);
 
     try {
-      const response = await fetch(`/api/loans/${loanId}/update-asset-condition`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `/api/loans/${loanId}/update-asset-condition`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ asset_condition: condition }),
         },
-        body: JSON.stringify({ asset_condition: condition }),
-      });
+      );
 
       const result = await response.json();
 
@@ -59,7 +69,7 @@ const UpdateAssetConditionModal = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="md">
+    <Modal isOpen={isOpen} size="md" onClose={onClose}>
       <ModalContent>
         <ModalHeader>Cập nhật tình trạng tài sản</ModalHeader>
         <ModalBody>
@@ -70,21 +80,21 @@ const UpdateAssetConditionModal = ({
           )}
           <Textarea
             label="Tình trạng tài sản"
+            minRows={6}
             placeholder="Ví dụ: Còn mới, hoạt động tốt, không trầy xước..."
             value={condition}
             onValueChange={setCondition}
-            minRows={6}
           />
         </ModalBody>
         <ModalFooter>
-          <Button variant="flat" onPress={onClose} isDisabled={isSubmitting}>
+          <Button isDisabled={isSubmitting} variant="flat" onPress={onClose}>
             Hủy
           </Button>
           <Button
             color="primary"
-            onPress={handleSubmit}
-            isLoading={isSubmitting}
             isDisabled={isSubmitting}
+            isLoading={isSubmitting}
+            onPress={handleSubmit}
           >
             Cập nhật
           </Button>

@@ -2,11 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { ZodError } from "zod";
+
+import { GenerateContractsSchema } from "./generate-contracts.schema";
+
+import { requireActionLoanApproverUser } from "@/lib/auth/action-auth";
 import {
   generateContractsService,
   regenerateContractsService,
 } from "@/services/contracts/contracts.service";
-import { GenerateContractsSchema } from "./generate-contracts.schema";
 
 type TGenerateContractsResult =
   | {
@@ -26,6 +29,12 @@ export async function generateContractsAction(
   contractTypes: string[],
 ): Promise<TGenerateContractsResult> {
   try {
+    const auth = await requireActionLoanApproverUser();
+
+    if (!auth.ok) {
+      return { success: false, error: auth.error };
+    }
+
     const input = GenerateContractsSchema.parse({ loanId, contractTypes });
     const result = await generateContractsService(
       input.loanId,
@@ -37,6 +46,7 @@ export async function generateContractsAction(
     }
 
     revalidatePath(`/`);
+
     return { success: true, data: result.contracts ?? [] };
   } catch (error) {
     if (error instanceof ZodError) {
@@ -46,6 +56,7 @@ export async function generateContractsAction(
       };
     }
     console.error("[GENERATE_CONTRACTS_ACTION_ERROR]", error);
+
     return {
       success: false,
       error: error instanceof Error ? error.message : "Lỗi khi tạo hợp đồng",
@@ -61,6 +72,12 @@ export async function regenerateContractsAction(
   contractTypes: string[],
 ): Promise<TGenerateContractsResult> {
   try {
+    const auth = await requireActionLoanApproverUser();
+
+    if (!auth.ok) {
+      return { success: false, error: auth.error };
+    }
+
     const input = GenerateContractsSchema.parse({ loanId, contractTypes });
     const result = await regenerateContractsService(
       input.loanId,
@@ -72,6 +89,7 @@ export async function regenerateContractsAction(
     }
 
     revalidatePath(`/`);
+
     return { success: true, data: result.contracts ?? [] };
   } catch (error) {
     if (error instanceof ZodError) {
@@ -81,9 +99,11 @@ export async function regenerateContractsAction(
       };
     }
     console.error("[REGENERATE_CONTRACTS_ACTION_ERROR]", error);
+
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Lỗi khi tạo lại hợp đồng",
+      error:
+        error instanceof Error ? error.message : "Lỗi khi tạo lại hợp đồng",
     };
   }
 }

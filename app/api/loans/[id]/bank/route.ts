@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LOAN_STATUS } from "@/constants/loan";
+import { requireAdminForPendingLoan } from "@/lib/auth/api-auth";
 
 /**
  * PATCH /api/loans/[id]/bank
@@ -8,23 +10,15 @@ import { LOAN_STATUS } from "@/constants/loan";
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const supabase = await createSupabaseServerClient();
     const { id: loanId } = await params;
 
-    // Check authentication
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const admin = await requireAdminForPendingLoan(loanId);
 
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
-    }
+    if (!admin.ok) return admin.response;
 
     // Parse request body
     const body = await request.json();
@@ -34,21 +28,21 @@ export async function PATCH(
     if (!bank_name?.trim()) {
       return NextResponse.json(
         { success: false, error: "Tên ngân hàng không được để trống" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!bank_account_holder?.trim()) {
       return NextResponse.json(
         { success: false, error: "Chủ tài khoản không được để trống" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!bank_account_number?.trim()) {
       return NextResponse.json(
         { success: false, error: "Số tài khoản không được để trống" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -69,7 +63,8 @@ export async function PATCH(
       return NextResponse.json(
         {
           success: false,
-          error: "Chỉ được sửa thông tin ngân hàng khi khoản vay ở trạng thái chờ duyệt",
+          error:
+            "Chỉ được sửa thông tin ngân hàng khi khoản vay ở trạng thái chờ duyệt",
         },
         { status: 400 },
       );
@@ -77,9 +72,10 @@ export async function PATCH(
 
     if (error) {
       console.error("[UPDATE_BANK_ERROR]", error);
+
       return NextResponse.json(
         { success: false, error: "Không thể cập nhật thông tin ngân hàng" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -89,12 +85,13 @@ export async function PATCH(
     });
   } catch (error) {
     console.error("[UPDATE_BANK_ERROR]", error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : "Internal server error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

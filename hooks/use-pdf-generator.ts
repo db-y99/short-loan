@@ -15,6 +15,7 @@ export function usePdfGenerator() {
 
     try {
       const element = document.getElementById(elementId);
+
       if (!element) throw new Error("Element not found");
 
       setProgress(20);
@@ -35,7 +36,7 @@ export function usePdfGenerator() {
 
       // Get the HTML content
       const html = element.outerHTML;
-      
+
       // Create complete HTML document with all styles
       const styledHtml = `
         <!DOCTYPE html>
@@ -120,11 +121,15 @@ export function usePdfGenerator() {
 
       if (!response.ok) {
         const error = await response.json();
+
         console.error("PDF API Error:", error);
-        throw new Error(error.details || error.error || "Failed to generate PDF");
+        throw new Error(
+          error.details || error.error || "Failed to generate PDF",
+        );
       }
 
       const pdfBlob = await response.blob();
+
       setProgress(100);
       setGenerating(false);
 
@@ -139,6 +144,7 @@ export function usePdfGenerator() {
     const { blob } = await generatePDF(elementId, fileName);
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
+
     link.href = url;
     link.download = fileName;
     link.click();
@@ -154,6 +160,7 @@ export function usePdfGenerator() {
   ) => {
     const { buffer } = await generatePDF(elementId, fileName);
     const formData = new FormData();
+
     formData.append("file", new Blob([buffer], { type: "application/pdf" }));
     formData.append("fileName", fileName);
     formData.append("folderId", folderId);
@@ -167,6 +174,7 @@ export function usePdfGenerator() {
 
     if (!response.ok) {
       const err = await response.json();
+
       throw new Error(err.error ?? "Upload failed");
     }
 

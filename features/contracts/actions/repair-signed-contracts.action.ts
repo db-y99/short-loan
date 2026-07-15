@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+
 import { generateSignedContractsService } from "@/services/contracts/contracts.service";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LOAN_STATUS } from "@/constants/loan";
+import { requireActionLoanApproverUser } from "@/lib/auth/action-auth";
 import { needsSignedContractRepair } from "@/lib/contract-utils";
 
 const RepairSignedContractsSchema = z.object({
@@ -28,6 +30,12 @@ export async function repairSignedContractsAction(
   loanId: string,
 ): Promise<TRepairSignedContractsResult> {
   try {
+    const auth = await requireActionLoanApproverUser();
+
+    if (!auth.ok) {
+      return { success: false, error: auth.error };
+    }
+
     const { loanId: validatedLoanId } = RepairSignedContractsSchema.parse({
       loanId,
     });
@@ -89,6 +97,7 @@ export async function repairSignedContractsAction(
     }
 
     revalidatePath("/");
+
     return { success: true, data: result.contracts ?? [] };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -99,6 +108,7 @@ export async function repairSignedContractsAction(
     }
 
     console.error("[REPAIR_SIGNED_CONTRACTS_ACTION_ERROR]", error);
+
     return {
       success: false,
       error:

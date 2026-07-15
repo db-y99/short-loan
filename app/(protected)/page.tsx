@@ -30,7 +30,11 @@ export default async function Home({ searchParams }: TPageProps) {
   return (
     <AppLayout>
       <section className="flex flex-col gap-4 py-4 md:py-6">
-        <LoansPageClient loans={loans} branches={branches} selectedBranch={params.branch || ""} />
+        <LoansPageClient
+          branches={branches}
+          loans={loans}
+          selectedBranch={params.branch || ""}
+        />
       </section>
     </AppLayout>
   );
