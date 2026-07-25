@@ -70,12 +70,16 @@ const LoanPreviewSection = ({ form }: TProps) => {
               30 * 24 * 60 * 60 * 1000 +
               payment.days * 24 * 60 * 60 * 1000,
           ).toISOString(),
-          interestAndFee: payment.interest + payment.rentalFee,
-          totalRedemption: loanAmount + payment.interest + payment.rentalFee, // Gốc + lãi (không chuộc gốc)
+          interestAndFee:
+            payment.interest +
+            payment.rentalFee +
+            (isPackage3 ? (payment.serviceFee ?? serviceFee) : 0),
+          // payment.total đã gồm gốc + lãi + phí thuê + phí DV (gói 3)
+          totalRedemption: payment.total,
           // Chi tiết cho gói 3
           interest: isPackage3 ? payment.interest : undefined,
           rentalFee: isPackage3 ? payment.rentalFee : undefined,
-          serviceFee: isPackage3 ? serviceFee : undefined,
+          serviceFee: isPackage3 ? (payment.serviceFee ?? serviceFee) : undefined,
         })) || [];
 
       return {
