@@ -219,27 +219,37 @@ export async function verifyStaffCanAccessDriveFile(
 ): Promise<boolean> {
   const supabase = await createSupabaseServerClient();
 
-  // Song song — asset gallery hầu hết match loan_assets
-  const [loanFileRes, assetImageRes] = await Promise.all([
-    supabase.from("loan_files").select("id").eq("file_id", fileId).maybeSingle(),
+  // Dùng limit(1) — không dùng maybeSingle.
+  // Vay lại / giữ ảnh cũ → cùng file_id xuất hiện nhiều dòng trong loan_assets;
+  // maybeSingle() sẽ error → data null → 403 dù file hợp lệ trên Drive.
+  const [loanFileRes, assetImageRes, activityRes] = await Promise.all([
+    supabase.from("loan_files").select("id").eq("file_id", fileId).limit(1),
+    supabase.from("loan_assets").select("id").eq("file_id", fileId).limit(1),
+    // Ảnh chat lưu fileId trong loan_activity_logs.images (text[])
     supabase
-      .from("loan_assets")
+      .from("loan_activity_logs")
       .select("id")
-      .eq("file_id", fileId)
-      .maybeSingle(),
+      .contains("images", [fileId])
+      .limit(1),
   ]);
 
-  if (loanFileRes.data || assetImageRes.data) return true;
+  if (
+    (loanFileRes.data?.length ?? 0) > 0 ||
+    (assetImageRes.data?.length ?? 0) > 0 ||
+    (activityRes.data?.length ?? 0) > 0
+  ) {
+    return true;
+  }
 
-  const { data: loan } = await supabase
+  const { data: loans } = await supabase
     .from("loans")
     .select("id")
     .or(
       `draft_signature_file_id.eq.${fileId},official_signature_file_id.eq.${fileId}`,
     )
-    .maybeSingle();
+    .limit(1);
 
-  return Boolean(loan);
+  return (loans?.length ?? 0) > 0;
 }
 
 export function isValidInternalApiSecret(secret: string | null): boolean {

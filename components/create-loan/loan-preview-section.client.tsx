@@ -198,7 +198,7 @@ const LoanPreviewSection = ({ form }: TProps) => {
                           Lãi: {formatCurrencyVND(milestone.interest || 0)}
                         </div>
                         <div>
-                          Phí thuê:{" "}
+                          Phí quản lý tài sản:{" "}
                           {formatCurrencyVND(milestone.rentalFee || 0)}
                         </div>
                         {(milestone.serviceFee || 0) > 0 && (

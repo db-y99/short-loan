@@ -4,6 +4,7 @@
  */
 
 import type { TPaymentPeriod } from "@/types/loan.types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { calculatePaymentPeriods } from "@/lib/payment-calculator";
@@ -86,14 +87,16 @@ export async function saveDetailedPaymentPeriodsService({
   loanAmount,
   loanType,
   signedAt,
+  supabaseClient,
 }: {
   loanId: string;
   cycleId: string;
   loanAmount: number;
   loanType: string;
   signedAt: string;
+  supabaseClient?: SupabaseClient;
 }): Promise<void> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseClient ?? (await createSupabaseServerClient());
 
   // Xóa payment periods cũ nếu có (để tránh duplicate)
   await supabase
@@ -368,14 +371,16 @@ export async function createPaymentCycleService({
   principal,
   startDate,
   endDate,
+  supabaseClient,
 }: {
   loanId: string;
   cycleNumber: number;
   principal: number;
   startDate: string;
   endDate: string;
+  supabaseClient?: SupabaseClient;
 }): Promise<string> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseClient ?? (await createSupabaseServerClient());
 
   const { data, error } = await supabase
     .from("loan_payment_cycles")
@@ -473,9 +478,13 @@ export async function recalculatePendingLoanPaymentScheduleService({
  */
 export async function clearLoanPaymentScheduleIfNoTransactionsService(
   loanId: string,
-  options?: { failIfHasTransactions?: boolean },
+  options?: {
+    failIfHasTransactions?: boolean;
+    supabaseClient?: SupabaseClient;
+  },
 ): Promise<void> {
-  const supabase = await createSupabaseServerClient();
+  const supabase =
+    options?.supabaseClient ?? (await createSupabaseServerClient());
 
   const { count, error: txCountError } = await supabase
     .from("loan_payment_transactions")
@@ -509,19 +518,24 @@ export async function recreateLoanPaymentScheduleOnSignService({
   loanAmount,
   loanType,
   signedAt,
+  supabaseClient,
 }: {
   loanId: string;
   loanAmount: number;
   loanType: string;
   signedAt: string;
+  supabaseClient?: SupabaseClient;
 }): Promise<void> {
-  await clearLoanPaymentScheduleIfNoTransactionsService(loanId);
+  await clearLoanPaymentScheduleIfNoTransactionsService(loanId, {
+    supabaseClient,
+  });
 
   await createLoanPaymentScheduleService({
     loanId,
     loanAmount,
     loanType,
     signedAt,
+    supabaseClient,
   });
 }
 
@@ -533,13 +547,15 @@ export async function createLoanPaymentScheduleService({
   loanAmount,
   loanType,
   signedAt,
+  supabaseClient,
 }: {
   loanId: string;
   loanAmount: number;
   loanType: string;
   signedAt: string;
+  supabaseClient?: SupabaseClient;
 }): Promise<void> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseClient ?? (await createSupabaseServerClient());
   const startDate = signedAt.split("T")[0];
   const endDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     .toISOString()
@@ -551,6 +567,7 @@ export async function createLoanPaymentScheduleService({
     principal: loanAmount,
     startDate,
     endDate,
+    supabaseClient: supabase,
   });
 
   try {
@@ -560,6 +577,7 @@ export async function createLoanPaymentScheduleService({
       loanAmount,
       loanType,
       signedAt,
+      supabaseClient: supabase,
     });
   } catch (error) {
     await supabase.from("loan_payment_cycles").delete().eq("id", cycleId);

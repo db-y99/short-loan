@@ -71,7 +71,7 @@ const INITIAL_FORM: TCreateLoanForm = {
   serial: "",
   asset_condition: "",
   loan_amount: "",
-  loan_type: LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE,
+  loan_type: LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD,
   notes: "",
   references: [],
   attachments: [],
@@ -303,8 +303,9 @@ const CreateContractModal = ({
       const result = await createLoanAction(payload);
 
       if (result.success) {
-        // 2) Upload files mới vào folder đã tạo
+        // 2) Upload files mới vào folder đã tạo — giữ ảnh cũ (vay lại) + ảnh mới
         let uploadedFiles: TUploadFiles[] = [...keptAssetImages];
+        let newlyUploadedFileIds: string[] = [];
 
         if (form.attachments.length > 0) {
           setUploadProgress(
@@ -317,11 +318,14 @@ const CreateContractModal = ({
             },
           });
 
-          uploadedFiles = results.map((r) => ({
+          const newFiles = results.map((r) => ({
             name: r.fileName,
             provider: PROVIDER_TYPES.GOOGLE_DRIVE,
             file_id: r.fileId,
           }));
+
+          newlyUploadedFileIds = newFiles.map((f) => f.file_id);
+          uploadedFiles = [...keptAssetImages, ...newFiles];
         }
 
         // 3) Save attachments vào DB
@@ -333,14 +337,17 @@ const CreateContractModal = ({
           });
 
           if (!saveRes.success) {
-            await cleanupDriveFilesAction(
-              uploadedFiles.map((file) => file.file_id),
-            ).catch((cleanupError) => {
-              console.error(
-                "[CREATE_LOAN_ATTACHMENT_CLEANUP_ERROR]",
-                cleanupError,
+            // Chỉ xóa file mới upload — không đụng ảnh cũ đang dùng bởi hợp đồng trước
+            if (newlyUploadedFileIds.length > 0) {
+              await cleanupDriveFilesAction(newlyUploadedFileIds).catch(
+                (cleanupError) => {
+                  console.error(
+                    "[CREATE_LOAN_ATTACHMENT_CLEANUP_ERROR]",
+                    cleanupError,
+                  );
+                },
               );
-            });
+            }
             setError(saveRes.error);
 
             return;

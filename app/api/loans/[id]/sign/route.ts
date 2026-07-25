@@ -1,6 +1,8 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { NextRequest, NextResponse } from "next/server";
 
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { LOAN_STATUS, ACTIVITY_LOG_TYPE } from "@/constants/loan";
 import { DEFAULT_SELECTED_CONTRACT_TYPES } from "@/constants/contracts";
 import { uploadToDrive, deleteManyFromDrive } from "@/lib/google-drive";
@@ -14,6 +16,7 @@ import {
   recreateLoanPaymentScheduleOnSignService,
 } from "@/services/payments/payment-periods.service";
 import { getOptionalAuthUser } from "@/lib/auth/api-auth";
+
 /**
  * Helper function to convert base64 data URL to Buffer
  */
@@ -28,7 +31,7 @@ async function revertFailedSign({
   loanId,
   signatureFileIds,
 }: {
-  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
+  supabase: SupabaseClient;
   loanId: string;
   signatureFileIds: string[];
 }) {
@@ -54,14 +57,19 @@ async function revertFailedSign({
     });
   }
 
-  const artifactsResult = await revertLoanSignArtifactsService(loanId);
+  const artifactsResult = await revertLoanSignArtifactsService(
+    loanId,
+    supabase,
+  );
 
   if (!artifactsResult.success) {
     console.error("[SIGN_REVERT_ARTIFACTS_ERROR]", artifactsResult.error);
   }
 
   try {
-    await clearLoanPaymentScheduleIfNoTransactionsService(loanId);
+    await clearLoanPaymentScheduleIfNoTransactionsService(loanId, {
+      supabaseClient: supabase,
+    });
   } catch (scheduleCleanupError) {
     console.error("[SIGN_REVERT_SCHEDULE_CLEANUP_ERROR]", scheduleCleanupError);
   }
@@ -69,14 +77,16 @@ async function revertFailedSign({
 
 /**
  * POST /api/loans/[id]/sign
- * Ký hợp đồng (chuyển từ approved sang signed)
+ * Ký hợp đồng (chuyển từ approved sang signed).
+ * Khách ký qua QR không cần đăng nhập — dùng admin client (bypass RLS).
  */
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
+    // Admin client: khách QR không có session; staff ký trực tiếp cũng OK qua path này
+    const supabase = createSupabaseAdminClient();
     const { id: loanId } = await params;
 
     // Get signatures from request body
@@ -84,7 +94,7 @@ export async function POST(
 
     try {
       body = await request.json();
-    } catch (e) {
+    } catch {
       return NextResponse.json(
         { success: false, error: "Invalid request body" },
         { status: 400 },
@@ -307,7 +317,7 @@ export async function POST(
       officialSignatureFileId,
     ].filter((id): id is string => Boolean(id));
 
-    const pdfResult = await generateSignedContractsService(loanId);
+    const pdfResult = await generateSignedContractsService(loanId, supabase);
 
     if (!pdfResult.success) {
       await revertFailedSign({ supabase, loanId, signatureFileIds });
@@ -331,6 +341,7 @@ export async function POST(
         loanAmount: Number(loan.amount),
         loanType,
         signedAt,
+        supabaseClient: supabase,
       });
     } catch (scheduleError) {
       console.error("[SIGN_PAYMENT_SCHEDULE_ERROR]", scheduleError);

@@ -44,7 +44,7 @@ const PaymentTable = ({
           <TableColumn>Mốc</TableColumn>
           <TableColumn>Ngày</TableColumn>
           <TableColumn align="end">Lãi</TableColumn>
-          <TableColumn align="end">Phí thuê</TableColumn>
+          <TableColumn align="end">Phí quản lý tài sản</TableColumn>
           <TableColumn align="end">Phí dịch vụ</TableColumn>
           <TableColumn align="end">Tổng chuộc</TableColumn>
         </TableHeader>
