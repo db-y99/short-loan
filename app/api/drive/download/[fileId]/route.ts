@@ -4,10 +4,7 @@ import { NextResponse } from "next/server";
 
 import { streamFileFromDrive } from "@/lib/google-drive";
 import { env } from "@/config/env";
-import {
-  requireActiveStaffUser,
-  verifyStaffCanAccessDriveFile,
-} from "@/lib/auth/api-auth";
+import { requireActiveStaffUser } from "@/lib/auth/api-auth";
 import { create as createContentDisposition } from "content-disposition";
 
 export async function GET(
@@ -19,12 +16,6 @@ export async function GET(
   const staff = await requireActiveStaffUser();
 
   if (!staff.ok) return staff.response;
-
-  const canAccess = await verifyStaffCanAccessDriveFile(fileId);
-
-  if (!canAccess) {
-    return new NextResponse("Forbidden", { status: 403 });
-  }
 
   const { searchParams } = new URL(req.url);
   const format = searchParams.get("format");

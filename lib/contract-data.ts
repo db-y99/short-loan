@@ -154,23 +154,23 @@ function buildPledgeMilestones(loan: TLoanDetails): TPledgeMilestone[] {
 }
 
 /**
- * Tạo milestones cho Hợp đồng thuê tài sản (Chỉ hiển thị phí thuê)
+ * Tạo milestones cho Hợp đồng thuê tài sản (Phí thuê)
  * Dựa vào loanAmount và loanType để tính trực tiếp
  */
 function buildLeaseMilestones(loan: TLoanDetails): TLeaseMilestone[] {
   const loanAmount = loan.loanAmount;
 
   // Xác định loan type để tính phí thuê
-  let isPackage1 =
+  const isPackage1 =
     loan.loanType === LOAN_TYPES.INSTALLMENT_3_PERIODS ||
     loan.loanType.includes("trả góp") ||
     loan.loanType.includes("3 kỳ");
 
-  let isPackage2 =
+  const isPackage2 =
     loan.loanType === LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE ||
     loan.loanType.includes("Theo mốc");
 
-  let isPackage3 =
+  const isPackage3 =
     loan.loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD ||
     loan.loanType.includes("Giữ TS");
 
@@ -211,7 +211,9 @@ function buildLeaseMilestones(loan: TLoanDetails): TLeaseMilestone[] {
         ),
       },
     ];
-  } else if (isPackage2) {
+  }
+
+  if (isPackage2) {
     // Package 2: Phí thuê = Total target - Principal - Interest
     return [
       {
@@ -242,38 +244,47 @@ function buildLeaseMilestones(loan: TLoanDetails): TLeaseMilestone[] {
         ),
       },
     ];
-  } else {
-    // Package 3: Phí thuê = Total target - Principal - Interest
-    return [
-      {
-        moc: 1,
-        ngay: 7,
-        phiThue: formatVND(
-          Math.round(loanAmount * 1.0125) -
-            loanAmount -
-            Math.round(loanAmount * DAILY_INTEREST_RATE * 7),
-        ),
-      },
-      {
-        moc: 2,
-        ngay: 18,
-        phiThue: formatVND(
-          Math.round(loanAmount * 1.035) -
-            loanAmount -
-            Math.round(loanAmount * DAILY_INTEREST_RATE * 18),
-        ),
-      },
-      {
-        moc: 3,
-        ngay: 30,
-        phiThue: formatVND(
-          Math.round(loanAmount * 1.05) -
-            loanAmount -
-            Math.round(loanAmount * DAILY_INTEREST_RATE * 30),
-        ),
-      },
-    ];
   }
+
+  if (isPackage3) {
+    // Gói 3: Phí thuê + Phí dịch vụ (cùng công thức calculateBulletPaymentWithCollateralHold)
+    return calculateBulletPaymentWithCollateralHold(loanAmount).map((p) => ({
+      moc: p.milestone,
+      ngay: p.days,
+      phiThue: formatVND(p.rentalFee + (p.serviceFee ?? 0)),
+    }));
+  }
+
+  // Fallback: coi như gói 2
+  return [
+    {
+      moc: 1,
+      ngay: 7,
+      phiThue: formatVND(
+        Math.round(loanAmount * 1.05) -
+          loanAmount -
+          Math.round(loanAmount * DAILY_INTEREST_RATE * 7),
+      ),
+    },
+    {
+      moc: 2,
+      ngay: 18,
+      phiThue: formatVND(
+        Math.round(loanAmount * 1.08) -
+          loanAmount -
+          Math.round(loanAmount * DAILY_INTEREST_RATE * 18),
+      ),
+    },
+    {
+      moc: 3,
+      ngay: 30,
+      phiThue: formatVND(
+        Math.round(loanAmount * 1.12) -
+          loanAmount -
+          Math.round(loanAmount * DAILY_INTEREST_RATE * 30),
+      ),
+    },
+  ];
 }
 
 /**

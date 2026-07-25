@@ -1,8 +1,5 @@
 import { env } from "@/config/env";
-import {
-  requireActiveStaffUser,
-  verifyStaffCanAccessDriveFile,
-} from "@/lib/auth/api-auth";
+import { requireActiveStaffUser } from "@/lib/auth/api-auth";
 import { create as createContentDisposition } from "content-disposition";
 import { NextResponse } from "next/server";
 
@@ -15,12 +12,6 @@ export async function GET(
   const staff = await requireActiveStaffUser();
 
   if (!staff.ok) return staff.response;
-
-  const canAccess = await verifyStaffCanAccessDriveFile(fileId);
-
-  if (!canAccess) {
-    return new NextResponse("Forbidden", { status: 403 });
-  }
 
   try {
     const serviceUrl = env.CONVERT_PDF_TO_WORD_SERVICE_URL;

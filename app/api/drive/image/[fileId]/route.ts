@@ -3,10 +3,7 @@ import { Readable } from "stream";
 import { create as createContentDisposition } from "content-disposition";
 import { NextRequest, NextResponse } from "next/server";
 
-import {
-  requireActiveStaffUser,
-  verifyStaffCanAccessDriveFile,
-} from "@/lib/auth/api-auth";
+import { requireActiveStaffUser } from "@/lib/auth/api-auth";
 import {
   streamFileFromDrive,
   streamFileMediaFromDrive,
@@ -23,12 +20,6 @@ export async function GET(
     const staff = await requireActiveStaffUser();
 
     if (!staff.ok) return staff.response;
-
-    const canAccess = await verifyStaffCanAccessDriveFile(fileId);
-
-    if (!canAccess) {
-      return new NextResponse("Forbidden", { status: 403 });
-    }
 
     // Thumbnail: 1 lần gọi Drive (bỏ metadata) — gallery load nhiều ảnh cùng lúc
     const result = isThumb
