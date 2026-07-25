@@ -67,8 +67,8 @@ const LoanPreviewSection = ({ form }: TProps) => {
           days: payment.days,
           date: new Date(
             Date.now() +
-              30 * 24 * 60 * 60 * 1000 +
-              payment.days * 24 * 60 * 60 * 1000,
+            30 * 24 * 60 * 60 * 1000 +
+            payment.days * 24 * 60 * 60 * 1000,
           ).toISOString(),
           interestAndFee:
             payment.interest +
@@ -202,7 +202,7 @@ const LoanPreviewSection = ({ form }: TProps) => {
                           Lãi: {formatCurrencyVND(milestone.interest || 0)}
                         </div>
                         <div>
-                          Phí quản lý tài sản:{" "}
+                          Phí bảo quản tài sản:{" "}
                           {formatCurrencyVND(milestone.rentalFee || 0)}
                         </div>
                         {(milestone.serviceFee || 0) > 0 && (

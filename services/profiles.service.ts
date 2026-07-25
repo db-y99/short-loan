@@ -1,4 +1,5 @@
 import { createSupabaseServerClient as createClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export interface Profile {
   id: string;
@@ -12,19 +13,36 @@ export interface Profile {
   updated_at?: string;
 }
 
+const PROFILE_COLUMNS =
+  "id, email, full_name, role, status, branch_id, deleted_at, created_at, updated_at";
+
 /**
- * Get profile by email
+ * Get profile by email (pre-auth / OTP).
+ * Dùng service-role vì RLS chặn anon SELECT trên profiles —
+ * OTP login chạy khi chưa có session nên client thường luôn trả null.
  */
 export async function getProfileByEmail(
   email: string,
 ): Promise<Profile | null> {
   try {
-    const supabase = await createClient();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (!trimmedEmail) {
+      return null;
+    }
+
+    const originalTrimmed = email.trim();
+    const emailCandidates = Array.from(
+      new Set([originalTrimmed, trimmedEmail]),
+    );
+
+    const supabase = createSupabaseAdminClient();
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")
-      .eq("email", email.trim())
-      .single();
+      .select(PROFILE_COLUMNS)
+      .in("email", emailCandidates)
+      .limit(1)
+      .maybeSingle();
 
     if (error || !data) {
       return null;

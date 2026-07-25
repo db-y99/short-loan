@@ -55,30 +55,30 @@ export function AssetPledgeContractView({
     data.MILESTONES && data.MILESTONES.length > 0
       ? data.MILESTONES
       : (() => {
-          // Fallback: calculate basic interest-only milestones
-          const loanAmount = unformatMoney(data.SO_TIEN_VAY);
+        // Fallback: calculate basic interest-only milestones
+        const loanAmount = unformatMoney(data.SO_TIEN_VAY);
 
-          return [
-            {
-              moc: 1,
-              ngay: 7,
-              lai: formatMoney(Math.round(loanAmount * 0.00033 * 7)),
-              tongTien: formatMoney(Math.round(loanAmount * 0.00033 * 7)),
-            },
-            {
-              moc: 2,
-              ngay: 18,
-              lai: formatMoney(Math.round(loanAmount * 0.00033 * 18)),
-              tongTien: formatMoney(Math.round(loanAmount * 0.00033 * 18)),
-            },
-            {
-              moc: 3,
-              ngay: 30,
-              lai: formatMoney(Math.round(loanAmount * 0.00033 * 30)),
-              tongTien: formatMoney(Math.round(loanAmount * 0.00033 * 30)),
-            },
-          ];
-        })();
+        return [
+          {
+            moc: 1,
+            ngay: 7,
+            lai: formatMoney(Math.round(loanAmount * 0.00033 * 7)),
+            tongTien: formatMoney(Math.round(loanAmount * 0.00033 * 7)),
+          },
+          {
+            moc: 2,
+            ngay: 18,
+            lai: formatMoney(Math.round(loanAmount * 0.00033 * 18)),
+            tongTien: formatMoney(Math.round(loanAmount * 0.00033 * 18)),
+          },
+          {
+            moc: 3,
+            ngay: 30,
+            lai: formatMoney(Math.round(loanAmount * 0.00033 * 30)),
+            tongTien: formatMoney(Math.round(loanAmount * 0.00033 * 30)),
+          },
+        ];
+      })();
 
   return (
     <div id={id} style={S.container}>
