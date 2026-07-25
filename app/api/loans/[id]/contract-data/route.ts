@@ -2,6 +2,7 @@ import type { TContractType } from "@/types/contract.types";
 
 import { NextRequest, NextResponse } from "next/server";
 
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { LOAN_STATUS } from "@/constants/loan";
 import { requireActiveStaffUser } from "@/lib/auth/api-auth";
@@ -17,37 +18,59 @@ import { getUnsignedContractTypesFromFiles } from "@/lib/contract-utils";
 
 /**
  * GET /api/loans/[id]/contract-data
- * Lấy dữ liệu hợp đồng để hiển thị trong modal ký hoặc contract page
+ * Lấy dữ liệu hợp đồng để hiển thị trong modal ký hoặc contract page.
+ * Khách (QR) khi loan approved: dùng admin client (bypass RLS, không cần login).
+ * Nhân viên xem loan chưa approved: cần staff auth.
  */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const supabase = await createSupabaseServerClient();
     const { id: loanId } = await params;
 
     const { searchParams } = new URL(request.url);
     const contractType = searchParams.get("type");
 
-    const { getLoanDetailsService } = await import(
-      "@/services/loans/loans.service"
-    );
-    const loanDetails = await getLoanDetailsService(loanId);
+    // Peek status bằng admin — anon không đọc được loans qua RLS
+    const admin = createSupabaseAdminClient();
+    const { data: loanStatusRow } = await admin
+      .from("loans")
+      .select("id, status")
+      .eq("id", loanId)
+      .maybeSingle();
 
-    if (!loanDetails) {
+    if (!loanStatusRow) {
       return NextResponse.json(
         { success: false, error: "Không tìm thấy khoản vay" },
         { status: 404 },
       );
     }
 
-    const isApprovedForSigning = loanDetails.status === LOAN_STATUS.APPROVED;
+    const isApprovedForSigning =
+      loanStatusRow.status === LOAN_STATUS.APPROVED;
 
     if (!isApprovedForSigning) {
       const staff = await requireActiveStaffUser();
 
       if (!staff.ok) return staff.response;
+    }
+
+    // Khách QR (approved) → admin; staff path → session client vẫn OK vì đã auth
+    const supabase = isApprovedForSigning
+      ? admin
+      : await createSupabaseServerClient();
+
+    const { getLoanDetailsService } = await import(
+      "@/services/loans/loans.service"
+    );
+    const loanDetails = await getLoanDetailsService(loanId, supabase);
+
+    if (!loanDetails) {
+      return NextResponse.json(
+        { success: false, error: "Không tìm thấy khoản vay" },
+        { status: 404 },
+      );
     }
 
     // Lấy các loại hợp đồng đã tạo (chưa ký) từ loan_files

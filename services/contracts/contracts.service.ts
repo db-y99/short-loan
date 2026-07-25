@@ -3,6 +3,8 @@
  * Service để tạo và quản lý hợp đồng
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   CONTRACT_TYPE,
@@ -100,10 +102,12 @@ function buildAllContractsData(
 
 /**
  * Tạo hợp đồng cho loan (có thể chọn loại cần tạo)
+ * Optional client: dùng admin khi khách ký QR (bypass RLS).
  */
 export async function generateContractsService(
   loanId: string,
   contractTypes: TContractType[] = [...GENERATABLE_CONTRACT_TYPES],
+  supabaseClient?: SupabaseClient,
 ): Promise<{
   success: boolean;
   contracts?: TContractFile[];
@@ -111,7 +115,7 @@ export async function generateContractsService(
 }> {
   try {
     console.log(`[GENERATE_CONTRACTS] Starting for loan: ${loanId}`);
-    const supabase = await createSupabaseServerClient();
+    const supabase = supabaseClient ?? (await createSupabaseServerClient());
 
     // Lấy loan details
     const { getLoanDetailsService } = await import(
@@ -119,7 +123,7 @@ export async function generateContractsService(
     );
 
     console.log(`[GENERATE_CONTRACTS] Fetching loan details...`);
-    const loan = await getLoanDetailsService(loanId);
+    const loan = await getLoanDetailsService(loanId, supabase);
 
     if (!loan) {
       console.error(`[GENERATE_CONTRACTS] Loan not found: ${loanId}`);
@@ -674,15 +678,19 @@ export async function regenerateContractsService(
 /**
  * Generate 4 signed contract PDFs (sau khi ký hợp đồng)
  * Tạo PDF có chữ ký và lưu vào DB + Drive
+ * Optional client: dùng admin khi khách ký QR (bypass RLS).
  */
-export async function generateSignedContractsService(loanId: string): Promise<{
+export async function generateSignedContractsService(
+  loanId: string,
+  supabaseClient?: SupabaseClient,
+): Promise<{
   success: boolean;
   contracts?: TContractFile[];
   error?: string;
 }> {
   try {
     console.log(`[GENERATE_SIGNED_CONTRACTS] Starting for loan: ${loanId}`);
-    const supabase = await createSupabaseServerClient();
+    const supabase = supabaseClient ?? (await createSupabaseServerClient());
 
     // Lấy loan details và metadata trước. Chỉ thay thế dữ liệu cũ sau khi đã tạo mới thành công.
     const { getLoanDetailsService } = await import(
@@ -690,7 +698,7 @@ export async function generateSignedContractsService(loanId: string): Promise<{
     );
 
     const [loan, loanData] = await Promise.all([
-      getLoanDetailsService(loanId),
+      getLoanDetailsService(loanId, supabase),
       supabase
         .from("loans")
         .select("draft_signature_file_id, official_signature_file_id, metadata")
@@ -1037,12 +1045,14 @@ export async function generateSignedContractsService(loanId: string): Promise<{
 
 /**
  * Hoàn tác artifact sau ký thất bại: xóa PDF đã ký và tạo lại bản chưa ký.
+ * Optional client: dùng admin khi khách ký QR (bypass RLS).
  */
 export async function revertLoanSignArtifactsService(
   loanId: string,
+  supabaseClient?: SupabaseClient,
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await createSupabaseServerClient();
+    const supabase = supabaseClient ?? (await createSupabaseServerClient());
 
     const { data: loanFiles, error: fetchError } = await supabase
       .from("loan_files")
@@ -1089,6 +1099,7 @@ export async function revertLoanSignArtifactsService(
     const regenerateResult = await generateContractsService(
       loanId,
       typesToRestore,
+      supabase,
     );
 
     if (!regenerateResult.success) {

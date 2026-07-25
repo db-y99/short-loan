@@ -28,10 +28,20 @@ const ASSET_TYPE_OPTIONS = Object.values(ASSET_TYPES).map((type) => ({
   label: ASSET_TYPE_LABEL[type],
 }));
 
-const LOAN_TYPE_OPTIONS = Object.values(LOAN_TYPES).map((type) => ({
-  key: type,
-  label: LOAN_TYPE_LABEL[type],
-}));
+const LOAN_TYPE_OPTIONS = [
+  // {
+  //   key: LOAN_TYPES.INSTALLMENT_3_PERIODS,
+  //   label: LOAN_TYPE_LABEL[LOAN_TYPES.INSTALLMENT_3_PERIODS],
+  // },
+  // {
+  //   key: LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE,
+  //   label: LOAN_TYPE_LABEL[LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE],
+  // },
+  {
+    key: LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD,
+    label: LOAN_TYPE_LABEL[LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD],
+  },
+];
 
 const VEHICLE_TYPES: readonly string[] = [
   ASSET_TYPES.MOTORBIKE,

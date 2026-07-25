@@ -9,6 +9,7 @@ import type {
   TCreateLoanInput,
   TUploadFiles,
 } from "@/types/loan.types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -322,11 +323,12 @@ const EMPTY_PERIOD: TPaymentPeriod = {
   milestones: EMPTY_MILESTONES,
 };
 
-/** Lấy chi tiết khoản vay theo id */
+/** Lấy chi tiết khoản vay theo id. Optional client: dùng admin khi khách ký QR (bypass RLS). */
 export const getLoanDetailsService = async (
   loanId: string,
+  supabaseClient?: SupabaseClient,
 ): Promise<TLoanDetails | null> => {
-  const supabase = await createSupabaseServerClient();
+  const supabase = supabaseClient ?? (await createSupabaseServerClient());
 
   const { data: loan, error: loanError } = await supabase
     .from("loans")

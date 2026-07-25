@@ -51,6 +51,7 @@ export default function LoanSignPage() {
   const [isAgreed, setIsAgreed] = useState(false);
   const [isSigning, setIsSigning] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [contractData, setContractData] = useState<any>(null);
   const [draftSignature, setDraftSignature] = useState<string | null>(null);
   const [officialSignature, setOfficialSignature] = useState<string | null>(
@@ -66,6 +67,7 @@ export default function LoanSignPage() {
 
   const fetchContractData = async () => {
     setIsLoading(true);
+    setLoadError(null);
     try {
       const res = await fetch(`/api/loans/${loanId}/contract-data`);
       const result = await res.json();
@@ -80,9 +82,18 @@ export default function LoanSignPage() {
             tabs.some((tab) => tab.key === current) ? current : tabs[0].key,
           );
         }
+      } else {
+        setContractData(null);
+        setLoadError(
+          typeof result.error === "string"
+            ? result.error
+            : "Không tải được hợp đồng",
+        );
       }
     } catch (err) {
       console.error("Error fetching contract data:", err);
+      setContractData(null);
+      setLoadError("Không tải được hợp đồng. Vui lòng thử lại.");
     } finally {
       setIsLoading(false);
     }
@@ -575,9 +586,21 @@ export default function LoanSignPage() {
         ) : (
           <div className="flex flex-col items-center justify-center py-32 gap-3 px-6 text-center">
             <FileText className="w-12 h-12 text-default-300" />
-            <p className="text-default-500 text-sm">
-              Không thể tải dữ liệu hợp đồng
+            <p className="text-default-700 font-medium">
+              Không tải được hợp đồng
             </p>
+            <p className="text-default-500 text-sm">
+              {loadError ??
+                "Vui lòng kiểm tra kết nối hoặc liên hệ nhân viên hỗ trợ."}
+            </p>
+            <Button
+              color="primary"
+              size="sm"
+              variant="flat"
+              onPress={fetchContractData}
+            >
+              Thử lại
+            </Button>
           </div>
         )}
       </div>
