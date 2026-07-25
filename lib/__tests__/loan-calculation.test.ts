@@ -173,38 +173,38 @@ describe("Loan Calculation Library", () => {
 
       expect(payments).toHaveLength(3);
 
-      // Mốc 7 ngày: Lãi = 10M × 0.033% × 7, Phí thuê = (10M × 1.25%) - Lãi
-      const interest1 = Math.round(10_000_000 * 0.00033 * 7); // 23,100
-      const rentalFeeBase1 = Math.round(10_000_000 * 0.0125); // 125,000
-      const rentalFee1 = Math.max(0, rentalFeeBase1 - interest1); // 101,900
-      const total1 = 10_000_000 + interest1 + rentalFee1; // 10,125,000
+      // Mốc 7 ngày: Lãi = 10M × 0.033% × 7, Phí thuê = (10M × 4%) - Lãi
+      const interest1 = Math.round(10_000_000 * 0.00033 * 7);
+      const rentalFeeBase1 = Math.round(10_000_000 * 0.04);
+      const rentalFee1 = Math.max(0, rentalFeeBase1 - interest1);
+      const total1 = 10_000_000 + interest1 + rentalFee1;
 
       expect(payments[0].days).toBe(7);
-      expect(payments[0].rate).toBe(0.0125);
+      expect(payments[0].rate).toBe(0.04);
       expect(payments[0].interest).toBe(interest1);
       expect(payments[0].rentalFee).toBe(rentalFee1);
       expect(payments[0].total).toBe(total1);
 
-      // Mốc 18 ngày: Lãi = 10M × 0.033% × 18, Phí thuê = (10M × 3.5%) - Lãi
-      const interest2 = Math.round(10_000_000 * 0.00033 * 18); // 59,400
-      const rentalFeeBase2 = Math.round(10_000_000 * 0.035); // 350,000
-      const rentalFee2 = Math.max(0, rentalFeeBase2 - interest2); // 290,600
-      const total2 = 10_000_000 + interest2 + rentalFee2; // 10,350,000
+      // Mốc 18 ngày: Lãi = 10M × 0.033% × 18, Phí thuê = (10M × 5%) - Lãi
+      const interest2 = Math.round(10_000_000 * 0.00033 * 18);
+      const rentalFeeBase2 = Math.round(10_000_000 * 0.05);
+      const rentalFee2 = Math.max(0, rentalFeeBase2 - interest2);
+      const total2 = 10_000_000 + interest2 + rentalFee2;
 
       expect(payments[1].days).toBe(18);
-      expect(payments[1].rate).toBe(0.035);
+      expect(payments[1].rate).toBe(0.05);
       expect(payments[1].interest).toBe(interest2);
       expect(payments[1].rentalFee).toBe(rentalFee2);
       expect(payments[1].total).toBe(total2);
 
-      // Mốc 30 ngày: Lãi = 10M × 0.033% × 30, Phí thuê = (10M × 5%) - Lãi
-      const interest3 = Math.round(10_000_000 * 0.00033 * 30); // 99,000
-      const rentalFeeBase3 = Math.round(10_000_000 * 0.05); // 500,000
-      const rentalFee3 = Math.max(0, rentalFeeBase3 - interest3); // 401,000
-      const total3 = 10_000_000 + interest3 + rentalFee3; // 10,500,000
+      // Mốc 30 ngày: Lãi = 10M × 0.033% × 30, Phí thuê = (10M × 6.5%) - Lãi
+      const interest3 = Math.round(10_000_000 * 0.00033 * 30);
+      const rentalFeeBase3 = Math.round(10_000_000 * 0.065);
+      const rentalFee3 = Math.max(0, rentalFeeBase3 - interest3);
+      const total3 = 10_000_000 + interest3 + rentalFee3;
 
       expect(payments[2].days).toBe(30);
-      expect(payments[2].rate).toBe(0.05);
+      expect(payments[2].rate).toBe(0.065);
       expect(payments[2].interest).toBe(interest3);
       expect(payments[2].rentalFee).toBe(rentalFee3);
       expect(payments[2].total).toBe(total3);
@@ -216,31 +216,31 @@ describe("Loan Calculation Library", () => {
       expect(payments).toHaveLength(3);
 
       // Mốc 1: 7 ngày
-      const interest1 = Math.round(1_500_000 * 0.00033 * 7); // 3,465
-      const rentalFeeBase1 = Math.round(1_500_000 * 0.0125); // 18,750
-      const rentalFee1 = Math.max(0, rentalFeeBase1 - interest1); // 15,285
+      const interest1 = Math.round(1_500_000 * 0.00033 * 7);
+      const rentalFeeBase1 = Math.round(1_500_000 * 0.04);
+      const rentalFee1 = Math.max(0, rentalFeeBase1 - interest1);
       const serviceFee = 30_000;
-      const total1 = 1_500_000 + interest1 + rentalFee1 + serviceFee; // 1,549,285
+      const total1 = 1_500_000 + interest1 + rentalFee1 + serviceFee;
 
       expect(payments[0].interest).toBe(interest1);
       expect(payments[0].rentalFee).toBe(rentalFee1);
       expect(payments[0].total).toBe(total1);
 
       // Mốc 2: 18 ngày
-      const interest2 = Math.round(1_500_000 * 0.00033 * 18); // 8,910
-      const rentalFeeBase2 = Math.round(1_500_000 * 0.035); // 52,500
-      const rentalFee2 = Math.max(0, rentalFeeBase2 - interest2); // 43,590
-      const total2 = 1_500_000 + interest2 + rentalFee2 + serviceFee; // 1,582,500
+      const interest2 = Math.round(1_500_000 * 0.00033 * 18);
+      const rentalFeeBase2 = Math.round(1_500_000 * 0.05);
+      const rentalFee2 = Math.max(0, rentalFeeBase2 - interest2);
+      const total2 = 1_500_000 + interest2 + rentalFee2 + serviceFee;
 
       expect(payments[1].interest).toBe(interest2);
       expect(payments[1].rentalFee).toBe(rentalFee2);
       expect(payments[1].total).toBe(total2);
 
       // Mốc 3: 30 ngày
-      const interest3 = Math.round(1_500_000 * 0.00033 * 30); // 14,850
-      const rentalFeeBase3 = Math.round(1_500_000 * 0.05); // 75,000
-      const rentalFee3 = Math.max(0, rentalFeeBase3 - interest3); // 60,150
-      const total3 = 1_500_000 + interest3 + rentalFee3 + serviceFee; // 1,605,000
+      const interest3 = Math.round(1_500_000 * 0.00033 * 30);
+      const rentalFeeBase3 = Math.round(1_500_000 * 0.065);
+      const rentalFee3 = Math.max(0, rentalFeeBase3 - interest3);
+      const total3 = 1_500_000 + interest3 + rentalFee3 + serviceFee;
 
       expect(payments[2].interest).toBe(interest3);
       expect(payments[2].rentalFee).toBe(rentalFee3);
