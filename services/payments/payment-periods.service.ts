@@ -206,10 +206,10 @@ export async function saveDetailedPaymentPeriodsService({
         milestone_day: payment.days,
         due_date: calculateDueDate(signedAt, payment.days),
         principal: loanAmount, // Gốc cuối kỳ = toàn bộ số tiền vay
-        interest: 0,
-        rental_fee: 0,
+        interest: payment.interest,
+        rental_fee: payment.rentalFee,
         rate: payment.rate,
-        fee_amount: payment.total - loanAmount,
+        fee_amount: payment.interest + payment.rentalFee,
         total_due: payment.total,
         status: "pending" as const,
       })),
@@ -221,10 +221,10 @@ export async function saveDetailedPaymentPeriodsService({
         milestone_day: payment.days,
         due_date: calculateNextPeriodDueDate(signedAt, payment.days),
         principal: loanAmount,
-        interest: 0,
-        rental_fee: 0,
+        interest: payment.interest,
+        rental_fee: payment.rentalFee,
         rate: payment.rate,
-        fee_amount: payment.total - loanAmount,
+        fee_amount: payment.interest + payment.rentalFee,
         total_due: payment.total,
         status: "pending" as const,
       })),
@@ -318,11 +318,57 @@ export async function getPaymentPeriodsService(
   const currentPeriods = data.filter((p) => p.period_type === "current");
   const nextPeriods = data.filter((p) => p.period_type === "next");
 
-  // Tính service fee cho Gói 3
+  const isPackage2 =
+    loanData.loan_type === "bullet_payment_by_milestone" ||
+    loanData.loan_type?.includes("Theo mốc");
   const isPackage3 =
     loanData.loan_type === "bullet_payment_with_collateral_hold" ||
     loanData.loan_type?.includes("Giữ TS");
   const serviceFee = isPackage3 && loanData.amount <= 2000000 ? 30000 : 0;
+
+  // Gói 2 cũ có thể lưu interest/rental_fee = 0 → tính lại để tách cột
+  const package2ByDay = new Map<
+    number,
+    { interest: number; rentalFee: number }
+  >();
+
+  if (isPackage2) {
+    const { calculateBulletPaymentByMilestone } = await import(
+      "@/lib/loan-calculation"
+    );
+
+    for (const payment of calculateBulletPaymentByMilestone(
+      Number(loanData.amount),
+    )) {
+      package2ByDay.set(payment.days, {
+        interest: payment.interest,
+        rentalFee: payment.rentalFee,
+      });
+    }
+  }
+
+  const mapMilestone = (p: (typeof data)[number]) => {
+    const storedInterest = Number(p.interest || 0);
+    const storedRentalFee = Number(p.rental_fee || 0);
+    const fallback = package2ByDay.get(p.milestone_day);
+    const interest =
+      storedInterest > 0 ? storedInterest : (fallback?.interest ?? undefined);
+    const rentalFee =
+      storedRentalFee > 0
+        ? storedRentalFee
+        : (fallback?.rentalFee ?? undefined);
+
+    return {
+      days: p.milestone_day,
+      date: p.due_date,
+      principal: p.principal ? Number(p.principal) : undefined,
+      interestAndFee: Number(p.fee_amount),
+      totalRedemption: Number(p.total_due),
+      interest,
+      rentalFee,
+      serviceFee: isPackage3 ? serviceFee : undefined,
+    };
+  };
 
   // Convert to TPaymentPeriod format
   const currentPeriod: TPaymentPeriod = {
@@ -330,33 +376,13 @@ export async function getPaymentPeriodsService(
     subtitle: currentPeriods[0]
       ? `${currentPeriods.length} mốc thanh toán`
       : undefined,
-    milestones: currentPeriods.map((p) => ({
-      days: p.milestone_day,
-      date: p.due_date,
-      principal: p.principal ? Number(p.principal) : undefined,
-      interestAndFee: Number(p.fee_amount),
-      totalRedemption: Number(p.total_due),
-      // Chi tiết cho Gói 3
-      interest: p.interest ? Number(p.interest) : undefined,
-      rentalFee: p.rental_fee ? Number(p.rental_fee) : undefined,
-      serviceFee: isPackage3 ? serviceFee : undefined,
-    })),
+    milestones: currentPeriods.map(mapMilestone),
   };
 
   const nextPeriod: TPaymentPeriod = {
     title: "Kỳ kế tiếp",
     subtitle: "Nếu gia hạn (Đóng lãi ngày 30)",
-    milestones: nextPeriods.map((p) => ({
-      days: p.milestone_day,
-      date: p.due_date,
-      principal: p.principal ? Number(p.principal) : undefined,
-      interestAndFee: Number(p.fee_amount),
-      totalRedemption: Number(p.total_due),
-      // Chi tiết cho Gói 3
-      interest: p.interest ? Number(p.interest) : undefined,
-      rentalFee: p.rental_fee ? Number(p.rental_fee) : undefined,
-      serviceFee: isPackage3 ? serviceFee : undefined,
-    })),
+    milestones: nextPeriods.map(mapMilestone),
   };
 
   return { currentPeriod, nextPeriod };
