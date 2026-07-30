@@ -28,7 +28,7 @@ export type TInstallmentPeriod = {
 export type TBulletPayment = {
   milestone: number; // Mốc 1, 2, 3
   days: number; // 7, 18, 30 ngày
-  rate: number; // Tỷ lệ % (5%, 8%, 12% hoặc 1.25%, 3.5%, 5%)
+  rate: number; // Tỷ lệ % (Gói 2: 5/8/12%; Gói 3: 4/5/6.5%)
   interest: number; // Tiền lãi (0.033%/ngày)
   rentalFee: number; // Phí thuê tài sản
   serviceFee?: number; // Phí dịch vụ (chỉ có ở Gói 3)
@@ -208,15 +208,15 @@ export function calculateBulletPaymentByMilestone(
  * Gói 3: Gốc cuối kỳ + Giữ tài sản
  * Tài sản được lưu kho tại cửa hàng → Phí thấp hơn Gói 2
  *
- * Công thức mới:
+ * Công thức:
  * - Lãi suất: 0.033%/ngày (pháp lý)
  * - Phí thuê = (Vay × %) - Lãi
  * - Phí dịch vụ = 30,000 đ (nếu Vay ≤ 2,000,000)
  * - Tổng chuộc = Vay + Lãi + Phí thuê + Phí dịch vụ
  *
- * - Mốc 7 ngày: Lãi = Vay × 0.033% × 7, Phí thuê = (Vay × 1.25%) - Lãi
- * - Mốc 18 ngày: Lãi = Vay × 0.033% × 18, Phí thuê = (Vay × 3.5%) - Lãi
- * - Mốc 30 ngày: Lãi = Vay × 0.033% × 30, Phí thuê = (Vay × 5%) - Lãi
+ * - Mốc 7 ngày: Lãi = Vay × 0.033% × 7, Phí thuê = (Vay × 4%) - Lãi
+ * - Mốc 18 ngày: Lãi = Vay × 0.033% × 18, Phí thuê = (Vay × 5%) - Lãi
+ * - Mốc 30 ngày: Lãi = Vay × 0.033% × 30, Phí thuê = (Vay × 6.5%) - Lãi
  */
 export function calculateBulletPaymentWithCollateralHold(
   loanAmount: number,
@@ -226,19 +226,19 @@ export function calculateBulletPaymentWithCollateralHold(
 
   // Mốc 1: 7 ngày
   const interest1 = Math.round(loanAmount * DAILY_INTEREST_RATE * 7);
-  const rentalFeeBase1 = Math.round(loanAmount * 0.0125); // 1.25%
+  const rentalFeeBase1 = Math.round(loanAmount * 0.04); // 4%
   const rentalFee1 = Math.max(0, rentalFeeBase1 - interest1);
   const total1 = loanAmount + interest1 + rentalFee1 + serviceFee;
 
   // Mốc 2: 18 ngày
   const interest2 = Math.round(loanAmount * DAILY_INTEREST_RATE * 18);
-  const rentalFeeBase2 = Math.round(loanAmount * 0.035); // 3.5%
+  const rentalFeeBase2 = Math.round(loanAmount * 0.05); // 5%
   const rentalFee2 = Math.max(0, rentalFeeBase2 - interest2);
   const total2 = loanAmount + interest2 + rentalFee2 + serviceFee;
 
   // Mốc 3: 30 ngày
   const interest3 = Math.round(loanAmount * DAILY_INTEREST_RATE * 30);
-  const rentalFeeBase3 = Math.round(loanAmount * 0.05); // 5%
+  const rentalFeeBase3 = Math.round(loanAmount * 0.065); // 6.5%
   const rentalFee3 = Math.max(0, rentalFeeBase3 - interest3);
   const total3 = loanAmount + interest3 + rentalFee3 + serviceFee;
 
@@ -246,7 +246,7 @@ export function calculateBulletPaymentWithCollateralHold(
     {
       milestone: 1,
       days: 7,
-      rate: 0.0125, // 1.25%
+      rate: 0.04, // 4%
       interest: interest1,
       rentalFee: rentalFee1,
       serviceFee: serviceFee,
@@ -255,7 +255,7 @@ export function calculateBulletPaymentWithCollateralHold(
     {
       milestone: 2,
       days: 18,
-      rate: 0.035, // 3.5%
+      rate: 0.05, // 5%
       interest: interest2,
       rentalFee: rentalFee2,
       serviceFee: serviceFee,
@@ -264,7 +264,7 @@ export function calculateBulletPaymentWithCollateralHold(
     {
       milestone: 3,
       days: 30,
-      rate: 0.05, // 5%
+      rate: 0.065, // 6.5%
       interest: interest3,
       rentalFee: rentalFee3,
       serviceFee: serviceFee,
@@ -287,6 +287,9 @@ export function calculateBulletPaymentWithCollateralHold(
  * Trễ từ ngày 36 trở đi (ngày thứ 6 của tháng mới):
  * - Phí = Vay × (5% + 1.25% + 2%) = Vay × 8.25%
  * - Tổng chuộc = Vay + Phí
+ *
+ * Lưu ý: % trễ hạn tạm giữ theo công thức cũ (chưa đổi theo mốc 4/5/6.5%).
+ * Xem docs/GOI_3_RATE_CHANGE_2026-07.md
  */
 export function calculateBulletPaymentWithCollateralHoldLate(
   loanAmount: number,
@@ -300,11 +303,11 @@ export function calculateBulletPaymentWithCollateralHoldLate(
     fee = 0;
     breakdown = "Không có phí trễ";
   } else if (daysLate <= 35) {
-    // Trễ từ ngày 31-35: 5% (tháng cũ) + 1.25% (tháng mới)
+    // Trễ từ ngày 31-35: 5% (tháng cũ) + 1.25% (tháng mới) — giữ công thức cũ
     fee = Math.round(loanAmount * 0.0625); // 6.25%
     breakdown = `Phí tháng cũ (5%) + Phí tháng mới (1.25%) = 6.25%`;
   } else {
-    // Trễ từ ngày 36 trở đi: 5% + 1.25% + 2% (phạt)
+    // Trễ từ ngày 36 trở đi: 5% + 1.25% + 2% (phạt) — giữ công thức cũ
     fee = Math.round(loanAmount * 0.0825); // 8.25%
     breakdown = `Phí tháng cũ (5%) + Phí tháng mới (1.25%) + Phí phạt (2%) = 8.25%`;
   }

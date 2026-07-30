@@ -151,15 +151,15 @@ Mốc 30 ngày: 10.000.000 × 1.12 = 11.200.000đ
 
 | Mốc | Thời hạn | Tỷ lệ  | Công thức |
 |-----|----------|--------|-----------|
-| 1   | 7 ngày   | 1.25%  | Tổng = Vay × 1.0125 |
-| 2   | 18 ngày  | 3.5%   | Tổng = Vay × 1.035 |
-| 3   | 30 ngày  | 5%     | Tổng = Vay × 1.05 |
+| 1   | 7 ngày   | 4%     | Tổng phí (Lãi + Phí) = Vay × 4% |
+| 2   | 18 ngày  | 5%     | Tổng phí (Lãi + Phí) = Vay × 5% |
+| 3   | 30 ngày  | 6.5%   | Tổng phí (Lãi + Phí) = Vay × 6.5% |
 
-**Ví dụ với 10.000.000đ:**
+**Ví dụ với 10.000.000đ (chưa kể phí DV):**
 ```
-Mốc 7 ngày:  10.000.000 × 1.0125 = 10.125.000đ
-Mốc 18 ngày: 10.000.000 × 1.035  = 10.350.000đ
-Mốc 30 ngày: 10.000.000 × 1.05   = 10.500.000đ
+Mốc 7 ngày:  10.000.000 + 400.000 = 10.400.000đ
+Mốc 18 ngày: 10.000.000 + 500.000 = 10.500.000đ
+Mốc 30 ngày: 10.000.000 + 650.000 = 10.650.000đ
 ```
 
 ---
@@ -253,7 +253,7 @@ runLoanCalculationDemo();
 - ✅ Gói 1: Trả góp 3 kỳ với lãi suất 0.033%/ngày
 - ✅ Gói 1: Phí thuê tài sản để đạt mục tiêu lợi nhuận (3%, 5%, 7%)
 - ✅ Gói 2: Gốc cuối kỳ theo mốc (5%, 8%, 12%)
-- ✅ Gói 3: Gốc cuối kỳ + Giữ TS (1.25%, 3.5%, 5%)
+- ✅ Gói 3: Gốc cuối kỳ + Giữ TS (4%, 5%, 6.5%)
 - ✅ Làm tròn tất cả số tiền (Math.round)
 - ✅ Format hiển thị VND (1.000.000 ₫)
 - ✅ Unformat để lưu vào Google Sheets

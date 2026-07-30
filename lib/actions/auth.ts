@@ -177,9 +177,12 @@ export async function sendOtpToEmail(email: string) {
     return { error: "Tài khoản chưa được kích hoạt. Vui lòng liên hệ Admin." };
   }
 
+  // Dùng email đúng như trong profile/auth để tránh lệch chữ hoa-thường
+  const authEmail = profile.email;
+
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithOtp({
-    email: trimmedEmail,
+    email: authEmail,
     options: {
       shouldCreateUser: false,
     },
@@ -196,12 +199,23 @@ export async function sendOtpToEmail(email: string) {
       };
     }
 
+    // shouldCreateUser: false → user có trong profiles nhưng chưa có trong auth.users
+    if (
+      error.message.toLowerCase().includes("signups not allowed") ||
+      error.message.toLowerCase().includes("user not found")
+    ) {
+      return {
+        error:
+          "Tài khoản chưa được kích hoạt đăng nhập OTP. Vui lòng liên hệ Admin.",
+      };
+    }
+
     return { error: error.message };
   }
 
   return {
     success: true,
-    message: `Mã OTP đã được gửi đến ${trimmedEmail}. Mã có hiệu lực trong 60 phút.`,
+    message: `Mã OTP đã được gửi đến ${authEmail}. Mã có hiệu lực trong 60 phút.`,
   };
 }
 

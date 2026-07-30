@@ -155,7 +155,7 @@ export function runLoanCalculationDemo() {
   console.log("\n📝 Đặc điểm:");
   console.log("   • Tài sản được giữ tại cửa hàng → Phí thấp hơn Gói 2");
   console.log("   • Trả 1 lần gốc + phí tại mốc đáo hạn");
-  console.log("   • Phí: 1.25% (7 ngày), 3.5% (18 ngày), 5% (30 ngày)");
+  console.log("   • Phí: 4% (7 ngày), 5% (18 ngày), 6.5% (30 ngày)");
 
   /* =========================
      SO SÁNH 3 GÓI

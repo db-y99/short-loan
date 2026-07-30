@@ -97,9 +97,14 @@ const PaymentPeriods = ({
   // Kiểm tra xem có phải gói 1 không (Gói 1 chỉ có 1 kỳ thanh toán)
   const isPackage1 = loanDetails.loanType === LOAN_TYPES.INSTALLMENT_3_PERIODS;
 
+  const isPackage2 =
+    loanDetails.loanType === LOAN_TYPES.BULLET_PAYMENT_BY_MILESTONE;
+
   // Kiểm tra xem có phải gói 3 không (Gốc cuối kỳ + Giữ TS)
   const isPackage3 =
     loanDetails.loanType === LOAN_TYPES.BULLET_PAYMENT_WITH_COLLATERAL_HOLD;
+
+  const showFeeBreakdown = isPackage2 || isPackage3;
 
   return (
     <div className="col-span-2 grid grid-cols-1 gap-4">
@@ -211,9 +216,13 @@ const PaymentPeriods = ({
             </p>
           )}
           <PaymentTable
+            feeLabel={
+              isPackage3 ? "Phí bảo quản tài sản" : "Phí thuê"
+            }
             milestones={loanDetails.currentPeriod.milestones}
-            showDetailedBreakdown={isPackage3}
+            showDetailedBreakdown={showFeeBreakdown}
             showPrincipal={isPackage1}
+            showServiceFeeColumn={isPackage3}
             showTotal={isPackage1}
           />
         </CardBody>
@@ -237,8 +246,12 @@ const PaymentPeriods = ({
             {loanDetails.nextPeriod.milestones &&
             loanDetails.nextPeriod.milestones.length > 0 ? (
               <PaymentTable
+                feeLabel={
+                  isPackage3 ? "Phí bảo quản tài sản" : "Phí thuê"
+                }
                 milestones={loanDetails.nextPeriod.milestones}
-                showDetailedBreakdown={isPackage3}
+                showDetailedBreakdown={showFeeBreakdown}
+                showServiceFeeColumn={isPackage3}
               />
             ) : (
               <p className="text-sm text-default-400">

@@ -6,7 +6,7 @@
 
 | Ngữ cảnh | Tên gọi |
 |----------|---------|
-| **Hiển thị UI** (preview tạo đơn, bảng thanh toán) | **Phí quản lý tài sản** (đôi khi nói tắt / ngoài app: *phí quản lý khoản vay*) |
+| **Hiển thị UI** (preview tạo đơn, bảng thanh toán) | **Phí bảo quản tài sản** |
 | **Code / DB / hợp đồng (logic nội bộ)** | **Phí thuê** (`rentalFee`, `rental_fee`, `phiThue`) |
 
 Không phải hai loại phí khác nhau — chỉ khác **nhãn hiển thị** và **tên biến**.
@@ -17,12 +17,12 @@ Không phải hai loại phí khác nhau — chỉ khác **nhãn hiển thị** 
 
 | Layer | Identifier / label |
 |-------|-------------------|
-| UI — `payment-table.tsx`, `loan-preview-section.client.tsx` | `Phí quản lý tài sản` |
+| UI — `payment-table.tsx`, `loan-preview-section.client.tsx` | `Phí bảo quản tài sản` |
 | Type / calc — `types/loan.types.ts`, `lib/loan-calculation.ts` | `rentalFee` — comment: *Phí thuê tài sản* |
 | DB — `loan_payment_periods` | `rental_fee` |
 | Hợp đồng thuê — `lib/contract-data.ts`, `types/contract.types.ts` | `phiThue` |
 
-Công thức (gói 3): `Phí thuê = (Vay × %) − Lãi` — giá trị này chính là số hiện trên UI là “Phí quản lý tài sản”.
+Công thức (gói 3): `Phí thuê = (Vay × %) − Lãi` — giá trị này chính là số hiện trên UI là “Phí bảo quản tài sản”.
 
 ---
 
@@ -30,7 +30,7 @@ Công thức (gói 3): `Phí thuê = (Vay × %) − Lãi` — giá trị này ch
 
 - Đổi label UI → sửa component (ví dụ cột bảng thanh toán).
 - Đổi tên field code/DB → migration + refactor rộng (`rentalFee` / `rental_fee` / `phiThue`).
-- **Không** cộng thêm một dòng “phí quản lý” riêng nếu đã có `rentalFee` — sẽ bị **nhân đôi**.
+- **Không** cộng thêm một dòng “phí bảo quản” riêng nếu đã có `rentalFee` — sẽ bị **nhân đôi**.
 
 ---
 
@@ -39,5 +39,5 @@ Công thức (gói 3): `Phí thuê = (Vay × %) − Lãi` — giá trị này ch
 | Tên | Code | Ghi chú |
 |-----|------|---------|
 | Lãi | `interest` | 0.033%/ngày |
-| Phí quản lý tài sản / phí thuê | `rentalFee` | Mục note này |
+| Phí bảo quản tài sản / phí thuê | `rentalFee` | Mục note này |
 | Phí dịch vụ | `serviceFee` | Gói 3, 30.000đ nếu vay ≤ 2 triệu |
