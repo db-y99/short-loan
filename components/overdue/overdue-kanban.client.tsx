@@ -1,19 +1,18 @@
 "use client";
 
-import type {
-  TOverdueData,
-  TOverdueCustomer,
-} from "@/services/payments/overdue.service";
+import type { TOverdueCustomer, TOverdueData } from "@/types/overdue.types";
 import type { TLoanDetails } from "@/types/loan.types";
 
 import dynamic from "next/dynamic";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Chip } from "@heroui/chip";
 import { Button } from "@heroui/button";
+import { Alert } from "@heroui/alert";
 import { Phone, Calendar, DollarSign, Package, RefreshCw } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useTransition, useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
+import { getLoanDetailsAction } from "@/features/loans/actions/get-loan-details.action";
+import { getOverdueCustomersAction } from "@/features/overdue/actions/get-overdue-customers.action";
 import { formatCurrencyVND, formatDateShortVN } from "@/lib/format";
 import { LOAN_TYPE_LABEL } from "@/constants/loan";
 
@@ -23,7 +22,8 @@ const LoanDetailsModal = dynamic(
 );
 
 type TProps = {
-  data: TOverdueData;
+  initialData: TOverdueData;
+  initialError?: string | null;
 };
 
 type TCustomerCardProps = {
@@ -168,18 +168,38 @@ function KanbanColumn({
   );
 }
 
-export default function OverdueKanban({ data }: TProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+export default function OverdueKanban({
+  initialData,
+  initialError = null,
+}: TProps) {
+  const [data, setData] = useState(initialData);
+  const [loadError, setLoadError] = useState<string | null>(initialError);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedLoanId, setSelectedLoanId] = useState<string | null>(null);
   const [loanDetails, setLoanDetails] = useState<TLoanDetails | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [detailsError, setDetailsError] = useState<string | null>(null);
 
-  const handleRefresh = () => {
-    startTransition(() => {
-      router.refresh();
-    });
+  useEffect(() => {
+    setData(initialData);
+    setLoadError(initialError);
+  }, [initialData, initialError]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    setLoadError(null);
+
+    const result = await getOverdueCustomersAction();
+
+    setIsRefreshing(false);
+
+    if (result.success) {
+      setData(result.data);
+
+      return;
+    }
+
+    setLoadError(result.error);
   };
 
   const handleOpenDetails = useCallback(async (loanId: string) => {
@@ -187,20 +207,14 @@ export default function OverdueKanban({ data }: TProps) {
     setIsLoadingDetails(true);
     setDetailsError(null);
 
-    try {
-      const response = await fetch(`/api/loans/${loanId}`);
-      const result = await response.json();
+    const result = await getLoanDetailsAction(loanId);
 
-      if (result.success) {
-        setLoanDetails(result.data);
-      } else {
-        setDetailsError(result.error || "Không thể tải thông tin khoản vay");
-      }
-    } catch (error) {
-      console.error("Error fetching loan details:", error);
-      setDetailsError("Có lỗi xảy ra khi tải thông tin");
-    } finally {
-      setIsLoadingDetails(false);
+    setIsLoadingDetails(false);
+
+    if (result.success) {
+      setLoanDetails(result.data);
+    } else {
+      setDetailsError(result.error);
     }
   }, []);
 
@@ -210,11 +224,12 @@ export default function OverdueKanban({ data }: TProps) {
     setDetailsError(null);
   };
 
-  const handleRefreshDetails = () => {
+  const handleRefreshDetails = async () => {
     if (selectedLoanId) {
-      handleOpenDetails(selectedLoanId);
+      await handleOpenDetails(selectedLoanId);
     }
-    handleRefresh();
+
+    await handleRefresh();
   };
 
   const totalOverdue =
@@ -226,6 +241,14 @@ export default function OverdueKanban({ data }: TProps) {
   return (
     <>
       <div className="flex flex-col gap-4">
+        {loadError ? (
+          <Alert
+            color="danger"
+            description={loadError}
+            title="Không thể tải dữ liệu"
+          />
+        ) : null}
+
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold">Theo dõi khách quá hạn</h1>
@@ -235,7 +258,7 @@ export default function OverdueKanban({ data }: TProps) {
           </div>
           <Button
             color="primary"
-            isLoading={isPending}
+            isLoading={isRefreshing}
             startContent={<RefreshCw className="w-4 h-4" />}
             variant="flat"
             onPress={handleRefresh}
